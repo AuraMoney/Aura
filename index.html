@@ -9,42 +9,33 @@
             --primary-color: #333333; --secondary-color: #000000; --danger-color: #d9534f;
             --light-gray: #f5f5f5; --dark-gray: #555555; --success-color: #1e8e3e;
             --text-light: #ffffff; --text-dark: #212529; --card-bg: #ffffff; --border-color: #dee2e6;
+            --chat-bg: #f0f2f5; --sent-bubble: #007bff; --received-bubble: #e9e9eb;
         }
         body { font-family: 'Roboto', sans-serif; background-color: var(--light-gray); display: flex; justify-content: center;
         align-items: center; height: 100vh; margin: 0; color: var(--text-dark); }
-        .view { display: none;
-        }
-        .view.active { display: block;
-        }
+        .view { display: none; }
+        .view.active { display: block; }
         .card { background-color: var(--card-bg); padding: 30px; border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 380px; text-align: center; border-top: 5px solid var(--secondary-color);
         }
         input, textarea { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px;
         border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px; text-align: center; font-family: 'Roboto', sans-serif; background-color: #fff; color: #000;
         }
-        textarea { resize: vertical; height: 80px;
-        }
+        textarea { resize: vertical; height: 80px; }
         button { width: 100%; padding: 12px; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); color: var(--text-light);
         border: none; border-radius: 6px; font-size: 16px; cursor: pointer; transition: all 0.2s;
         }
-        button:hover { opacity: 0.9; transform: translateY(-2px);
-        }
-        button:disabled { background: #999; cursor: not-allowed; transform: translateY(0);
-        }
-        .back-button { background: var(--dark-gray); margin-top: 10px;
-        }
-        .logout-button { background: var(--danger-color); margin-top: 10px;
-        }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        button:disabled { background: #999; cursor: not-allowed; transform: translateY(0); }
+        .back-button { background: var(--dark-gray); margin-top: 10px; }
+        .logout-button { background: var(--danger-color); margin-top: 10px; }
         .link-button { background: none; border: none; color: var(--primary-color); text-decoration: underline; cursor: pointer;
         padding: 5px; width: auto; }
         .status-box { font-weight: bold; min-height: 20px; margin-top: 10px;
         word-wrap: break-word; }
-        .error { color: var(--danger-color);
-        }
-        .success { color: var(--success-color);
-        }
-        .info { color: #007bff;
-        }
+        .error { color: var(--danger-color); }
+        .success { color: var(--success-color); }
+        .info { color: #007bff; }
         .seed-phrase-box { padding: 15px; border: 1px dashed var(--danger-color); border-radius: 8px;
         margin: 20px 0; background-color: #fff8f8; color: #333; font-size: 18px; letter-spacing: 1px;
         }
@@ -53,58 +44,61 @@
         label.qr-upload-label { cursor: pointer; display: block;
         margin: 15px; padding: 10px; border: 2px dashed #ccc; border-radius: 8px;
         }
-        label.qr-upload-label:hover { background-color: #f9f9f9;
-        }
-        input[type="file"] { display: none;
-        }
+        label.qr-upload-label:hover { background-color: #f9f9f9; }
+        input[type="file"] { display: none; }
         .loader { border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid var(--primary-color);
         width: 20px; height: 20px; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; margin: 10px auto;
         }
-        .loader.hidden { display: none;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg);
-        } }
-        .transaction-history { margin-top: 25px; text-align: left;
-        }
-        .transaction-history h3 { text-align: center; margin-bottom: 15px; color: var(--secondary-color);
-        }
-        .transaction-list { list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto;
-        }
+        .loader.hidden { display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .transaction-history { margin-top: 25px; text-align: left; }
+        .transaction-history h3 { text-align: center; margin-bottom: 15px; color: var(--secondary-color); }
+        .transaction-list { list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto; }
         .transaction-item { display: flex; justify-content: space-between; align-items: center; padding: 10px;
         border-bottom: 1px solid var(--border-color); }
-        .transaction-item:last-child { border-bottom: none;
-        }
-        .transaction-details { display: flex; flex-direction: column;
-        }
-        .transaction-type { font-weight: bold; font-size: 16px;
-        }
-        .transaction-type.sent { color: var(--danger-color);
-        }
-        .transaction-type.received { color: var(--success-color);
-        }
-        .transaction-date { font-size: 12px; color: #888;
-        }
-        .transaction-amount { font-weight: bold; font-size: 16px;
-        }
-        .transaction-amount.sent { color: var(--danger-color);
-        }
-        .transaction-amount.received { color: var(--success-color);
-        }
-        .no-transactions { text-align: center; color: #999; padding: 20px;
-        }
+        .transaction-item:last-child { border-bottom: none; }
+        .transaction-details { display: flex; flex-direction: column; }
+        .transaction-type { font-weight: bold; font-size: 16px; }
+        .transaction-type.sent { color: var(--danger-color); }
+        .transaction-type.received { color: var(--success-color); }
+        .transaction-date { font-size: 12px; color: #888; }
+        .transaction-amount { font-weight: bold; font-size: 16px; }
+        .transaction-amount.sent { color: var(--danger-color); }
+        .transaction-amount.received { color: var(--success-color); }
+        .no-transactions { text-align: center; color: #999; padding: 20px; }
         .address-display-box { background: #f0f2f5; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: flex;
         align-items: center; justify-content: center; }
-        .address-text { font-family: monospace; font-size: 14px; margin-right: 10px;
-        }
+        .address-text { font-family: monospace; font-size: 14px; margin-right: 10px; }
         .copy-button { padding: 5px 10px; font-size: 12px; width: auto; background: var(--dark-gray);
         min-width: 60px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%;
         height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000;
         }
-        .modal-content { width: 400px; max-width: 90%; text-align: left; padding: 25px;
-        }
-        .modal-content h2 { text-align: center; margin-bottom: 20px;
-        }
+        .modal-content { width: 400px; max-width: 90%; text-align: left; padding: 25px; }
+        .modal-content h2 { text-align: center; margin-bottom: 20px; }
+        
+        /* --- CHAT STYLES --- */
+        #chat-view .card { padding: 0; overflow: hidden; height: 550px; display: flex; flex-direction: column; }
+        .chat-header { padding: 15px; background: var(--primary-color); color: var(--text-light); text-align: center; }
+        .chat-header h2 { margin: 0; font-size: 18px; }
+        .conversation-list { flex-grow: 1; overflow-y: auto; text-align: left; }
+        .conversation-item { display: flex; padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.2s; }
+        .conversation-item:hover { background-color: #f9f9f9; }
+        .conversation-details { flex-grow: 1; }
+        .conversation-address { font-weight: bold; font-family: monospace; font-size: 14px; }
+        .last-message { font-size: 14px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #message-view { display: none; flex-direction: column; height: 100%; }
+        .message-header { display: flex; align-items: center; padding: 10px; background: #eee; }
+        .message-header .back-button { margin: 0 10px 0 0; padding: 5px 10px; width: auto; font-size: 14px; }
+        .message-header-address { font-family: monospace; font-size: 12px; font-weight: bold; }
+        .message-list-area { flex-grow: 1; overflow-y: auto; padding: 15px; background-color: var(--chat-bg); display: flex; flex-direction: column-reverse; }
+        .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; margin-bottom: 10px; line-height: 1.4; word-wrap: break-word; }
+        .message-bubble.sent { background-color: var(--sent-bubble); color: white; align-self: flex-end; }
+        .message-bubble.received { background-color: var(--received-bubble); color: black; align-self: flex-start; }
+        .message-form { display: flex; padding: 10px; border-top: 1px solid var(--border-color); }
+        .message-form input { flex-grow: 1; margin: 0 10px 0 0; text-align: left; }
+        .message-form button { width: auto; padding: 10px 15px; }
+
     </style>
 </head>
 <body>
@@ -114,7 +108,7 @@
     <div id="seed-phrase-view" class="view"><div class="card"><h2>Your Recovery Phrase</h2><p class="error">Write down these 12 words in a safe, offline place. This is the only way to recover your wallet.</p><div id="seed-phrase-display" class="seed-phrase-box"></div><button id="seed-phrase-confirm-button">I Understand, Take Me to My Wallet</button></div></div>
     <div id="restore-wallet-view" class="view"><div class="card"><h2>Restore Wallet</h2><p>Enter your 12-word recovery phrase.</p><textarea id="restore-seed-input" placeholder="Enter words separated by spaces..."></textarea><p>Choose a new password for this device.</p><input type="password" id="restore-password-input" placeholder="New Password"><div class="loader hidden" id="restore-loader"></div><button id="restore-wallet-button">Restore</button><div id="restore-status" class="status-box"></div><button class="back-button" id="back-from-restore">Back</button></div></div>
     <div id="login-view" class="view"><div class="card"><h1>Unlock Wallet</h1><p>Enter your password to decrypt your wallet.</p><input type="password" id="login-password-input" placeholder="Password"><div class="loader hidden" id="login-loader"></div><button id="login-button">Unlock</button><div id="login-status" class="status-box"></div><p style="margin-top:20px;">Want to use a different wallet? <button class="link-button" id="reset-app-button">Erase everything and start over</button></p></div></div>
-    <div id="wallet-view" class="view"><div class="card"><h2>Your Wallet</h2><div class="address-display-box"><span id="address-display" class="address-text"></span><button id="copy-address-button" class="copy-button">Copy</button></div><p>Balance:</p><h1 id="balance-display">$0.00</h1><div id="sync-status" class="status-box" style="font-size: 14px;"></div><p id="network-status" style="font-size: 12px; color: var(--success-color);">Ledger: Supabase</p><button id="show-charge-view-button">Charge with Banknote</button><button id="show-send-view-button" style="margin-top:10px;">Send (Aura)</button><button id="show-receive-view-button" style="margin-top:10px;">Receive (Aura)</button><div class="transaction-history"><h3>Recent Transactions</h3><ul id="transaction-list-ul" class="transaction-list"></ul></div><button id="logout-button" class="logout-button">Logout (Lock Wallet)</button></div></div>
+    <div id="wallet-view" class="view"><div class="card"><h2>Your Wallet</h2><div class="address-display-box"><span id="address-display" class="address-text"></span><button id="copy-address-button" class="copy-button">Copy</button></div><p>Balance:</p><h1 id="balance-display">$0.00</h1><div id="sync-status" class="status-box" style="font-size: 14px;"></div><p id="network-status" style="font-size: 12px; color: var(--success-color);">Ledger: Supabase</p><button id="show-messages-view-button">Messages</button><button id="show-charge-view-button" style="margin-top:10px;">Charge with Banknote</button><button id="show-send-view-button" style="margin-top:10px;">Send (Aura)</button><button id="show-receive-view-button" style="margin-top:10px;">Receive (Aura)</button><div class="transaction-history"><h3>Recent Transactions</h3><ul id="transaction-list-ul" class="transaction-list"></ul></div><button id="logout-button" class="logout-button">Logout (Lock Wallet)</button></div></div>
     <div id="charge-view" class="view"><div class="card"><h2>Charge Wallet</h2><p>Upload a digital banknote image to validate it and add the funds to your balance.</p><label for="banknote-image-input" class="qr-upload-label" id="banknote-upload-label">Upload Banknote Image</label><input type="file" id="banknote-image-input" accept="image/*"><div id="validation-status" class="status-box"></div><div id="charge-confirmation" style="display:none; margin-top: 20px;"><p>Validation successful! Amount: <b id="validated-amount"></b></p><button id="confirm-charge-button">Add to Balance</button></div><button class="back-button" id="back-from-charge">Back</button></div></div>
     <div id="receive-view" class="view"><div class="card"><h2>Receive Funds</h2><p>Share your address to receive funds.</p><div id="static-qr-code"></div><p style="font-size: 12px; word-wrap: break-word; background: #f0f2f5; padding: 8px; border-radius: 4px;" id="full-receive-address"></p><hr style="margin: 20px 0;"><p>Or request a specific amount:</p><input type="number" id="request-amount-input" placeholder="Amount to receive"><button id="create-request-qr-button">Generate Payment Request QR</button><div id="receive-status" class="status-box"></div><button class="back-button" id="back-from-receive">Back</button></div></div>
     <div id="send-view" class="view"><div class="card"><h2>Send Funds</h2><p>Enter recipient address and amount.</p><div><input type="text" id="send-address-input" placeholder="Recipient's Aura Address" style="margin-bottom: 10px;"><input type="number" id="send-amount-input" placeholder="Amount to send" style="margin-bottom: 10px;"><button id="send-manual-button">Continue</button></div><p style="text-align:center; margin: 20px 0; font-weight: bold;">- OR -</p><p>Scan a recipient's payment request QR code.</p><div id="video-container" style="position: relative; width: 100%; max-width: 300px; margin: 15px auto; border-radius: 8px; overflow: hidden; border: 2px solid #333; background: #000;"><video id="qr-video" playsinline style="width: 100%; height: auto; display: block;"></video><div id="loading-message" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center;">Requesting camera access...</div></div><canvas id="qr-canvas" style="display: none;"></canvas><div id="send-status" class="status-box"></div><button class="back-button" id="back-from-send">Back</button></div></div>
@@ -122,6 +116,31 @@
     <div id="qr-display-view" class="view"><div class="card"><h2 id="qr-display-title"></h2><p id="qr-display-instruction"></p><div id="qr-display-box"></div><div id="waiting-on-payment" style="display: none;"><div id="payment-timer"></div><div class="loader"></div><p id="final-status-message" class="status-box" style="font-size:18px;"></p></div><button class="back-button" id="back-from-qr-display">Back to Wallet</button></div></div>
     <div id="transaction-detail-modal" class="modal-overlay" style="display:none;"><div class="modal-content card"><h2>Transaction Details</h2><div id="modal-details-content"><p><strong>Status:</strong> <span id="detail-status"></span></p><p><strong>Type:</strong> <span id="detail-type"></span></p><p><strong>Date & Time:</strong> <span id="detail-datetime"></span></p><p><strong>Amount:</strong> <span id="detail-amount"></span></p><p><strong>Fee:</strong> <span id="detail-fee"></span></p><p style="word-wrap: break-word;"><strong>From:</strong> <span id="detail-from"></span></p><p style="word-wrap: break-word;"><strong>To:</strong> <span id="detail-to"></span></p><p style="word-wrap: break-word;"><strong>Transaction Hash:</strong> <span id="detail-hash"></span></p></div><button id="download-tx-button">Download as JPG</button><button id="close-modal-button" class="back-button">Close</button></div></div>
     
+    <div id="chat-view" class="view">
+        <div class="card">
+            <div id="conversation-list-view">
+                <div class="chat-header"><h2>Messages</h2></div>
+                <div id="conversation-list" class="conversation-list">
+                    </div>
+            </div>
+
+            <div id="message-view">
+                <div class="message-header">
+                    <button id="back-to-conversations" class="back-button">Back</button>
+                    <span id="message-header-address" class="message-header-address"></span>
+                </div>
+                <div class="message-list-area" id="message-list-area">
+                    </div>
+                <form id="message-form" class="message-form">
+                    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit">Send</button>
+                </form>
+            </div>
+            <button class="back-button" id="back-from-chat">Back to Wallet</button>
+        </div>
+    </div>
+
+
     <script src="pako.min.js"></script>
     <script src="qrcode.js"></script>
     <script src="jsQR.js"></script>
@@ -260,7 +279,75 @@ if (typeof globalThis.Buffer === 'undefined') {
         // --- PERFORMANCE OPTIMIZATION MODULES ---
         const CacheManager = { cache: new Map(), DEFAULT_CACHE_DURATION: 30000, set(key, data, duration = this.DEFAULT_CACHE_DURATION) { this.cache.set(key, { data, expiresAt: Date.now() + duration }); }, get(key) { const cached = this.cache.get(key); if (!cached) return null; if (Date.now() > cached.expiresAt) { this.cache.delete(key); return null; } return cached.data; }, invalidate(pattern) { for (const key of this.cache.keys()) { if (key.includes(pattern)) { this.cache.delete(key); } } } };
         const NetworkOptimizer = { getSyncStrategy() { const speed = navigator.connection?.effectiveType || '4g'; switch (speed) { case 'slow-2g': case '2g': return { interval: 45000, useCache: true, cacheDuration: 120000 }; case '3g': return { interval: 20000, useCache: true, cacheDuration: 60000 }; case '4g': default: return { interval: 10000, useCache: true, cacheDuration: 20000 }; } } };
-        const BackgroundSync = { isRunning: false, syncIntervalId: null, start() { if (this.isRunning) return; console.log("Starting background sync..."); this.isRunning = true; const strategy = NetworkOptimizer.getSyncStrategy(); const performSyncCycle = () => { if (!this.isRunning) return; this.performSync().catch(err => console.error("Background sync error:", err)); }; performSyncCycle(); this.syncIntervalId = setInterval(performSyncCycle, strategy.interval); }, async performSync() { if (!state.wallet) { this.stop(); return; } const syncStatusEl = document.getElementById('sync-status'); try { const [incomingTxs, outgoingTxs] = await Promise.all([ SupabaseLedger.findIncomingTxs(state.wallet.address), SupabaseLedger.findOutgoingTxs(state.wallet.address) ]); let newTxCount = 0; for (const confirmation of incomingTxs) { if (await WalletLogic.processDiscoveredTransaction(confirmation)) { newTxCount++; } } const balance = WalletLogic.calculateBalanceFromTxs(incomingTxs, outgoingTxs); document.getElementById('balance-display').textContent = `$${balance.toFixed(2)}`; if (newTxCount > 0) { renderTransactionHistory(); if (syncStatusEl) { setStatus(syncStatusEl, '⚡ New transaction(s) detected!', 'success'); setTimeout(() => { if (syncStatusEl) setStatus(syncStatusEl, ''); }, 4000); } } } catch (error) { console.error("Background sync failed:", error); if (syncStatusEl) setStatus(syncStatusEl, 'Sync failed. Retrying...', 'error'); } }, stop() { if (!this.isRunning) return; console.log("Stopping background sync..."); clearInterval(this.syncIntervalId); this.syncIntervalId = null; this.isRunning = false; } };
+        const BackgroundSync = { 
+            isRunning: false, 
+            syncIntervalId: null, 
+            start() { 
+                if (this.isRunning) return; 
+                console.log("Starting background sync..."); 
+                this.isRunning = true; 
+                const strategy = NetworkOptimizer.getSyncStrategy(); 
+                const performSyncCycle = () => { 
+                    if (!this.isRunning) return; 
+                    this.performSync().catch(err => console.error("Background sync error:", err)); 
+                }; 
+                performSyncCycle(); 
+                this.syncIntervalId = setInterval(performSyncCycle, strategy.interval); 
+            }, 
+            async performSync() {
+                if (!state.wallet) { this.stop(); return; }
+                const syncStatusEl = document.getElementById('sync-status');
+                try {
+                    const [incomingTxs, outgoingTxs] = await Promise.all([
+                        SupabaseLedger.findIncomingTxs(state.wallet.address),
+                        SupabaseLedger.findOutgoingTxs(state.wallet.address)
+                    ]);
+
+                    const newConfirmations = incomingTxs.filter(tx => !state.transactionIndex.has(tx.linkedTxHash));
+
+                    if (newConfirmations.length > 0) {
+                        let newTxCount = 0;
+                        for (const confirmation of newConfirmations) {
+                            if (await WalletLogic.processDiscoveredTransaction(confirmation)) {
+                                newTxCount++;
+                            }
+                        }
+
+                        if (newTxCount > 0) {
+                            const hashesToDelete = newConfirmations.map(c => c.linkedTxHash);
+                            const messageToSign = hashesToDelete.sort().join(',');
+                            const signature = await state.wallet.signMessage(messageToSign);
+                            await SupabaseLedger.deleteConfirmationsBatch(hashesToDelete, signature, state.wallet.address);
+                            console.log(`Smart Sync: Processed and purged ${hashesToDelete.length} confirmations.`);
+                        }
+                    }
+
+                    const balance = WalletLogic.calculateBalanceFromTxs(incomingTxs, outgoingTxs);
+                    document.getElementById('balance-display').textContent = `$${balance.toFixed(2)}`;
+
+                    if (newConfirmations.length > 0) {
+                        renderTransactionHistory();
+                        if (document.getElementById('chat-view').classList.contains('active')) {
+                            renderConversations(); // Refresh chat if open
+                        }
+                        if (syncStatusEl) {
+                            setStatus(syncStatusEl, `⚡ ${newConfirmations.length} new item(s) synced!`, 'success');
+                            setTimeout(() => { if (syncStatusEl) setStatus(syncStatusEl, ''); }, 4000);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Background sync failed:", error);
+                    if (syncStatusEl) setStatus(syncStatusEl, 'Sync failed. Retrying...', 'error');
+                }
+            },
+            stop() { 
+                if (!this.isRunning) return; 
+                console.log("Stopping background sync..."); 
+                clearInterval(this.syncIntervalId); 
+                this.syncIntervalId = null; 
+                this.isRunning = false; 
+            } 
+        };
         
         // --- SUPABASE LEDGER MODULE ---
         const SupabaseLedger = (() => {
@@ -287,20 +374,20 @@ if (typeof globalThis.Buffer === 'undefined') {
                 findIncomingTxs: async (receiverAddress) => { const cacheKey = `incoming_${receiverAddress}`; const strategy = NetworkOptimizer.getSyncStrategy(); if (strategy.useCache) { const cached = CacheManager.get(cacheKey); if (cached) return cached; } const txs = await apiCall('findIncomingTxs', { receiverAddress }); if (strategy.useCache) CacheManager.set(cacheKey, txs, strategy.cacheDuration); return txs; },
                 findOutgoingTxs: async (senderAddress) => { const cacheKey = `outgoing_${senderAddress}`; const strategy = NetworkOptimizer.getSyncStrategy(); if (strategy.useCache) { const cached = CacheManager.get(cacheKey); if (cached) return cached; } const txs = await apiCall('findOutgoingTxs', { senderAddress }); if (strategy.useCache) CacheManager.set(cacheKey, txs, strategy.cacheDuration); return txs; },
                 getSpendDetails: (identifier) => apiCall('getSpendDetails', { identifier }),
-                deleteConfirmation: (linkedTxHash, signature) => apiCall('deleteConfirmation', { linkedTxHash, signature })
+                deleteConfirmationsBatch: (hashes, signature, signerAddress) => apiCall('deleteConfirmationsBatch', { hashes, signature, signerAddress })
             };
         })();
         // AURA PROTOCOL - DECENTRALIZED WALLET APPLICATION
         const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8 };
-        let state = { wallet: null, userStore: null, failedLoginAttempts: 0, isLockedOut: false, activePaymentRequest: null, activeManualSend: null, activePollingTimer: null, cameraStream: null, isScannerActive: false, currentBalance: 0, transactionIndex: new Map(), config: null };
+        let state = { wallet: null, userStore: null, failedLoginAttempts: 0, isLockedOut: false, activePaymentRequest: null, activeManualSend: null, activePollingTimer: null, cameraStream: null, isScannerActive: false, currentBalance: 0, transactionIndex: new Map(), config: null, activeChatAddress: null };
         const WalletLogic = {
             createWallet: (password) => { const wallet = ethers.Wallet.createRandom(); const mnemonic = wallet.mnemonic.phrase; const encryptedJson = wallet.encryptSync(password); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ hash: ethers.id("GENESIS_BLOCK"), type: 'creation', timestamp: Date.now() }], messages: [] }; localStorage.setItem('aura_user_store', JSON.stringify(userStore)); state.userStore = userStore; state.wallet = wallet; return { mnemonic }; },
             restoreWallet: async (mnemonic, password) => { try { const wallet = ethers.Wallet.fromPhrase(mnemonic); const encryptedJson = wallet.encryptSync(password); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ hash: ethers.id("GENESIS_BLOCK"), type: 'creation', timestamp: Date.now() }], messages: [] }; localStorage.setItem('aura_user_store', JSON.stringify(userStore)); state.userStore = userStore; state.wallet = wallet; return true; } catch (e) { console.error("Restore failed:", e); return false; } },
             login: async (password) => { const userStoreJson = localStorage.getItem('aura_user_store'); if (!userStoreJson) return null; try { const reloadedUserStore = JSON.parse(userStoreJson); const wallet = await ethers.Wallet.fromEncryptedJson(reloadedUserStore.encryptedJson, password); reloadedUserStore.messages = reloadedUserStore.messages || []; state.userStore = reloadedUserStore; state.wallet = wallet; state.failedLoginAttempts = 0; WalletLogic.buildTransactionIndex(); return true; } catch (e) { console.error("Login failed (likely incorrect password):", e); state.failedLoginAttempts++; return false; } },
             logout: () => { BackgroundSync.stop(); state.wallet = null; state.userStore = null; state.transactionIndex.clear(); },
-            buildTransactionIndex: () => { state.transactionIndex.clear(); if (!state.userStore || !state.userStore.chain) return; state.userStore.chain.forEach(tx => { const txKey = tx.linkedTxHash || tx.hash; state.transactionIndex.set(txKey, tx); }); state.userStore.messages.forEach(msg => { const msgKey = msg.linkedTxHash || msg.hash; state.transactionIndex.set(msgKey, msg); }); },
+            buildTransactionIndex: () => { state.transactionIndex.clear(); if (!state.userStore) return; if(state.userStore.chain) state.userStore.chain.forEach(tx => state.transactionIndex.set(tx.linkedTxHash || tx.hash, tx)); if(state.userStore.messages) state.userStore.messages.forEach(msg => state.transactionIndex.set(msg.linkedTxHash || msg.hash, msg)); },
             getLastTransaction: () => state.userStore.chain[state.userStore.chain.length - 1],
-            addToChain: (txData) => { const prevTx = WalletLogic.getLastTransaction(); const newTx = { ...txData, prevHash: prevTx.hash, timestamp: txData.timestamp || Date.now() }; const amountInt = ethers.parseUnits((newTx.amount || 0).toFixed(state.config.PRECISION), state.config.PRECISION); const feeInt = ethers.parseUnits((newTx.fee || 0).toFixed(state.config.PRECISION), state.config.PRECISION); newTx.hash = ethers.solidityPackedKeccak256( ['string', 'uint256', 'uint256', 'string', 'string', 'string'], [newTx.type, amountInt, feeInt, newTx.from || '', newTx.to || '', newTx.prevHash] ); state.userStore.chain.push(newTx); localStorage.setItem('aura_user_store', JSON.stringify(state.userStore)); const txKey = newTx.linkedTxHash || newTx.hash; state.transactionIndex.set(txKey, newTx); return newTx; },
+            addToChain: (txData) => { const prevTx = WalletLogic.getLastTransaction(); const newTx = { ...txData, prevHash: prevTx.hash, timestamp: txData.timestamp || Date.now() }; const amountInt = ethers.parseUnits((newTx.amount || 0).toFixed(state.config.PRECISION), state.config.PRECISION); const feeInt = ethers.parseUnits((newTx.fee || 0).toFixed(state.config.PRECISION), state.config.PRECISION); newTx.hash = ethers.solidityPackedKeccak256( ['string', 'uint256', 'uint256', 'string', 'string', 'string'], [newTx.type, amountInt, feeInt, newTx.from || '', newTx.to || '', newTx.prevHash] ); state.userStore.chain.push(newTx); localStorage.setItem('aura_user_store', JSON.stringify(state.userStore)); state.transactionIndex.set(newTx.linkedTxHash || newTx.hash, newTx); return newTx; },
             calculateBalanceFromTxs: (incomingTxs, outgoingTxs) => { const incomingTotal = incomingTxs.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0); const outgoingTotal = outgoingTxs.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0); const finalBalance = incomingTotal - outgoingTotal; state.currentBalance = finalBalance; return finalBalance; },
             getServerAuthoritativeBalance: async () => { if (!state.userStore) return 0.0; const [incomingTxs, outgoingTxs] = await Promise.all([ SupabaseLedger.findIncomingTxs(state.wallet.address), SupabaseLedger.findOutgoingTxs(state.wallet.address) ]); return WalletLogic.calculateBalanceFromTxs(incomingTxs, outgoingTxs); },
             getStandardizedConfirmationMessage: (confirmation) => { const amount = Number(confirmation.amount).toFixed(state.config.PRECISION); return [confirmation.type, confirmation.senderAddress, confirmation.receiverAddress, amount, confirmation.linkedTxHash].join('|'); },
@@ -309,49 +396,40 @@ if (typeof globalThis.Buffer === 'undefined') {
             directSend: async (recipientAddress, amount) => { if (!state.config?.TREASURY_ADDRESS) throw new Error("CRITICAL: Treasury address is not configured."); const fee = amount * state.config.FEE_PERCENTAGE; const totalDebit = amount + fee; if (state.currentBalance < totalDebit) throw new Error(`Insufficient funds to cover amount + fee.`); const sendTx = WalletLogic.addToChain({ type: 'send', amount: amount, fee: fee, from: state.wallet.address, to: recipientAddress, status: 'completed' }); const confirmation = { type: 'AURA_PAYMENT_CONFIRMATION', senderAddress: state.wallet.address, receiverAddress: recipientAddress, amount: amount, linkedTxHash: sendTx.hash }; const messageToSign = WalletLogic.getStandardizedConfirmationMessage(confirmation); confirmation.signature = await state.wallet.signMessage(messageToSign); confirmation.signedMessage = messageToSign; await SupabaseLedger.pinConfirmation(confirmation); const feeTx = WalletLogic.addToChain({ type: 'send', amount: fee, fee: 0, from: state.wallet.address, to: state.config.TREASURY_ADDRESS, status: 'completed', purpose: 'fee' }); const feeConfirmation = { type: 'AURA_PAYMENT_CONFIRMATION', senderAddress: state.wallet.address, receiverAddress: state.config.TREASURY_ADDRESS, amount: fee, linkedTxHash: feeTx.hash }; const feeMessageToSign = WalletLogic.getStandardizedConfirmationMessage(feeConfirmation); feeConfirmation.signature = await state.wallet.signMessage(feeMessageToSign); feeConfirmation.signedMessage = feeMessageToSign; await SupabaseLedger.pinConfirmation(feeConfirmation); CacheManager.invalidate(state.wallet.address); return true; },
             finalizePayment: async (confirmation) => { const receiveTxIndex = state.userStore.chain.findIndex(tx => tx.hash === confirmation.linkedTxHash && tx.status === 'pending_request'); if (receiveTxIndex === -1) { console.error("Finalize Error: Could not find pending transaction."); return false; } if (!confirmation.signedMessage) { console.error("Finalize Error: Receipt is missing 'signedMessage'."); return false; } const locallyRecreatedMessage = WalletLogic.getStandardizedConfirmationMessage(confirmation); if (locallyRecreatedMessage !== confirmation.signedMessage) { console.error("Tamper Detection: Confirmation data mismatch."); return false; } const signerAddress = ethers.verifyMessage(confirmation.signedMessage, confirmation.signature); if (signerAddress !== confirmation.senderAddress) { console.error("Signature verification failed!"); return false; } state.userStore.chain[receiveTxIndex].status = 'completed'; state.userStore.chain[receiveTxIndex].from = confirmation.senderAddress; localStorage.setItem('aura_user_store', JSON.stringify(state.userStore)); CacheManager.invalidate(state.wallet.address); return true; },
             processDiscoveredTransaction: async (confirmation) => {
-                if (confirmation.receiverAddress !== state.wallet.address) return false;
-                
                 const txKey = confirmation.linkedTxHash || confirmation.hash;
-                if (state.transactionIndex.has(txKey)) return false; // Already processed
+                if (state.transactionIndex.has(txKey)) return false; // Already processed, crucial check
 
-                // --- Main processing logic ---
-                // This is a placeholder for message decryption.
-                // For now, we'll just check if it's a zero-amount transaction to treat it as a message.
+                // Simplified logic: Save locally, let sync manager handle deletion.
+                // TODO: Implement decryption for messages.
                 const isMessage = confirmation.amount === 0;
 
-                // **Step 1: Save the transaction/message locally FIRST**
                 if (isMessage) {
-                    // TODO: Add decryption logic here. For now, save the raw confirmation.
                     state.userStore.messages.push(confirmation);
                 } else {
-                    // It's a financial transaction, add it to the local chain
-                    if (confirmation.senderAddress !== 'BANKNOTE_ISSUER') {
-                        if (!confirmation.signedMessage) { console.error("Discovered TX invalid: Missing 'signedMessage'"); return false; }
-                        const locallyRecreatedMessage = WalletLogic.getStandardizedConfirmationMessage(confirmation);
-                        if (locallyRecreatedMessage !== confirmation.signedMessage) { console.error("Discovered TX failed tamper check"); return false; }
-                        const signerAddress = ethers.verifyMessage(confirmation.signedMessage, confirmation.signature);
-                        if (signerAddress !== confirmation.senderAddress) { console.error("Discovered TX failed signature validation"); return false; }
+                    if (confirmation.senderAddress !== 'BANKNOTE_ISSUER' && !confirmation.signedMessage) {
+                         console.error("Discovered TX invalid: Missing 'signedMessage'"); return false;
                     }
-                    WalletLogic.addToChain({ type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive', amount: confirmation.amount, from: confirmation.senderAddress, to: state.wallet.address, status: 'completed', linkedTxHash: confirmation.linkedTxHash, timestamp: confirmation.timestamp });
+                    // Optional: Re-verify signature for financial transactions
+                    WalletLogic.addToChain({
+                        type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive',
+                        amount: confirmation.amount,
+                        from: confirmation.senderAddress,
+                        to: state.wallet.address,
+                        status: 'completed',
+                        linkedTxHash: confirmation.linkedTxHash,
+                        timestamp: confirmation.timestamp
+                    });
                 }
-
-                state.transactionIndex.set(txKey, confirmation); // Mark as processed
-                localStorage.setItem('aura_user_store', JSON.stringify(state.userStore));
                 
-                // **Step 2: After successful local storage, request deletion from the server**
-                try {
-                    const signature = await state.wallet.signMessage(confirmation.linkedTxHash);
-                    await SupabaseLedger.deleteConfirmation(confirmation.linkedTxHash, signature);
-                    console.log(`Successfully requested deletion of confirmation: ${confirmation.linkedTxHash}`);
-                } catch (e) {
-                    console.error(`Failed to request deletion for ${confirmation.linkedTxHash}. It will be fetched again, but is saved locally.`, e);
-                }
-
-                CacheManager.invalidate(state.wallet.address); // Invalidate cache to reflect new state
-                return true; // Indicates a new transaction was processed
+                state.transactionIndex.set(txKey, confirmation);
+                localStorage.setItem('aura_user_store', JSON.stringify(state.userStore));
+                return true; // Indicates a new item was processed
             }
         };
         
+        // --- UI & APP FLOW ---
+        let currentChatAddress = null; // Holds the address of the person we are chatting with
+
         function setLoader(loaderId, isLoading) { document.getElementById(loaderId).classList.toggle('hidden', !isLoading); }
         function setStatus(element, message, type = '') {
             element.textContent = message;
@@ -364,7 +442,7 @@ if (typeof globalThis.Buffer === 'undefined') {
         function abbreviateAddress(address) { if (!address) return ''; return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`; }
         function stopScanner() { if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); state.cameraStream = null; state.isScannerActive = false; } }
         async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status'); setStatus(sendStatusEl, ''); loadingMessage.style.display = 'flex'; loadingMessage.textContent = 'Requesting camera access...'; try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err); loadingMessage.textContent = "Could not access camera."; setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false; } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth; canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info'); let isPaymentRequest = false; try { const request = JSON.parse(code.data); if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true; Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); state.activePaymentRequest = request; state.activeManualSend = null; const fee = request.amount * state.config.FEE_PERCENTAGE; const total = request.amount + fee; document.getElementById('confirm-amount-display').innerHTML = `Amount: $${sanitizeHTML(request.amount.toFixed(2))}<br><span style="font-size: 14px; color: #555;">Fee (${(state.config.FEE_PERCENTAGE*100).toFixed(1)}%): +$${sanitizeHTML(fee.toFixed(2))}</span><br><strong style="font-size: 18px;">Total: $${sanitizeHTML(total.toFixed(2))}</strong>`; document.getElementById('confirm-recipient-address-display').textContent = request.receiverAddress; await showView('send-confirm-view'); }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); }); } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data; setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); document.getElementById('send-amount-input').focus(); } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000); } } return; } } requestAnimationFrame(tick); } }
-        async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner(); if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active'); if (id === 'wallet-view') { document.getElementById('balance-display').textContent = 'Loading...'; if(state.wallet) document.getElementById('address-display').textContent = abbreviateAddress(state.wallet.address); await updateBalanceAndRender(); BackgroundSync.start(); } if (id === 'send-view') { startScanner(); } if (id === 'receive-view') { document.getElementById('full-receive-address').textContent = state.wallet.address; generateQrCode(state.wallet.address, 'static-qr-code'); } }
+        async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner(); if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active'); if (id === 'wallet-view') { document.getElementById('balance-display').textContent = 'Loading...'; if(state.wallet) document.getElementById('address-display').textContent = abbreviateAddress(state.wallet.address); await updateBalanceAndRender(); BackgroundSync.start(); } if (id === 'send-view') { startScanner(); } if (id === 'receive-view') { document.getElementById('full-receive-address').textContent = state.wallet.address; generateQrCode(state.wallet.address, 'static-qr-code'); } if (id === 'chat-view') { renderConversations(); } }
         function renderTransactionHistory() {
             const listUl = document.getElementById('transaction-list-ul');
             listUl.innerHTML = '';
@@ -393,25 +471,19 @@ if (typeof globalThis.Buffer === 'undefined') {
                 const totalAmount = tx.amount || 0;
                 const date = new Date(tx.timestamp).toLocaleString('en-US');
                 
-                // Create elements programmatically to prevent XSS
                 const detailsDiv = document.createElement('div');
                 detailsDiv.className = 'transaction-details';
-
                 const typeSpan = document.createElement('span');
                 typeSpan.className = `transaction-type ${typeClass}`;
                 typeSpan.textContent = typeText;
-
                 const dateSpan = document.createElement('span');
                 dateSpan.className = 'transaction-date';
                 dateSpan.textContent = date;
-
                 detailsDiv.appendChild(typeSpan);
                 detailsDiv.appendChild(dateSpan);
-
                 const amountSpan = document.createElement('span');
                 amountSpan.className = `transaction-amount ${typeClass}`;
                 amountSpan.textContent = `${isSent ? '-' : '+'}$${totalAmount.toFixed(2)}`;
-
                 item.appendChild(detailsDiv);
                 item.appendChild(amountSpan);
                 
@@ -420,6 +492,63 @@ if (typeof globalThis.Buffer === 'undefined') {
             });
         }
         function showTransactionDetails(tx) { const modal = document.getElementById('transaction-detail-modal'); document.getElementById('detail-status').textContent = tx.status || 'N/A'; document.getElementById('detail-type').textContent = tx.type || 'N/A'; document.getElementById('detail-datetime').textContent = new Date(tx.timestamp).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'medium' }); document.getElementById('detail-amount').textContent = `$${(tx.amount || 0).toFixed(2)}`; document.getElementById('detail-fee').textContent = `$${(tx.fee || 0).toFixed(2)}`; document.getElementById('detail-from').textContent = tx.from || 'N/A'; document.getElementById('detail-to').textContent = tx.to || 'N/A'; document.getElementById('detail-hash').textContent = tx.hash || 'N/A'; modal.style.display = 'flex'; document.getElementById('close-modal-button').onclick = () => { modal.style.display = 'none'; }; document.getElementById('download-tx-button').onclick = () => { const contentToCapture = document.getElementById('modal-details-content'); html2canvas(contentToCapture, { scale: 2 }).then(canvas => { const link = document.createElement('a'); link.download = `transaction_${tx.hash.substring(0, 10)}.jpg`; link.href = canvas.toDataURL('image/jpeg', 0.9); link.click(); }); }; }
+
+        // --- CHAT UI FUNCTIONS ---
+        function renderConversations() {
+            const conversations = {};
+            state.userStore.messages.forEach(msg => {
+                const otherParty = msg.senderAddress === state.wallet.address ? msg.receiverAddress : msg.senderAddress;
+                if (!conversations[otherParty] || msg.timestamp > conversations[otherParty].timestamp) {
+                    conversations[otherParty] = msg;
+                }
+            });
+
+            const conversationListEl = document.getElementById('conversation-list');
+            conversationListEl.innerHTML = '';
+            if (Object.keys(conversations).length === 0) {
+                conversationListEl.innerHTML = '<p class="no-transactions">No messages yet.</p>';
+                return;
+            }
+            
+            Object.values(conversations)
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .forEach(msg => {
+                    const otherParty = msg.senderAddress === state.wallet.address ? msg.receiverAddress : msg.senderAddress;
+                    const item = document.createElement('div');
+                    item.className = 'conversation-item';
+                    item.innerHTML = `<div class="conversation-details">
+                        <div class="conversation-address">${sanitizeHTML(abbreviateAddress(otherParty))}</div>
+                        <div class="last-message">${sanitizeHTML(msg.content || 'Tap to view conversation')}</div>
+                    </div>`; // Placeholder for msg.content
+                    item.onclick = () => renderChat(otherParty);
+                    conversationListEl.appendChild(item);
+                });
+            
+            document.getElementById('conversation-list-view').style.display = 'block';
+            document.getElementById('message-view').style.display = 'none';
+        }
+
+        function renderChat(address) {
+            currentChatAddress = address;
+            document.getElementById('conversation-list-view').style.display = 'none';
+            document.getElementById('message-view').style.display = 'flex';
+            document.getElementById('message-header-address').textContent = sanitizeHTML(address);
+
+            const messageListArea = document.getElementById('message-list-area');
+            messageListArea.innerHTML = '';
+
+            const relevantMessages = state.userStore.messages
+                .filter(msg => (msg.senderAddress === address && msg.receiverAddress === state.wallet.address) || (msg.senderAddress === state.wallet.address && msg.receiverAddress === address))
+                .sort((a, b) => a.timestamp - b.timestamp);
+
+            relevantMessages.forEach(msg => {
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                bubble.classList.add(msg.senderAddress === state.wallet.address ? 'sent' : 'received');
+                bubble.textContent = sanitizeHTML(msg.content || `[Encrypted msg: ${msg.linkedTxHash.substring(0,10)}...]`); // Placeholder for msg.content
+                messageListArea.prepend(bubble); // Prepend to show latest at the bottom
+            });
+        }
         
         async function initializeApp() {
             try {
@@ -447,6 +576,56 @@ if (typeof globalThis.Buffer === 'undefined') {
             document.getElementById('back-from-send').addEventListener('click', () => { resetViewInputs('send-view'); showView('wallet-view'); });
             document.getElementById('back-from-send-confirm').addEventListener('click', () => showView('send-view'));
             document.getElementById('back-from-qr-display').addEventListener('click', () => { showView('wallet-view'); });
+            document.getElementById('back-from-chat').addEventListener('click', () => showView('wallet-view'));
+            document.getElementById('show-messages-view-button').addEventListener('click', () => showView('chat-view'));
+            document.getElementById('back-to-conversations').addEventListener('click', renderConversations);
+            
+            document.getElementById('message-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = document.getElementById('message-input');
+                const messageText = input.value.trim();
+                if (!messageText || !currentChatAddress) return;
+                
+                const recipientAddress = currentChatAddress;
+                input.value = '';
+                input.disabled = true;
+
+                try {
+                    // This is a simplified placeholder for creating and sending a message.
+                    // A full implementation requires encryption and creating a unique hash.
+                    const tempHash = ethers.id(messageText + Date.now());
+
+                    const confirmation = {
+                        type: 'AURA_MESSAGE',
+                        senderAddress: state.wallet.address,
+                        receiverAddress: recipientAddress,
+                        amount: 0,
+                        linkedTxHash: tempHash,
+                        content: messageText, // In a real app, this would be encrypted
+                        timestamp: Date.now()
+                    };
+                    
+                    const messageToSign = WalletLogic.getStandardizedConfirmationMessage(confirmation);
+                    confirmation.signature = await state.wallet.signMessage(messageToSign);
+                    confirmation.signedMessage = messageToSign;
+                    
+                    await SupabaseLedger.pinConfirmation(confirmation);
+                    
+                    // Add to local messages immediately for smooth UI
+                    state.userStore.messages.push(confirmation);
+                    state.transactionIndex.set(tempHash, confirmation);
+                    localStorage.setItem('aura_user_store', JSON.stringify(state.userStore));
+                    renderChat(recipientAddress);
+
+                } catch (err) {
+                    console.error("Failed to send message:", err);
+                    alert(`Error: ${err.message}`);
+                } finally {
+                    input.disabled = false;
+                    input.focus();
+                }
+            });
+
             document.getElementById('create-wallet-button').addEventListener('click', async () => { const button = document.getElementById('create-wallet-button'), statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(), confirmPass = document.getElementById('confirm-password-input').value.trim(); statusEl.textContent = ''; if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); setTimeout(() => { const { mnemonic } = WalletLogic.createWallet(pass); document.getElementById('seed-phrase-display').textContent = mnemonic; showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); }, 50); });
             document.getElementById('seed-phrase-confirm-button').addEventListener('click', async () => { await showView('wallet-view'); document.getElementById('seed-phrase-display').textContent = ''; resetViewInputs('create-wallet-view'); });
             document.getElementById('restore-wallet-button').addEventListener('click', async () => { const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); statusEl.textContent = ''; if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; } if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } button.disabled = true; setLoader('restore-loader', true); const success = await WalletLogic.restoreWallet(mnemonic, pass); if (success) { await showView('wallet-view'); } else { setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); } button.disabled = false; setLoader('restore-loader', false); resetViewInputs('restore-wallet-view'); });
