@@ -386,11 +386,29 @@ if (typeof globalThis.Buffer === 'undefined') {
         const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8 };
         let state = { wallet: null, userStore: null, failedLoginAttempts: 0, isLockedOut: false, activePaymentRequest: null, activeManualSend: null, activePollingTimer: null, cameraStream: null, isScannerActive: false, currentBalance: 0, transactionIndex: new Map(), config: null, activeChatAddress: null };
         const WalletLogic = {
-            createWallet: (password) => { const wallet = ethers.Wallet.createRandom(); const mnemonic = wallet.mnemonic.phrase; const encryptedJson = wallet.encryptSync(password); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ hash: ethers.id("GENESIS_BLOCK"), type: 'creation', timestamp: Date.now() }], messages: [] }; localStorage.setItem('aura_user_store', JSON.stringify(userStore)); state.userStore = userStore; state.wallet = wallet; return { mnemonic }; },
-            restoreWallet: async (mnemonic, password) => { try { const wallet = ethers.Wallet.fromPhrase(mnemonic); const encryptedJson = wallet.encryptSync(password); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ hash: ethers.id("GENESIS_BLOCK"), type: 'creation', timestamp: Date.now() }], messages: [] }; localStorage.setItem('aura_user_store', JSON.stringify(userStore)); state.userStore = userStore; state.wallet = wallet; return true; } catch (e) { console.error("Restore failed:", e); return false; } },
+            createWallet: (password) => { const wallet = ethers.Wallet.createRandom(); const mnemonic = wallet.mnemonic.phrase; const encryptedJson = wallet.encryptSync(password); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ hash: ethers.id("GENESIS_BLOCK"), type: 'creation', timestamp: Date.now() }], messages: [] }; localStorage.setItem('aura_user_store', JSON.stringify(userStore)); state.userStore = userStore; state.wallet = wallet; WalletLogic.buildTransactionIndex(); return { mnemonic }; },
+            restoreWallet: async (mnemonic, password) => { try { const wallet = ethers.Wallet.fromPhrase(mnemonic); const encryptedJson = wallet.encryptSync(password); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ hash: ethers.id("GENESIS_BLOCK"), type: 'creation', timestamp: Date.now() }], messages: [] }; localStorage.setItem('aura_user_store', JSON.stringify(userStore)); state.userStore = userStore; state.wallet = wallet; WalletLogic.buildTransactionIndex(); return true; } catch (e) { console.error("Restore failed:", e); return false; } },
             login: async (password) => { const userStoreJson = localStorage.getItem('aura_user_store'); if (!userStoreJson) return null; try { const reloadedUserStore = JSON.parse(userStoreJson); const wallet = await ethers.Wallet.fromEncryptedJson(reloadedUserStore.encryptedJson, password); reloadedUserStore.messages = reloadedUserStore.messages || []; state.userStore = reloadedUserStore; state.wallet = wallet; state.failedLoginAttempts = 0; WalletLogic.buildTransactionIndex(); return true; } catch (e) { console.error("Login failed (likely incorrect password):", e); state.failedLoginAttempts++; return false; } },
             logout: () => { BackgroundSync.stop(); state.wallet = null; state.userStore = null; state.transactionIndex.clear(); },
-            buildTransactionIndex: () => { state.transactionIndex.clear(); if (!state.userStore) return; if(state.userStore.chain) state.userStore.chain.forEach(tx => state.transactionIndex.set(tx.linkedTxHash || tx.hash, tx)); if(state.userStore.messages) state.userStore.messages.forEach(msg => state.transactionIndex.set(msg.linkedTxHash || msg.hash, msg)); },
+            buildTransactionIndex: () => {
+                state.transactionIndex.clear();
+                if (!state.userStore) return;
+
+                if (state.userStore.chain && Array.isArray(state.userStore.chain)) {
+                    state.userStore.chain.forEach(tx => {
+                        if (tx) { // Defensive check
+                            state.transactionIndex.set(tx.linkedTxHash || tx.hash, tx);
+                        }
+                    });
+                }
+                if (state.userStore.messages && Array.isArray(state.userStore.messages)) {
+                    state.userStore.messages.forEach(msg => {
+                        if (msg) { // Defensive check
+                            state.transactionIndex.set(msg.linkedTxHash || msg.hash, msg);
+                        }
+                    });
+                }
+            },
             getLastTransaction: () => state.userStore.chain[state.userStore.chain.length - 1],
             addToChain: (txData) => { const prevTx = WalletLogic.getLastTransaction(); const newTx = { ...txData, prevHash: prevTx.hash, timestamp: txData.timestamp || Date.now() }; const amountInt = ethers.parseUnits((newTx.amount || 0).toFixed(state.config.PRECISION), state.config.PRECISION); const feeInt = ethers.parseUnits((newTx.fee || 0).toFixed(state.config.PRECISION), state.config.PRECISION); newTx.hash = ethers.solidityPackedKeccak256( ['string', 'uint256', 'uint256', 'string', 'string', 'string'], [newTx.type, amountInt, feeInt, newTx.from || '', newTx.to || '', newTx.prevHash] ); state.userStore.chain.push(newTx); localStorage.setItem('aura_user_store', JSON.stringify(state.userStore)); state.transactionIndex.set(newTx.linkedTxHash || newTx.hash, newTx); return newTx; },
             calculateBalanceFromTxs: (incomingTxs, outgoingTxs) => { const incomingTotal = incomingTxs.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0); const outgoingTotal = outgoingTxs.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0); const finalBalance = incomingTotal - outgoingTotal; state.currentBalance = finalBalance; return finalBalance; },
@@ -504,21 +522,20 @@ if (typeof globalThis.Buffer === 'undefined') {
                     conversations[otherParty] = { ...msg }; 
                 }
             }
-            // Decrypt the last message for preview
+            
             for(const addr in conversations) {
                 try {
                     const msg = conversations[addr];
-                    if(msg.content && msg.senderAddress !== state.wallet.address) {
+                    if (msg.senderAddress === state.wallet.address) {
+                        conversations[addr].decryptedContent = `You: ${JSON.parse(msg.content).message}`;
+                    } else if (msg.content) {
                        const decrypted = await EthCrypto.decryptWithPrivateKey(state.wallet.privateKey, EthCrypto.cipher.parse(msg.content));
                        conversations[addr].decryptedContent = decrypted;
-                    } else if (msg.content) {
-                       conversations[addr].decryptedContent = `You: ${JSON.parse(msg.content).message}`; // Show own plaintext message
                     }
                 } catch(e) {
                     conversations[addr].decryptedContent = '[Encrypted Message]';
                 }
             }
-
 
             const conversationListEl = document.getElementById('conversation-list');
             conversationListEl.innerHTML = '';
@@ -562,10 +579,8 @@ if (typeof globalThis.Buffer === 'undefined') {
                 let decryptedContent = '[Message cannot be decrypted]';
                 try {
                     if (msg.senderAddress === state.wallet.address) {
-                        // This is our own sent message, content is plaintext before encryption
                         decryptedContent = JSON.parse(msg.content).message;
                     } else {
-                        // This is a received message, content is the encrypted payload
                         const parsedPayload = EthCrypto.cipher.parse(msg.content);
                         decryptedContent = await EthCrypto.decryptWithPrivateKey(state.wallet.privateKey, parsedPayload);
                     }
@@ -640,7 +655,7 @@ if (typeof globalThis.Buffer === 'undefined') {
                     const { public_key } = await SupabaseLedger.getPublicKey(recipientAddress);
                     if (!public_key) throw new Error("Recipient has not published their key. Cannot send message.");
 
-                    const encryptedPayload = await EthCrypto.encryptWithPublicKey(public_key, messageText);
+                    const encryptedPayload = await EthCrypto.encryptWithPublicKey(public_key.substring(2), messageText);
                     const encryptedContent = EthCrypto.cipher.stringify(encryptedPayload);
 
                     const tempHash = ethers.id(encryptedContent + Date.now());
@@ -660,7 +675,7 @@ if (typeof globalThis.Buffer === 'undefined') {
                     
                     await SupabaseLedger.pinConfirmation(confirmation);
                     
-                    confirmation.content = JSON.stringify({ message: originalText }); // Save our own message as plaintext for easy viewing
+                    confirmation.content = JSON.stringify({ message: originalText }); 
                     state.userStore.messages.push(confirmation);
                     state.transactionIndex.set(tempHash, confirmation);
                     localStorage.setItem('aura_user_store', JSON.stringify(state.userStore));
