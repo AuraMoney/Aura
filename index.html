@@ -359,7 +359,7 @@ if (typeof globalThis.Buffer === 'undefined') {
             addToChain: (txData) => { const prevTx = WalletLogic.getLastTransaction();
             const newTx = { ...txData, prevHash: prevTx.hash, timestamp: txData.timestamp || Date.now() }; const amountInt = ethers.parseUnits((newTx.amount || 0).toString(), state.config.PRECISION);
             const feeInt = ethers.parseUnits((newTx.fee || 0).toString(), state.config.PRECISION); newTx.hash = ethers.solidityPackedKeccak256( ['string', 'uint256', 'uint256', 'string', 'string', 'string'], [newTx.type, amountInt, feeInt, newTx.from || '', newTx.to || '', newTx.prevHash] );
-            newTx.id = parseInt(newTx.hash.slice(-10), 16); state.userStore.chain.push(newTx); localStorage.setItem('aura_user_store', JSON.stringify(state.userStore)); const txKey = newTx.linkedTxHash || newTx.hash; state.transactionIndex.set(txKey, newTx); return newTx;
+            if (txData.id) { newTx.id = txData.id; } else { newTx.id = parseInt(newTx.hash.slice(-10), 16); } state.userStore.chain.push(newTx); localStorage.setItem('aura_user_store', JSON.stringify(state.userStore)); const txKey = newTx.linkedTxHash || newTx.hash; state.transactionIndex.set(txKey, newTx); return newTx;
             },
             calculateBalanceFromTxs: (incomingTxs, outgoingTxs) => { const precision = state.config.PRECISION; let incomingTotal = 0n; incomingTxs.forEach(tx => { incomingTotal += ethers.parseUnits((Number(tx.amount) || 0).toString(), precision); });
             let outgoingTotal = 0n; outgoingTxs.forEach(tx => { outgoingTotal += ethers.parseUnits((Number(tx.amount) || 0).toString(), precision); }); return incomingTotal - outgoingTotal; },
@@ -407,7 +407,7 @@ if (typeof globalThis.Buffer === 'undefined') {
             if (existingTx) return false; if (confirmation.senderAddress !== 'BANKNOTE_ISSUER') { if (!confirmation.signedMessage) { console.error("Discovered TX invalid: Missing 'signedMessage'"); return false;
             } const locallyRecreatedMessage = WalletLogic.getStandardizedConfirmationMessage(confirmation); if (locallyRecreatedMessage !== confirmation.signedMessage) { console.error("Discovered TX failed tamper check"); return false;
             } const signerAddress = ethers.verifyMessage(confirmation.signedMessage, confirmation.signature); if (signerAddress !== confirmation.senderAddress) { console.error("Discovered TX failed signature validation"); return false;
-            } } WalletLogic.addToChain({ type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive', amount: confirmation.amount, from: confirmation.senderAddress, to: state.wallet.address, status: 'completed', linkedTxHash: confirmation.linkedTxHash, timestamp: confirmation.timestamp });
+            } } WalletLogic.addToChain({ id: confirmation.id, type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive', amount: confirmation.amount, from: confirmation.senderAddress, to: state.wallet.address, status: 'completed', linkedTxHash: confirmation.linkedTxHash, timestamp: confirmation.timestamp });
             return true; }
         };
         
