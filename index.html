@@ -376,7 +376,6 @@ if (typeof globalThis.Buffer === 'undefined') {
             getServerAuthoritativeBalance: async () => { if (!state.userStore) return 0n;
             const [incomingTxs, outgoingTxs] = await Promise.all([ SupabaseLedger.findIncomingTxs(state.wallet.address), SupabaseLedger.findOutgoingTxs(state.wallet.address) ]); const balance = WalletLogic.calculateBalanceFromTxs(incomingTxs, outgoingTxs); state.currentBalance = balance; return balance;
             },
-            // ▼▼▼ MODIFIED TO INCLUDE COMMENT ▼▼▼
             getStandardizedConfirmationMessage: (confirmation) => {
                 const amount = Number(confirmation.amount).toFixed(state.config.PRECISION);
                 return [
@@ -388,7 +387,6 @@ if (typeof globalThis.Buffer === 'undefined') {
                     confirmation.comment || ''
                 ].join('|');
             },
-            // ▲▲▲ END MODIFICATION ▲▲▲
             createPaymentRequest: (amount) => { const receiveTx = WalletLogic.addToChain({ type: 'receive', amount: amount, from: '', to: state.wallet.address, status: 'pending_request' });
             return { type: 'AURA_PAYMENT_REQUEST', receiverAddress: state.wallet.address, amount: amount, linkedTxHash: receiveTx.hash, expiresAt: Date.now() + state.config.PAYMENT_REQUEST_EXPIRY };
             },
@@ -406,7 +404,6 @@ if (typeof globalThis.Buffer === 'undefined') {
             const feeConfirmation = { type: 'AURA_PAYMENT_CONFIRMATION', senderAddress: state.wallet.address, receiverAddress: state.config.TREASURY_ADDRESS, amount: feeNum, linkedTxHash: feeTx.hash, id: feeTx.id }; const feeMessageToSign = WalletLogic.getStandardizedConfirmationMessage(feeConfirmation);
             feeConfirmation.signature = await state.wallet.signMessage(feeMessageToSign); feeConfirmation.signedMessage = feeMessageToSign; await SupabaseLedger.pinConfirmation(feeConfirmation); CacheManager.invalidate(state.wallet.address); return true;
             },
-            // ▼▼▼ MODIFIED TO INCLUDE COMMENT ▼▼▼
             directSend: async (recipientAddress, amount, comment) => {
                 if (!state.config?.TREASURY_ADDRESS) throw new Error("CRITICAL: Treasury address is not configured.");
                 const precision = state.config.PRECISION;
@@ -419,7 +416,7 @@ if (typeof globalThis.Buffer === 'undefined') {
                 const amountNum = parseFloat(ethers.formatUnits(amountBI, precision));
                 const feeNum = parseFloat(ethers.formatUnits(feeBI, precision));
                 
-                const sendTx = WalletLogic.addToChain({ type: 'send', amount: amountNum, fee: feeNum, from: state.wallet.address, to: recipientAddress, status: 'completed' });
+                const sendTx = WalletLogic.addToChain({ type: 'send', amount: amountNum, fee: feeNum, from: state.wallet.address, to: recipientAddress, status: 'completed', comment: comment });
 
                 const confirmation = {
                     type: 'AURA_PAYMENT_CONFIRMATION',
@@ -428,7 +425,7 @@ if (typeof globalThis.Buffer === 'undefined') {
                     amount: amountNum,
                     linkedTxHash: sendTx.hash,
                     id: sendTx.id,
-                    comment: comment // Add comment here
+                    comment: comment
                 };
                 const messageToSign = WalletLogic.getStandardizedConfirmationMessage(confirmation);
                 confirmation.signature = await state.wallet.signMessage(messageToSign);
@@ -445,7 +442,6 @@ if (typeof globalThis.Buffer === 'undefined') {
                 CacheManager.invalidate(state.wallet.address);
                 return true;
             },
-            // ▲▲▲ END MODIFICATION ▲▲▲
             finalizePayment: async (confirmation) => { const receiveTxIndex = state.userStore.chain.findIndex(tx => tx.hash === confirmation.linkedTxHash && tx.status === 'pending_request');
             if (receiveTxIndex === -1) { console.error("Finalize Error: Could not find pending transaction."); return false;
             } if (!confirmation.signedMessage) { console.error("Finalize Error: Receipt is missing 'signedMessage'."); return false; } const locallyRecreatedMessage = WalletLogic.getStandardizedConfirmationMessage(confirmation);
@@ -558,7 +554,6 @@ if (typeof globalThis.Buffer === 'undefined') {
                 listUl.appendChild(item);
             });
         }
-        // ▼▼▼ MODIFIED TO INCLUDE COMMENT ▼▼▼
         function showTransactionDetails(tx) {
             const modal = document.getElementById('transaction-detail-modal');
             const confirmationData = tx.confirmation_data || tx;
@@ -597,7 +592,6 @@ if (typeof globalThis.Buffer === 'undefined') {
                 });
             };
         }
-        // ▲▲▲ END MODIFICATION ▲▲▲
         
         async function initializeApp() {
             try {
@@ -625,7 +619,7 @@ if (typeof globalThis.Buffer === 'undefined') {
             document.getElementById('back-from-send').addEventListener('click', () => { resetViewInputs('send-view'); showView('wallet-view'); });
             document.getElementById('back-from-send-confirm').addEventListener('click', () => showView('send-view'));
             document.getElementById('back-from-qr-display').addEventListener('click', () => { showView('wallet-view'); });
-            document.getElementById('create-wallet-button').addEventListener('click', async () => { const button = document.getElementById('create-wallet-button'), statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(), confirmPass = document.getElementById('confirm-password-input').value.trim(); statusEl.textContent = ''; if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); setTimeout(() => { const { mnemonic } = WalletLogic.createWallet(pass); document.getElementById('seed-phrase-display').textContent = mnemonic; showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); }, 50); });
+            document.getElementById('create-wallet-button').addEventListener('click', async () => { const button = document.getElementById('create-wallet-button'), statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(), confirmPass = document.getElementById('confirm-password-input').value.trim(); statusEl.textContent = ''; if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); setTimeout(() => { const { mnemonic } } = WalletLogic.createWallet(pass); document.getElementById('seed-phrase-display').textContent = mnemonic; showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); }, 50); });
             document.getElementById('seed-phrase-confirm-button').addEventListener('click', async () => { await showView('wallet-view'); document.getElementById('seed-phrase-display').textContent = ''; resetViewInputs('create-wallet-view'); });
             document.getElementById('restore-wallet-button').addEventListener('click', async () => { const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); statusEl.textContent = ''; if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; } if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } button.disabled = true; setLoader('restore-loader', true); const success = await WalletLogic.restoreWallet(mnemonic, pass); if (success) { await showView('wallet-view'); } else { setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); } button.disabled = false; setLoader('restore-loader', false); resetViewInputs('restore-wallet-view'); });
             document.getElementById('login-button').addEventListener('click', async () => { if (state.isLockedOut) return; const button = document.getElementById('login-button'), statusEl = document.getElementById('login-status'); const pass = document.getElementById('login-password-input').value.trim(); button.disabled = true; setLoader('login-loader', true); setStatus(statusEl, 'Decrypting wallet...', 'info'); const success = await WalletLogic.login(pass); if (success) { await showView('wallet-view'); resetViewInputs('login-view'); } else { if (state.failedLoginAttempts >= state.config.MAX_LOGIN_ATTEMPTS) { state.isLockedOut = true; setStatus(statusEl, 'Too many failed attempts. Please wait 30 seconds.', 'error'); setTimeout(() => { state.isLockedOut = false; state.failedLoginAttempts = 0; statusEl.textContent = ''; button.disabled = false; }, state.config.LOGIN_LOCKOUT_PERIOD); } else { setStatus(statusEl, `Invalid password. (${state.config.MAX_LOGIN_ATTEMPTS - state.failedLoginAttempts} attempts remaining)`, 'error');
@@ -635,18 +629,15 @@ if (typeof globalThis.Buffer === 'undefined') {
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { button.textContent = 'Copied!'; setTimeout(() => { button.textContent = 'Copy'; }, 1500); }); });
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('show-send-view-button').addEventListener('click', () => { resetViewInputs('send-view'); showView('send-view'); });
-            // ▼▼▼ ADDED COMMENT COUNTER LISTENER ▼▼▼
             document.getElementById('send-comment-input').addEventListener('input', (event) => {
                 const count = event.target.value.length;
                 document.getElementById('comment-char-count').textContent = `${count} / 50`;
             });
-            // ▲▲▲ END ADDITION ▲▲▲
             document.getElementById('send-manual-button').addEventListener('click', async () => {
                 const statusEl = document.getElementById('send-status');
                 const recipientAddress = document.getElementById('send-address-input').value.trim();
                 const amountStr = document.getElementById('send-amount-input').value;
                 const amount = parseFloat(amountStr);
-                // ▼▼▼ MODIFIED TO INCLUDE COMMENT ▼▼▼
                 const comment = document.getElementById('send-comment-input').value.trim();
                 
                 statusEl.textContent = '';
@@ -655,7 +646,6 @@ if (typeof globalThis.Buffer === 'undefined') {
                     setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error');
                     return;
                 }
-                // ▲▲▲ END MODIFICATION ▲▲▲
                 if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address.', 'error'); return; }
                 if (isNaN(amount) || amount <= 0) { setStatus(statusEl, 'Please enter a valid amount.', 'error'); return; }
 
@@ -681,9 +671,7 @@ if (typeof globalThis.Buffer === 'undefined') {
             updateTimer(); state.activePollingTimer = setInterval(async () => { updateTimer(); if (timeLeft <= 0) return; try { const confirmation = await SupabaseLedger.findConfirmation(request.linkedTxHash); if (confirmation) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; timerEl.style.display = 'none'; setStatus(statusMsg, 'Payment detected! Finalizing...', 'info'); if (await WalletLogic.finalizePayment(confirmation)) { setStatus(statusMsg, `Success! $${Number(confirmation.amount).toFixed(2)} received.`, 'success'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; setTimeout(async () => { await showView('wallet-view'); }, 2000); } } } catch (err) { console.error("Polling error:", err); setStatus(statusMsg, 'Network error while checking for payment.', 'error'); clearInterval(state.activePollingTimer); state.activePollingTimer = null; } }, state.config.POLLING_INTERVAL);
             });
             document.getElementById('confirm-payment-button').addEventListener('click', async (event) => { const button = event.target, statusEl = document.getElementById('send-confirm-status'); button.disabled = true; setStatus(statusEl, 'Processing payment...', 'info'); try { await WalletLogic.getServerAuthoritativeBalance(); let success = false, message = ''; if (state.activePaymentRequest) { await WalletLogic.processPayment(state.activePaymentRequest); message = `Payment of $${state.activePaymentRequest.amount.toFixed(2)} sent!`; success = true; } else if (state.activeManualSend) {
-                // ▼▼▼ MODIFIED TO INCLUDE COMMENT ▼▼▼
                 await WalletLogic.directSend(state.activeManualSend.address, state.activeManualSend.amount, state.activeManualSend.comment);
-                // ▲▲▲ END MODIFICATION ▲▲▲
                 message = `Payment of $${state.activeManualSend.amount.toFixed(2)} sent!`; success = true; } else { throw new Error("No active payment request."); } if (success) { setStatus(statusEl, message, 'success'); await BackgroundSync.performSync(); await new Promise(resolve => setTimeout(resolve, 1500)); state.activePaymentRequest = null;
             state.activeManualSend = null; await showView('wallet-view'); } } catch (err) { setStatus(statusEl, `Payment Failed: ${err.message}`, 'error');
             } finally { button.disabled = false; } });
