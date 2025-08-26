@@ -153,15 +153,16 @@
         // --- SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://bgmzkjnnzeyqavvwhncr.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnbXpram5uemV5cWF2dndobmNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMzM5NTUsImV4cCI6MjA3MTcwOTk1NX0.TVuPJwZFKwEGdpBrdklbgkyhZrXYZVQXil90Gj1oaeU';
-        const EDGE_FUNCTION_BASE_URL = `${SUPABASE_URL}/functions/v1`;
+        // ✅ Assuming your function is named 'api' in Supabase
+        const EDGE_FUNCTION_BASE_URL = `${SUPABASE_URL}/functions/v1/api`;
 
         // --- GLOBAL STATE ---
         let state = {
-            wallet: null, // The active ethers.js wallet object
-            sessionToken: null, // The JWT for the current session
+            wallet: null,
+            sessionToken: null,
             currentBalance: 0.0,
             activeManualSend: null,
-            config: null // App configuration from server
+            config: null
         };
 
         // --- API COMMUNICATION LAYER ---
@@ -171,6 +172,7 @@
                 if (useAuth && state.sessionToken) {
                     headers['Authorization'] = `Bearer ${state.sessionToken}`;
                 }
+                // The endpoint now includes the sub-path, e.g., '/config' or '/action'
                 const response = await fetch(`${EDGE_FUNCTION_BASE_URL}${endpoint}`, {
                     method: 'POST',
                     headers,
@@ -183,13 +185,12 @@
                 return result.data;
             },
             async callAction(action, payload) {
-                return this.post('/api', { action, payload });
+                // ✅ All actions now go to the '/action' endpoint
+                return this.post('/action', { action, payload });
             }
         };
         
         // --- WALLET LOGIC (Client-Side) ---
-        // Manages wallet creation, restoration, and login (authentication).
-        // Does NOT manage transaction chains or balances.
         const WalletLogic = {
             createWallet: (password) => {
                 const wallet = ethers.Wallet.createRandom();
@@ -213,17 +214,15 @@
                 const userStoreJson = localStorage.getItem('aura_user_store');
                 if (!userStoreJson) return null;
 
-                // 1. Decrypt wallet locally
                 const { encryptedJson } = JSON.parse(userStoreJson);
                 let wallet;
                 try {
                     wallet = await ethers.Wallet.fromEncryptedJson(encryptedJson, password);
                 } catch (e) {
-                    console.error("Decryption failed (likely incorrect password):", e);
+                    console.error("Decryption failed:", e);
                     return null;
                 }
 
-                // 2. Authenticate with the server
                 try {
                     const { nonce } = await api.post('/request-nonce', { address: wallet.address }, false);
                     const signature = await wallet.signMessage(nonce);
@@ -234,7 +233,7 @@
                     return true;
                 } catch (authError) {
                     console.error("Server authentication failed:", authError);
-                    throw authError; // Rethrow to be caught by the UI
+                    throw authError;
                 }
             },
             logout: () => {
@@ -311,7 +310,6 @@
             container.innerHTML = qr.createImgTag(6, 10);
         }
 
-        // --- Standardized Confirmation Message (must match backend) ---
         const getStandardizedConfirmationMessage = (confirmation) => {
             const amount = Number(confirmation.amount).toFixed(state.config.PRECISION);
             return [
@@ -324,9 +322,8 @@
             ].join('|');
         };
         
-        // --- EVENT LISTENERS ---
         function setupEventListeners() {
-            // Navigation
+            // Simplified Navigation
             document.getElementById('go-to-create-wallet').addEventListener('click', () => showView('create-wallet-view'));
             document.getElementById('go-to-restore-wallet').addEventListener('click', () => showView('restore-wallet-view'));
             document.getElementById('back-from-create').addEventListener('click', () => showView('onboarding-view'));
@@ -345,7 +342,7 @@
                 if (pass !== confirmPass) return setStatus(statusEl, 'Passwords do not match.', 'error');
                 
                 setLoader('create-loader', true);
-                const { mnemonic, wallet } = WalletLogic.createWallet(pass);
+                const { mnemonic } = WalletLogic.createWallet(pass);
                 document.getElementById('seed-phrase-display').textContent = mnemonic;
                 showView('seed-phrase-view');
                 setLoader('create-loader', false);
@@ -362,7 +359,7 @@
                 }
             });
             
-            // Wallet Restoration
+            // Wallet Restoration & Login
             document.getElementById('restore-wallet-button').addEventListener('click', async () => {
                 const mnemonic = document.getElementById('restore-seed-input').value.trim();
                 const pass = document.getElementById('restore-password-input').value.trim();
@@ -381,7 +378,6 @@
                 setLoader('restore-loader', false);
             });
 
-            // Login
             document.getElementById('login-button').addEventListener('click', async () => {
                 const pass = document.getElementById('login-password-input').value;
                 const statusEl = document.getElementById('login-status');
@@ -447,7 +443,6 @@
                 setStatus(statusEl, 'Preparing transaction...', 'info');
                 
                 try {
-                    // Create a local hash to serve as the transaction's unique ID
                     const linkedTxHash = ethers.solidityPackedKeccak256(
                         ['address', 'address', 'uint256', 'string', 'uint256'],
                         [state.wallet.address, address, ethers.parseUnits(amount.toString(), state.config.PRECISION), comment, Date.now()]
@@ -486,8 +481,10 @@
         
         async function initializeApp() {
             try {
-                state.config = await api.post('/api', { action: 'getAppConfig' }, false);
+                // ✅ FIXED: Call the new public '/config' endpoint without authentication
+                state.config = await api.post('/config', {}, false);
             } catch (e) {
+                // This error message is now accurate, as it's a critical failure.
                 alert(`Critical error: Could not load app configuration. ${e.message}`);
                 return;
             }
