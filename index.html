@@ -339,16 +339,16 @@ if (typeof globalThis.Buffer === 'undefined') {
         let state = { wallet: null, userStore: null, failedLoginAttempts: 0, isLockedOut: false, activePaymentRequest: null, activeManualSend: null, activePollingTimer: null, cameraStream: null, isScannerActive: false, currentBalance: 0n, transactionIndex: new Map(), config: null };
         const WalletLogic = {
             createWallet: (password) => { const wallet = ethers.Wallet.createRandom();
-            const mnemonic = wallet.mnemonic.phrase; const encryptedJson = wallet.encryptSync(password); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ id: 1, hash: ethers.id("GENESIS_BLOCK"), type: 'creation', timestamp: Date.now() }], transactionCounter: 1 };
+            const mnemonic = wallet.mnemonic.phrase; const encryptedJson = wallet.encryptSync(password); const genesisHash = ethers.id("GENESIS_BLOCK"); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }] };
             localStorage.setItem('aura_user_store', JSON.stringify(userStore)); state.userStore = userStore; state.wallet = wallet; return { mnemonic };
             },
             restoreWallet: async (mnemonic, password) => { try { const wallet = ethers.Wallet.fromPhrase(mnemonic);
-            const encryptedJson = wallet.encryptSync(password); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ id: 1, hash: ethers.id("GENESIS_BLOCK"), type: 'creation', timestamp: Date.now() }], transactionCounter: 1 };
+            const encryptedJson = wallet.encryptSync(password); const genesisHash = ethers.id("GENESIS_BLOCK"); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }] };
             localStorage.setItem('aura_user_store', JSON.stringify(userStore)); state.userStore = userStore; state.wallet = wallet; return true; } catch (e) { console.error("Restore failed:", e); return false;
             } },
             login: async (password) => { const userStoreJson = localStorage.getItem('aura_user_store');
             if (!userStoreJson) return null; try { const reloadedUserStore = JSON.parse(userStoreJson); const wallet = await ethers.Wallet.fromEncryptedJson(reloadedUserStore.encryptedJson, password); state.userStore = reloadedUserStore;
-            if (!state.userStore.transactionCounter) { state.userStore.transactionCounter = state.userStore.chain.length; } state.wallet = wallet; state.failedLoginAttempts = 0; WalletLogic.buildTransactionIndex(); return true; } catch (e) { console.error("Login failed (likely incorrect password):", e); state.failedLoginAttempts++;
+            state.wallet = wallet; state.failedLoginAttempts = 0; WalletLogic.buildTransactionIndex(); return true; } catch (e) { console.error("Login failed (likely incorrect password):", e); state.failedLoginAttempts++;
             return false; } },
             logout: () => { BackgroundSync.stop();
             state.wallet = null; state.userStore = null; state.transactionIndex.clear(); },
@@ -357,9 +357,9 @@ if (typeof globalThis.Buffer === 'undefined') {
             },
             getLastTransaction: () => state.userStore.chain[state.userStore.chain.length - 1],
             addToChain: (txData) => { const prevTx = WalletLogic.getLastTransaction();
-            state.userStore.transactionCounter++; const newTx = { ...txData, id: state.userStore.transactionCounter, prevHash: prevTx.hash, timestamp: txData.timestamp || Date.now() }; const amountInt = ethers.parseUnits((newTx.amount || 0).toString(), state.config.PRECISION);
+            const newTx = { ...txData, prevHash: prevTx.hash, timestamp: txData.timestamp || Date.now() }; const amountInt = ethers.parseUnits((newTx.amount || 0).toString(), state.config.PRECISION);
             const feeInt = ethers.parseUnits((newTx.fee || 0).toString(), state.config.PRECISION); newTx.hash = ethers.solidityPackedKeccak256( ['string', 'uint256', 'uint256', 'string', 'string', 'string'], [newTx.type, amountInt, feeInt, newTx.from || '', newTx.to || '', newTx.prevHash] );
-            state.userStore.chain.push(newTx); localStorage.setItem('aura_user_store', JSON.stringify(state.userStore)); const txKey = newTx.linkedTxHash || newTx.hash; state.transactionIndex.set(txKey, newTx); return newTx;
+            newTx.id = parseInt(newTx.hash.slice(-10), 16); state.userStore.chain.push(newTx); localStorage.setItem('aura_user_store', JSON.stringify(state.userStore)); const txKey = newTx.linkedTxHash || newTx.hash; state.transactionIndex.set(txKey, newTx); return newTx;
             },
             calculateBalanceFromTxs: (incomingTxs, outgoingTxs) => { const precision = state.config.PRECISION; let incomingTotal = 0n; incomingTxs.forEach(tx => { incomingTotal += ethers.parseUnits((Number(tx.amount) || 0).toString(), precision); });
             let outgoingTotal = 0n; outgoingTxs.forEach(tx => { outgoingTotal += ethers.parseUnits((Number(tx.amount) || 0).toString(), precision); }); return incomingTotal - outgoingTotal; },
