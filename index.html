@@ -376,7 +376,6 @@ if (typeof globalThis.Buffer === 'undefined') {
             getServerAuthoritativeBalance: async () => { if (!state.userStore) return 0n;
             const [incomingTxs, outgoingTxs] = await Promise.all([ SupabaseLedger.findIncomingTxs(state.wallet.address), SupabaseLedger.findOutgoingTxs(state.wallet.address) ]); const balance = WalletLogic.calculateBalanceFromTxs(incomingTxs, outgoingTxs); state.currentBalance = balance; return balance;
             },
-            // ▼▼▼ MODIFIED TO INCLUDE COMMENT ▼▼▼
             getStandardizedConfirmationMessage: (confirmation) => {
                 const amount = Number(confirmation.amount).toFixed(state.config.PRECISION);
                 return [
@@ -388,7 +387,6 @@ if (typeof globalThis.Buffer === 'undefined') {
                     confirmation.comment || ''
                 ].join('|');
             },
-            // ▲▲▲ END MODIFICATION ▲▲▲
             createPaymentRequest: (amount) => { const receiveTx = WalletLogic.addToChain({ type: 'receive', amount: amount, from: '', to: state.wallet.address, status: 'pending_request' });
             return { type: 'AURA_PAYMENT_REQUEST', receiverAddress: state.wallet.address, amount: amount, linkedTxHash: receiveTx.hash, expiresAt: Date.now() + state.config.PAYMENT_REQUEST_EXPIRY };
             },
@@ -418,13 +416,7 @@ if (typeof globalThis.Buffer === 'undefined') {
                 const amountNum = parseFloat(ethers.formatUnits(amountBI, precision));
                 const feeNum = parseFloat(ethers.formatUnits(feeBI, precision));
                 
-                // =================================================================
-                // ▼▼▼ THIS IS THE CORRECTED LINE ▼▼▼
-                // =================================================================
                 const sendTx = WalletLogic.addToChain({ type: 'send', amount: amountNum, fee: feeNum, from: state.wallet.address, to: recipientAddress, status: 'completed', comment: comment });
-                // =================================================================
-                // ▲▲▲ END OF CORRECTION ▲▲▲
-                // =================================================================
 
                 const confirmation = {
                     type: 'AURA_PAYMENT_CONFIRMATION',
@@ -527,21 +519,23 @@ if (typeof globalThis.Buffer === 'undefined') {
                 item.style.cursor = 'pointer';
 
                 const isSent = tx.type === 'send';
-          
-                     const typeText = isSent ? 'Sent' : (tx.type === 'charge' ? 'Charge' : 'Received');
+                // =================================================================
+                // ▼▼▼ THIS IS THE CORRECTED LINE ▼▼▼
+                // =================================================================
+                const typeText = isSent ? 'Sent' : (tx.comment || (tx.type === 'charge' ? 'Charge' : 'Received'));
+                // =================================================================
+                // ▲▲▲ END OF CORRECTION ▲▲▲
+                // =================================================================
                 const typeClass = isSent ? 'sent' : 'received';
                 const totalAmount = tx.amount || 0;
                 const date = new Date(tx.timestamp).toLocaleString('en-US');
                 
- 
-                               // Create elements programmatically to prevent XSS
                 const detailsDiv = document.createElement('div');
                 detailsDiv.className = 'transaction-details';
 
                 const typeSpan = document.createElement('span');
                 typeSpan.className = `transaction-type ${typeClass}`;
-    
-                         typeSpan.textContent = typeText;
+                typeSpan.textContent = typeText;
 
                 const dateSpan = document.createElement('span');
                 dateSpan.className = 'transaction-date';
