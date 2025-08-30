@@ -277,7 +277,6 @@
 </main>
    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js" integrity="sha512-4mbvppTrRiD3l24R3zV9uX+wSQwOMI5zxS8s29a2Y2nLPf2sOx8o50ECsbj9/2N/Q+N+5+1//2Te8hY8s53fVw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdn.jsdelivr.net/npm/argon2-browser@1.18.0/dist/argon2.min.js" integrity="sha256-42LS2kn/Q60g3k5hM0v6yOU2L6W5G8aqa0bUoMwwaH4=" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     
     <script src="pako.min.js"></script>
     <script src="qrcode.js"></script>
@@ -291,7 +290,6 @@
         }
 
         import { ethers } from "./ethers.min.js";
-        // argon2 global is exposed by the script tag
 
         const SUPABASE_URL = 'https://lahcfohgcaapvgdzirsu.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhaGNmb2hnY2FhcHZnZHppcnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4MjI5MjEsImV4cCI6MjA3MTM5ODkyMX0.6-Ug9nivwEd-e92o9o1_tKXUn_iRaTOzOMgW-x3qDL8';
@@ -479,21 +477,18 @@
         const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8 };
         let state = { wallet: null, userStore: null, failedLoginAttempts: 0, isLockedOut: false, activePaymentRequest: null, activeManualSend: null, activePollingTimer: null, cameraStream: null, isScannerActive: false, currentBalance: 0n, transactionIndex: new Map(), config: null, usedNonces: new Set() };
         
-        // --- SECURITY ENHANCEMENT: Switched to Argon2id via argon2-browser ---
+        // --- SECURITY UPDATE: Reverted to PBKDF2 ---
         const CryptoEnhancements = {
+            PBKDF2_ITERATIONS: 200000,
             SALT_BYTES: 16,
-            deriveKey: async (password, salt) => {
-                const saltBytes = CryptoJS.enc.Hex.parse(salt).words.flatMap(w => [w >> 24 & 0xff, w >> 16 & 0xff, w >> 8 & 0xff, w & 0xff]);
-                const result = await argon2.hash({
-                    pass: password,
-                    salt: new Uint8Array(saltBytes),
-                    time: 3,
-                    mem: 65536, // 64 MB
-                    parallelism: 4,
-                    type: argon2.ArgonType.Argon2id,
-                    hashLen: 64 // 512 bits for key + hmac
-                });
-                return result.hashHex;
+            deriveKey: (password, salt) => {
+                const saltHex = CryptoJS.enc.Hex.parse(salt);
+                // Derive a 512-bit key: 256 for encryption, 256 for HMAC
+                return CryptoJS.PBKDF2(password, saltHex, {
+                    keySize: 512 / 32, 
+                    iterations: CryptoEnhancements.PBKDF2_ITERATIONS,
+                    hasher: CryptoJS.algo.SHA256
+                }).toString(CryptoJS.enc.Hex);
             },
             generateSalt: () => SecureRandom.getHex(CryptoEnhancements.SALT_BYTES),
         };
@@ -514,13 +509,13 @@
                 const expectedHmac = WalletLogic.addIntegrityProtection(data, hmacKey);
                 return CryptoJS.timingSafeEqual(CryptoJS.enc.Hex.parse(expectedHmac), CryptoJS.enc.Hex.parse(storedHmac));
             },
-            createWallet: async (password) => {
+            createWallet: (password) => {
                 const wallet = ethers.Wallet.createRandom();
                 const mnemonic = wallet.mnemonic.phrase;
                 const salt = CryptoEnhancements.generateSalt();
-                const derivedKey = await CryptoEnhancements.deriveKey(password, salt);
+                const derivedKey = CryptoEnhancements.deriveKey(password, salt);
                 const { encryptionKey, hmacKey } = WalletLogic.splitDerivedKey(derivedKey);
-                const encryptedJson = await wallet.encrypt(encryptionKey);
+                const encryptedJson = wallet.encryptSync(encryptionKey);
                 const genesisHash = ethers.id("GENESIS_BLOCK");
                 const chain = [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }];
                 const userStoreData = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, salt: salt, chain };
@@ -530,13 +525,13 @@
                 state.wallet = wallet;
                 return { mnemonic };
             },
-            restoreWallet: async (mnemonic, password) => {
+            restoreWallet: (mnemonic, password) => {
                 try {
                     const wallet = ethers.Wallet.fromPhrase(mnemonic);
                     const salt = CryptoEnhancements.generateSalt();
-                    const derivedKey = await CryptoEnhancements.deriveKey(password, salt);
+                    const derivedKey = CryptoEnhancements.deriveKey(password, salt);
                     const { encryptionKey, hmacKey } = WalletLogic.splitDerivedKey(derivedKey);
-                    const encryptedJson = await wallet.encrypt(encryptionKey);
+                    const encryptedJson = wallet.encryptSync(encryptionKey);
                     const genesisHash = ethers.id("GENESIS_BLOCK");
                     const chain = [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }];
                     const userStoreData = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, salt: salt, chain };
@@ -550,21 +545,21 @@
                     return false;
                 }
             },
-            login: async (password) => {
+            login: (password) => {
                 const userStoreJson = localStorage.getItem('aura_user_store');
                 if (!userStoreJson) return null;
                 try {
                     const reloadedUserStore = JSON.parse(userStoreJson);
                     if (!reloadedUserStore.salt || !reloadedUserStore.hmac) throw new Error("Insecure or outdated wallet format. Please restore from seed phrase to upgrade.");
                     
-                    const derivedKey = await CryptoEnhancements.deriveKey(password, reloadedUserStore.salt);
+                    const derivedKey = CryptoEnhancements.deriveKey(password, reloadedUserStore.salt);
                     const { encryptionKey, hmacKey } = WalletLogic.splitDerivedKey(derivedKey);
 
                     if (!WalletLogic.verifyIntegrity(reloadedUserStore.encryptedJson, reloadedUserStore.hmac, hmacKey)) {
                         throw new Error("Wallet data integrity check failed.");
                     }
                     
-                    const wallet = await ethers.Wallet.fromEncryptedJson(reloadedUserStore.encryptedJson, encryptionKey);
+                    const wallet = ethers.Wallet.fromEncryptedJsonSync(reloadedUserStore.encryptedJson, encryptionKey);
                     state.userStore = reloadedUserStore;
                     state.wallet = wallet;
                     state.failedLoginAttempts = 0;
@@ -702,16 +697,19 @@
                 if (pass.length < 12) return setStatus(statusEl, 'Password must be at least 12 characters.', 'error');
                 if (pass !== confirmPass) return setStatus(statusEl, 'Passwords do not match.', 'error');
                 button.disabled = true; setLoader('create-loader', true);
-                try {
-                    const { mnemonic } = await WalletLogic.createWallet(pass);
-                    SecureMemory.store(document.body, mnemonic); // Store sensitive data securely
-                    SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic);
-                    showView('seed-phrase-view');
-                } catch (err) {
-                    setStatus(statusEl, SafeErrorHandler.sanitizeError(err), 'error');
-                } finally {
-                    button.disabled = false; setLoader('create-loader', false);
-                }
+                // Use setTimeout to allow UI to update before synchronous, blocking operation
+                setTimeout(() => {
+                    try {
+                        const { mnemonic } = WalletLogic.createWallet(pass);
+                        SecureMemory.store(document.body, mnemonic);
+                        SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic);
+                        showView('seed-phrase-view');
+                    } catch (err) {
+                        setStatus(statusEl, SafeErrorHandler.sanitizeError(err), 'error');
+                    } finally {
+                        button.disabled = false; setLoader('create-loader', false);
+                    }
+                }, 50);
             });
 
             document.getElementById('seed-phrase-confirm-button').addEventListener('click', async () => {
@@ -728,12 +726,18 @@
                 setStatus(statusEl, '');
                 if (mnemonic.split(' ').length !== 12) return setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error');
                 if (pass.length < 12) return setStatus(statusEl, 'Password must be at least 12 characters.', 'error');
-                button.disabled = true, setLoader('restore-loader', true);
-                if (await WalletLogic.restoreWallet(mnemonic, pass)) await showView('wallet-view');
-                else setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error');
-                button.disabled = false, setLoader('restore-loader', false);
-                document.getElementById('restore-seed-input').value = '';
-                resetViewInputs('restore-wallet-view');
+                button.disabled = true; setLoader('restore-loader', true);
+                 setTimeout(async () => {
+                    if (WalletLogic.restoreWallet(mnemonic, pass)) {
+                        await showView('wallet-view');
+                    } else {
+                        setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error');
+                    }
+                    button.disabled = false;
+                    setLoader('restore-loader', false);
+                    document.getElementById('restore-seed-input').value = '';
+                    resetViewInputs('restore-wallet-view');
+                }, 50);
             });
 
             document.getElementById('login-button').addEventListener('click', async () => {
@@ -742,21 +746,24 @@
                 const button = document.getElementById('login-button'), statusEl = document.getElementById('login-status');
                 const pass = document.getElementById('login-password-input').value;
                 button.disabled = true, setLoader('login-loader', true), setStatus(statusEl, 'Decrypting wallet...', 'info');
-                try {
-                    if (await WalletLogic.login(pass)) {
-                        await showView('wallet-view');
-                        resetViewInputs('login-view');
-                    } else if (state.failedLoginAttempts >= state.config.MAX_LOGIN_ATTEMPTS) {
-                        state.isLockedOut = true, setStatus(statusEl, `Too many failed attempts. Please wait ${state.config.LOGIN_LOCKOUT_PERIOD / 1000} seconds.`, 'error');
-                        setTimeout(() => { state.isLockedOut = false, state.failedLoginAttempts = 0, setStatus(statusEl, ''), button.disabled = false; }, state.config.LOGIN_LOCKOUT_PERIOD);
-                    } else setStatus(statusEl, `Invalid password. (${state.config.MAX_LOGIN_ATTEMPTS - state.failedLoginAttempts} attempts remaining)`, 'error');
-                } catch (e) {
-                    setStatus(statusEl, SafeErrorHandler.sanitizeError(e), 'error');
-                } finally {
-                    if (!state.isLockedOut) button.disabled = false;
-                    setLoader('login-loader', false);
-                    document.getElementById('login-password-input').value = '';
-                }
+                // Use setTimeout to allow UI to update before synchronous, blocking operation
+                setTimeout(async () => {
+                    try {
+                        if (WalletLogic.login(pass)) {
+                            await showView('wallet-view');
+                            resetViewInputs('login-view');
+                        } else if (state.failedLoginAttempts >= state.config.MAX_LOGIN_ATTEMPTS) {
+                            state.isLockedOut = true, setStatus(statusEl, `Too many failed attempts. Please wait ${state.config.LOGIN_LOCKOUT_PERIOD / 1000} seconds.`, 'error');
+                            setTimeout(() => { state.isLockedOut = false, state.failedLoginAttempts = 0, setStatus(statusEl, ''), button.disabled = false; }, state.config.LOGIN_LOCKOUT_PERIOD);
+                        } else setStatus(statusEl, `Invalid password. (${state.config.MAX_LOGIN_ATTEMPTS - state.failedLoginAttempts} attempts remaining)`, 'error');
+                    } catch (e) {
+                        setStatus(statusEl, SafeErrorHandler.sanitizeError(e), 'error');
+                    } finally {
+                        if (!state.isLockedOut) button.disabled = false;
+                        setLoader('login-loader', false);
+                        document.getElementById('login-password-input').value = '';
+                    }
+                }, 50);
             });
 
             document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(), showView('login-view'); });
