@@ -206,9 +206,11 @@
             };
         })();
         const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8, WALLET_STORAGE_KEY: 'aura_encrypted_user_store' };
-        let state = { wallet: null, userStore: null, failedLoginAttempts: 0, isLockedOut: false, activePaymentRequest: null, activeManualSend: null, activePollingTimer: null, cameraStream: null, isScannerActive: false, currentBalance: 0, transactionIndex: new Map(), config: null };
+        let state = { wallet: null, userStore: null, pendingCreation: null, failedLoginAttempts: 0, isLockedOut: false, activePaymentRequest: null, activeManualSend: null, activePollingTimer: null, cameraStream: null, isScannerActive: false, currentBalance: 0, transactionIndex: new Map(), config: null };
         const WalletLogic = {
-            createWallet: (password) => { const wallet = ethers.Wallet.createRandom(); const mnemonic = wallet.mnemonic.phrase; const encryptedJson = wallet.encryptSync(password); const genesisHash = ethers.id("GENESIS_BLOCK"); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }] }; state.userStore = userStore; state.wallet = wallet; localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(userStore)); return { mnemonic }; },
+            createWallet: (password) => { const wallet = ethers.Wallet.createRandom(); const mnemonic = wallet.mnemonic.phrase; const encryptedJson = wallet.encryptSync(password); const genesisHash = ethers.id("GENESIS_BLOCK"); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }] }; return { wallet, userStore, mnemonic }; },
+            commitWallet: () => { if (!state.pendingCreation) return; state.userStore = state.pendingCreation.userStore; state.wallet = state.pendingCreation.wallet; localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore)); state.pendingCreation = null; },
+            clearPendingWallet: () => { state.pendingCreation = null; },
             restoreWallet: async (mnemonic, password) => { try { const wallet = ethers.Wallet.fromPhrase(mnemonic); const encryptedJson = wallet.encryptSync(password); const genesisHash = ethers.id("GENESIS_BLOCK"); const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }] }; state.userStore = userStore; state.wallet = wallet; localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(userStore)); return true; } catch (e) { console.error("Restore failed:", e); return false; } },
             unlockWallet: async (password) => { const storedUserStore = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY); if (!storedUserStore) throw new Error("No wallet found on this device."); const userStore = JSON.parse(storedUserStore); try { const wallet = await ethers.Wallet.fromEncryptedJson(userStore.encryptedJson, password); state.userStore = userStore; state.wallet = wallet; return true; } catch (error) { console.error("Unlock failed:", error); return false; } },
             logout: () => { BackgroundSync.stop(); state.wallet = null; state.userStore = null; state.transactionIndex.clear(); localStorage.removeItem(AppConstants.WALLET_STORAGE_KEY); showView('onboarding-view'); },
@@ -347,11 +349,47 @@
         }
         
         function setupEventListeners() {
-            document.getElementById('unlock-wallet-button').addEventListener('click', async () => { const button = document.getElementById('unlock-wallet-button'); const statusEl = document.getElementById('unlock-status'); const pass = document.getElementById('unlock-password-input').value; setStatus(statusEl, ''); if (!pass) { setStatus(statusEl, 'Password is required.', 'error'); return; } button.disabled = true; setLoader('unlock-loader', true); const success = await WalletLogic.unlockWallet(pass); if (success) { await showView('wallet-view'); resetViewInputs('unlock-view'); } else { setStatus(statusEl, 'Incorrect password. Please try again.', 'error'); } button.disabled = false; setLoader('unlock-loader', false); });
+            document.getElementById('unlock-wallet-button').addEventListener('click', async () => {
+                const button = document.getElementById('unlock-wallet-button');
+                const statusEl = document.getElementById('unlock-status');
+                if (state.isLockedOut) {
+                    setStatus(statusEl, `Too many failed attempts. Please wait 30 seconds.`, 'error');
+                    return;
+                }
+                const pass = document.getElementById('unlock-password-input').value;
+                setStatus(statusEl, '');
+                if (!pass) {
+                    setStatus(statusEl, 'Password is required.', 'error');
+                    return;
+                }
+                button.disabled = true;
+                setLoader('unlock-loader', true);
+                const success = await WalletLogic.unlockWallet(pass);
+                if (success) {
+                    state.failedLoginAttempts = 0; // Reset on success
+                    await showView('wallet-view');
+                    resetViewInputs('unlock-view');
+                } else {
+                    state.failedLoginAttempts++;
+                    if (state.failedLoginAttempts >= state.config.MAX_LOGIN_ATTEMPTS) {
+                        state.isLockedOut = true;
+                        setStatus(statusEl, 'Too many failed attempts. Locked for 30 seconds.', 'error');
+                        setTimeout(() => {
+                            state.isLockedOut = false;
+                            state.failedLoginAttempts = 0;
+                            setStatus(document.getElementById('unlock-status'), 'You may now try again.', 'info');
+                        }, state.config.LOGIN_LOCKOUT_PERIOD);
+                    } else {
+                        setStatus(statusEl, `Incorrect password. ${state.config.MAX_LOGIN_ATTEMPTS - state.failedLoginAttempts} attempts remaining.`, 'error');
+                    }
+                }
+                button.disabled = false;
+                setLoader('unlock-loader', false);
+            });
             document.getElementById('forget-wallet-button').addEventListener('click', () => { if (confirm('Are you sure you want to forget this wallet? You will need your 12-word recovery phrase to access it again.')) { WalletLogic.logout(); } });
             document.getElementById('go-to-create-wallet').addEventListener('click', () => showView('create-wallet-view'));
             document.getElementById('go-to-restore-wallet').addEventListener('click', () => showView('restore-wallet-view'));
-            document.getElementById('back-from-create').addEventListener('click', () => { resetViewInputs('create-wallet-view'); showView('onboarding-view'); });
+            document.getElementById('back-from-create').addEventListener('click', () => { WalletLogic.clearPendingWallet(); resetViewInputs('create-wallet-view'); showView('onboarding-view'); });
             document.getElementById('back-from-restore').addEventListener('click', () => { resetViewInputs('restore-wallet-view'); showView('onboarding-view'); });
             document.getElementById('back-from-charge').addEventListener('click', () => showView('wallet-view'));
             document.getElementById('back-from-receive').addEventListener('click', () => showView('wallet-view'));
@@ -363,10 +401,13 @@
             document.getElementById('back-from-send-options').addEventListener('click', () => showView('wallet-view'));
             document.getElementById('back-from-send').addEventListener('click', () => showView('send-options-view'));
             document.getElementById('back-from-send-manual').addEventListener('click', () => showView('send-options-view'));
-            let generatedMnemonic = ''; 
-            document.getElementById('create-wallet-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(); const confirmPass = document.getElementById('confirm-password-input').value.trim(); setStatus(statusEl, ''); if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); setTimeout(() => { const { mnemonic } = WalletLogic.createWallet(pass); generatedMnemonic = mnemonic; SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic); showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); }, 50); });
-            document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => { const words = generatedMnemonic.split(' '); const idx1 = Math.floor(Math.random() * 6); const idx2 = Math.floor(Math.random() * 6) + 6; const verifyBtn = document.getElementById('verify-seed-button'); verifyBtn.dataset.word1 = words[idx1]; verifyBtn.dataset.word2 = words[idx2]; document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`; document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`; resetViewInputs('seed-confirm-view'); showView('seed-confirm-view'); });
-            document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { generatedMnemonic = ''; resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error'); } });
+            
+            document.getElementById('create-wallet-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(); const confirmPass = document.getElementById('confirm-password-input').value.trim(); setStatus(statusEl, ''); if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); setTimeout(() => { const { wallet, userStore, mnemonic } = WalletLogic.createWallet(pass); state.pendingCreation = { wallet, userStore, mnemonic }; SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic); showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); }, 50); });
+            
+            document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => { if (!state.pendingCreation) return; const words = state.pendingCreation.mnemonic.split(' '); const idx1 = Math.floor(Math.random() * 6); const idx2 = Math.floor(Math.random() * 6) + 6; const verifyBtn = document.getElementById('verify-seed-button'); verifyBtn.dataset.word1 = words[idx1]; verifyBtn.dataset.word2 = words[idx2]; document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`; document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`; resetViewInputs('seed-confirm-view'); showView('seed-confirm-view'); });
+            
+            document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { WalletLogic.commitWallet(); resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error'); } });
+            
             document.getElementById('restore-wallet-button').addEventListener('click', async () => { const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); setStatus(statusEl, ''); if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; } if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } button.disabled = true; setLoader('restore-loader', true); const success = await WalletLogic.restoreWallet(mnemonic, pass); if (success) { await showView('wallet-view'); } else { setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); } button.disabled = false; setLoader('restore-loader', false); resetViewInputs('restore-wallet-view'); });
             document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); });
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
