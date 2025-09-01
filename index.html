@@ -2,6 +2,14 @@
 <html lang="en-US">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self'; 
+        script-src 'self' https://cdnjs.cloudflare.com; 
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data:;
+        connect-src 'self' https://yuozqhimrkyjopgidqje.supabase.co;
+    ">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aura Wallet (Supabase Ledger) - S Tier Pro</title>
     <style>
@@ -424,8 +432,7 @@
 
         import { ethers } from "./ethers.min.js";
 
-        // GENIUS FIX 1: Declare the application's state object at the top of the module.
-        // This ensures it exists before any other code tries to reference it.
+        // State object with added properties for rate limiting
         let state = { 
             wallet: null, 
             userStore: null, 
@@ -451,6 +458,45 @@
             txReceive: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>',
             address: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>'
         };
+
+        // IMPLEMENTED: Hybrid WebCrypto API for password hardening
+        const CryptoLogic = {
+            // This salt is static for the application. For multi-user systems where the server
+            // can store user-specific data, generating and storing a unique salt per user is best practice.
+            // For this client-only wallet, a static salt still adds a significant security layer.
+            SALT: new TextEncoder().encode("AURA-WALLET-STATIC-SALT-V1"),
+            ITERATIONS: 250000,
+
+            async deriveKeyFromPassword(password) {
+                if (!password || typeof password !== 'string' || password.length === 0) {
+                    throw new Error("Password is required for key derivation.");
+                }
+                const baseKey = await window.crypto.subtle.importKey(
+                    'raw',
+                    new TextEncoder().encode(password),
+                    { name: 'PBKDF2' },
+                    false,
+                    ['deriveBits']
+                );
+                
+                const derivedBits = await window.crypto.subtle.deriveBits(
+                    {
+                        name: 'PBKDF2',
+                        salt: this.SALT,
+                        iterations: this.ITERATIONS,
+                        hash: 'SHA-256'
+                    },
+                    baseKey,
+                    256 // 256 bits
+                );
+                
+                // Convert the ArrayBuffer to a hex string to be used as the new password for ethers.js
+                const keyBytes = new Uint8Array(derivedBits);
+                return '0x' + Array.from(keyBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+        };
+
+
         function animateBalance(element, start, end, duration) {
             let startTimestamp = null;
             const step = (timestamp) => {
@@ -516,21 +562,31 @@
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress })
             };
         })();
-        const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8, WALLET_STORAGE_KEY: 'aura_encrypted_user_store' };
+        
+        const AppConstants = { 
+            MAX_LOGIN_ATTEMPTS: 5, 
+            LOGIN_LOCKOUT_PERIOD: 30000, // 30 seconds
+            POLLING_INTERVAL: 5000, 
+            PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, 
+            PRECISION: 8, 
+            WALLET_STORAGE_KEY: 'aura_encrypted_user_store' 
+        };
         
         const WalletLogic = {
-            createWallet: (password) => {
+            // UPDATED: Now accepts a derivedKey instead of a raw password
+            createWallet: (derivedKey) => {
                 const wallet = ethers.Wallet.createRandom();
                 const mnemonic = wallet.mnemonic.phrase;
-                const encryptedJson = wallet.encryptSync(password);
+                const encryptedJson = wallet.encryptSync(derivedKey);
                 const genesisHash = ethers.id("GENESIS_BLOCK");
                 const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }] };
                 return { mnemonic, userStore, wallet };
             },
-            restoreWallet: async (mnemonic, password) => {
+            // UPDATED: Now accepts a derivedKey instead of a raw password
+            restoreWallet: async (mnemonic, derivedKey) => {
                 try {
                     const wallet = ethers.Wallet.fromPhrase(mnemonic);
-                    const encryptedJson = wallet.encryptSync(password);
+                    const encryptedJson = wallet.encryptSync(derivedKey);
                     const genesisHash = ethers.id("GENESIS_BLOCK");
                     const userStore = { publicKey: wallet.publicKey, address: wallet.address, encryptedJson: encryptedJson, chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }] };
                     state.userStore = userStore;
@@ -542,17 +598,19 @@
                     return false;
                 }
             },
-            unlockWallet: async (password) => {
+            // UPDATED: Now accepts a derivedKey instead of a raw password
+            unlockWallet: async (derivedKey) => {
                 const storedUserStore = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
                 if (!storedUserStore) throw new Error("No wallet found on this device.");
                 const userStore = JSON.parse(storedUserStore);
                 try {
-                    const wallet = await ethers.Wallet.fromEncryptedJson(userStore.encryptedJson, password);
+                    const wallet = await ethers.Wallet.fromEncryptedJson(userStore.encryptedJson, derivedKey);
                     state.userStore = userStore;
                     state.wallet = wallet;
                     return true;
                 } catch (error) {
-                    console.error("Unlock failed:", error);
+                    // Don't log the error here to avoid leaking info in production consoles.
+                    // The function will return false, which is handled by the caller.
                     return false;
                 }
             },
@@ -790,20 +848,15 @@
         }
         function showTransactionDetails(tx) { const modal = document.getElementById('transaction-detail-modal'); const confirmationData = tx.confirmation_data || tx; const fromAddress = confirmationData.from && ethers.isAddress(confirmationData.from) ? confirmationData.from : 'Invalid Address'; const toAddress = confirmationData.to && ethers.isAddress(confirmationData.to) ? confirmationData.to : 'Invalid Address'; const amount = !isNaN(parseFloat(confirmationData.amount)) ? parseFloat(confirmationData.amount) : 0; const fee = !isNaN(parseFloat(confirmationData.fee)) ? parseFloat(confirmationData.fee) : 0; SecurityUtils.setTextContent(document.getElementById('detail-id'), confirmationData.id || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-status'), confirmationData.status || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-type'), confirmationData.type || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-datetime'), new Date(confirmationData.timestamp).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'medium' })); SecurityUtils.setTextContent(document.getElementById('detail-amount'), `$${amount.toFixed(2)}`); SecurityUtils.setTextContent(document.getElementById('detail-fee'), `$${fee.toFixed(2)}`); SecurityUtils.setTextContent(document.getElementById('detail-from'), fromAddress); SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress); SecurityUtils.setTextContent(document.getElementById('detail-comment'), confirmationData.comment || 'N/A'); const linkedHashEl = document.getElementById('detail-linked-hash'); const localHashEl = document.getElementById('detail-local-hash'); if (confirmationData.type === 'send' || (fromAddress === state.wallet.address && confirmationData.purpose !== 'fee')) { SecurityUtils.setTextContent(linkedHashEl, SecurityUtils.sanitizeTransactionId(confirmationData.hash || 'N/A')); document.getElementById('detail-local-hash').closest('p').style.display = 'none'; } else { SecurityUtils.setTextContent(linkedHashEl, SecurityUtils.sanitizeTransactionId(confirmationData.linkedTxHash || 'N/A')); SecurityUtils.setTextContent(localHashEl, SecurityUtils.sanitizeTransactionId(confirmationData.hash || 'N/A')); document.getElementById('detail-local-hash').closest('p').style.display = 'block'; } modal.style.display = 'flex'; document.getElementById('close-modal-button').onclick = () => { modal.style.display = 'none'; }; }
         
-        // GENIUS FIX 2: Restructure initializeApp to be more robust.
-        // It now ensures configuration is loaded before any other initialization steps run.
         async function initializeApp() {
             try {
-                // Phase 1: Load critical configuration first.
                 const fetchedConfig = await SupabaseLedger.getAppConfig();
                 state.config = { ...AppConstants, ...fetchedConfig };
 
-                // Phase 2: Now that config is loaded, initialize the rest of the app.
                 loadTheme();
                 document.getElementById('manual-address-icon').innerHTML = SvgIcons.address;
                 setupEventListeners();
 
-                // Phase 3: Determine which view to show.
                 const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
                 if (storedWallet) {
                     showView('unlock-view');
@@ -818,27 +871,59 @@
         }
         
         function setupEventListeners() {
+            // UPDATED: Unlock button with WebCrypto and rate limiting
             document.getElementById('unlock-wallet-button').addEventListener('click', async () => {
-                const button = document.getElementById('unlock-wallet-button');
                 const statusEl = document.getElementById('unlock-status');
+
+                if (state.isLockedOut) {
+                    setStatus(statusEl, 'Too many failed attempts. Please wait.', 'error');
+                    return;
+                }
+
+                const button = document.getElementById('unlock-wallet-button');
                 const pass = document.getElementById('unlock-password-input').value;
                 setStatus(statusEl, '');
                 if (!pass) {
                     setStatus(statusEl, 'Password is required.', 'error');
                     return;
                 }
+                
                 button.disabled = true;
                 setLoader('unlock-loader', true);
-                const success = await WalletLogic.unlockWallet(pass);
-                if (success) {
-                    await showView('wallet-view');
-                    resetViewInputs('unlock-view');
-                } else {
-                    setStatus(statusEl, 'Incorrect password. Please try again.', 'error');
+                setStatus(statusEl, 'Hardening password and decrypting wallet...', 'info');
+
+                try {
+                    const derivedKey = await CryptoLogic.deriveKeyFromPassword(pass);
+                    const success = await WalletLogic.unlockWallet(derivedKey);
+                    
+                    if (success) {
+                        state.failedLoginAttempts = 0;
+                        await showView('wallet-view');
+                        resetViewInputs('unlock-view');
+                    } else {
+                        state.failedLoginAttempts++;
+                        if (state.failedLoginAttempts >= AppConstants.MAX_LOGIN_ATTEMPTS) {
+                            state.isLockedOut = true;
+                            setStatus(statusEl, `Too many failed attempts. Locked for ${AppConstants.LOGIN_LOCKOUT_PERIOD / 1000} seconds.`, 'error');
+                            setTimeout(() => {
+                                state.isLockedOut = false;
+                                state.failedLoginAttempts = 0;
+                                setStatus(statusEl, 'You can try again now.', 'info');
+                            }, AppConstants.LOGIN_LOCKOUT_PERIOD);
+                        } else {
+                            const attemptsLeft = AppConstants.MAX_LOGIN_ATTEMPTS - state.failedLoginAttempts;
+                            setStatus(statusEl, `Incorrect password. ${attemptsLeft} attempt(s) remaining.`, 'error');
+                        }
+                    }
+                } catch (err) {
+                    console.error("Crypto or Unlock Error:", err);
+                    setStatus(statusEl, 'A critical error occurred during decryption.', 'error');
+                } finally {
+                    button.disabled = false;
+                    setLoader('unlock-loader', false);
                 }
-                button.disabled = false;
-                setLoader('unlock-loader', false);
             });
+
             document.getElementById('forget-wallet-button').addEventListener('click', () => {
                 if (confirm('Are you sure you want to forget this wallet? You will need your 12-word recovery phrase to access it again.')) {
                     WalletLogic.logout();
@@ -860,6 +945,7 @@
             document.getElementById('back-from-send-manual').addEventListener('click', () => showView('send-options-view'));
             
             let generatedMnemonic = '';
+            // UPDATED: Create wallet with WebCrypto derived key
             document.getElementById('create-wallet-button').addEventListener('click', async (event) => { 
                 const button = event.target;
                 const statusEl = document.getElementById('create-status'); 
@@ -868,17 +954,33 @@
                 setStatus(statusEl, ''); 
                 if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } 
                 if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } 
-                button.disabled = true; setLoader('create-loader', true); 
-                setTimeout(() => { 
-                    const { mnemonic, userStore, wallet } = WalletLogic.createWallet(pass); 
-                    generatedMnemonic = mnemonic; 
-                    state.tempUserStore = userStore;
-                    state.tempWallet = wallet;
-                    SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic);
-                    showView('seed-phrase-view'); 
-                    button.disabled = false; setLoader('create-loader', false); 
-                }, 50); 
+                
+                button.disabled = true; 
+                setLoader('create-loader', true);
+                setStatus(statusEl, 'Hardening password with WebCrypto...', 'info');
+                
+                try {
+                    const derivedKey = await CryptoLogic.deriveKeyFromPassword(pass);
+                    setStatus(statusEl, 'Creating secure wallet...', 'info');
+                    
+                    // Use a short timeout to allow the UI to update before the blocking crypto operation
+                    setTimeout(() => { 
+                        const { mnemonic, userStore, wallet } = WalletLogic.createWallet(derivedKey); 
+                        generatedMnemonic = mnemonic; 
+                        state.tempUserStore = userStore;
+                        state.tempWallet = wallet;
+                        SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic);
+                        showView('seed-phrase-view'); 
+                    }, 50);
+                } catch (err) {
+                    console.error("Wallet Creation Error:", err);
+                    setStatus(statusEl, 'Failed to create secure wallet.', 'error');
+                } finally {
+                    button.disabled = false; 
+                    setLoader('create-loader', false);
+                }
             });
+
             document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => {
                 const words = generatedMnemonic.split(' ');
                 const idx1 = Math.floor(Math.random() * 6);
@@ -913,23 +1015,39 @@
                     setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error');
                 }
             });
+            
+            // UPDATED: Restore wallet with WebCrypto derived key
             document.getElementById('restore-wallet-button').addEventListener('click', async () => { 
-                const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); 
-                const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); 
+                const button = document.getElementById('restore-wallet-button');
+                const statusEl = document.getElementById('restore-status'); 
+                const mnemonic = document.getElementById('restore-seed-input').value.trim();
+                const pass = document.getElementById('restore-password-input').value.trim(); 
                 setStatus(statusEl, ''); 
                 if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; } 
                 if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } 
-                button.disabled = true; setLoader('restore-loader', true); 
-                const success = await WalletLogic.restoreWallet(mnemonic, pass); 
-                if (success) { 
-                    await showView('wallet-view'); 
-                } else { 
-                    setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); 
-                } 
-                button.disabled = false;
-                setLoader('restore-loader', false); 
-                resetViewInputs('restore-wallet-view'); 
+                
+                button.disabled = true; 
+                setLoader('restore-loader', true);
+                setStatus(statusEl, 'Hardening password and restoring wallet...', 'info');
+
+                try {
+                    const derivedKey = await CryptoLogic.deriveKeyFromPassword(pass);
+                    const success = await WalletLogic.restoreWallet(mnemonic, derivedKey); 
+                    if (success) { 
+                        await showView('wallet-view'); 
+                    } else { 
+                        setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); 
+                    }
+                } catch (err) {
+                    console.error("Wallet Restore Error:", err);
+                    setStatus(statusEl, 'Failed to restore wallet.', 'error');
+                } finally {
+                    button.disabled = false;
+                    setLoader('restore-loader', false); 
+                    resetViewInputs('restore-wallet-view');
+                }
             });
+
             document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); });
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
@@ -991,7 +1109,7 @@
                 }
             });
             document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } const localTransaction = state.userStore.chain.find(tx => tx.id && tx.id.toString() === searchId); if (localTransaction) { showTransactionDetails(localTransaction); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { const displayableTx = { id: serverTransaction.id, status: 'completed', type: serverTransaction.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : (serverTransaction.senderAddress === state.wallet.address ? 'send' : 'receive'), timestamp: serverTransaction.timestamp, amount: serverTransaction.amount, fee: 0, from: serverTransaction.senderAddress, to: serverTransaction.receiverAddress, hash: serverTransaction.hash, linkedTxHash: serverTransaction.linkedTxHash, comment: serverTransaction.comment }; showTransactionDetails(displayableTx); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
-            document.getElementById('create-request-qr-button').addEventListener('click', () => { const amount = parseFloat(document.getElementById('request-amount-input').value); const statusEl = document.getElementById('receive-status'); if (isNaN(amount) || amount <= 0) { setStatus(statusEl, 'Please enter a valid amount.', 'error'); return; } const request = WalletLogic.createPaymentRequest(amount); SecurityUtils.setTextContent(document.getElementById('qr-display-title'), 'Payment Request'); SecurityUtils.setTextContent(document.getElementById('qr-display-instruction'), `Show this QR to the sender to pay $${amount.toFixed(2)}.`); document.getElementById('qr-display-box').style.display = 'block'; generateQrCode(JSON.stringify(request), 'qr-display-box'); document.getElementById('waiting-on-payment').style.display = 'block'; const statusMsg = document.getElementById('final-status-message'), timerEl = document.getElementById('payment-timer'); setStatus(statusMsg, 'Waiting for sender to pay...', 'info'); document.querySelector('#waiting-on-payment .loader').style.display = 'block'; showView('qr-display-view'); let timeLeft = state.config.PAYMENT_REQUEST_EXPIRY; const updateTimer = () => { timeLeft -= 1000; const minutes = Math.floor(timeLeft / 60000), seconds = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0'); SecurityUtils.setTextContent(timerEl, `Expires in: ${minutes}:${seconds}`); if (timeLeft <= 0) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; setStatus(statusMsg, 'Payment request expired.', 'error'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } }; updateTimer(); state.activePollingTimer = setInterval(async () => { updateTimer(); if (timeLeft <= 0) return; try { const confirmation = await SupabaseLedger.findConfirmation(request.linkedTxHash); if (confirmation) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; timerEl.style.display = 'none'; setStatus(statusMsg, 'Payment detected! Finalizing...', 'info'); if (await WalletLogic.finalizePayment(confirmation)) { setStatus(msg, `Success! $${Number(confirmation.amount).toFixed(2)} received.`, 'success'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; setTimeout(async () => { await showView('wallet-view'); }, 2000); } } } catch (err) { console.error("Polling error:", err); setStatus(statusMsg, 'Network error while checking for payment.', 'error'); clearInterval(state.activePollingTimer); state.activePollingTimer = null; } }, state.config.POLLING_INTERVAL); });
+            document.getElementById('create-request-qr-button').addEventListener('click', () => { const amount = parseFloat(document.getElementById('request-amount-input').value); const statusEl = document.getElementById('receive-status'); if (isNaN(amount) || amount <= 0) { setStatus(statusEl, 'Please enter a valid amount.', 'error'); return; } const request = WalletLogic.createPaymentRequest(amount); SecurityUtils.setTextContent(document.getElementById('qr-display-title'), 'Payment Request'); SecurityUtils.setTextContent(document.getElementById('qr-display-instruction'), `Show this QR to the sender to pay $${amount.toFixed(2)}.`); document.getElementById('qr-display-box').style.display = 'block'; generateQrCode(JSON.stringify(request), 'qr-display-box'); document.getElementById('waiting-on-payment').style.display = 'block'; const statusMsg = document.getElementById('final-status-message'), timerEl = document.getElementById('payment-timer'); setStatus(statusMsg, 'Waiting for sender to pay...', 'info'); document.querySelector('#waiting-on-payment .loader').style.display = 'block'; showView('qr-display-view'); let timeLeft = state.config.PAYMENT_REQUEST_EXPIRY; const updateTimer = () => { timeLeft -= 1000; const minutes = Math.floor(timeLeft / 60000), seconds = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0'); SecurityUtils.setTextContent(timerEl, `Expires in: ${minutes}:${seconds}`); if (timeLeft <= 0) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; setStatus(statusMsg, 'Payment request expired.', 'error'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } }; updateTimer(); state.activePollingTimer = setInterval(async () => { updateTimer(); if (timeLeft <= 0) return; try { const confirmation = await SupabaseLedger.findConfirmation(request.linkedTxHash); if (confirmation) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; timerEl.style.display = 'none'; setStatus(statusMsg, 'Payment detected! Finalizing...', 'info'); if (await WalletLogic.finalizePayment(confirmation)) { setStatus(statusMsg, `Success! $${Number(confirmation.amount).toFixed(2)} received.`, 'success'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; setTimeout(async () => { await showView('wallet-view'); }, 2000); } } } catch (err) { console.error("Polling error:", err); setStatus(statusMsg, 'Network error while checking for payment.', 'error'); clearInterval(state.activePollingTimer); state.activePollingTimer = null; } }, state.config.POLLING_INTERVAL); });
             document.getElementById('confirm-payment-button').addEventListener('click', async (event) => { const button = event.target, statusEl = document.getElementById('send-confirm-status'); button.disabled = true; setStatus(statusEl, 'Processing payment...', 'info'); try { await WalletLogic.getServerAuthoritativeBalance(); let success = false, message = ''; if (state.activePaymentRequest) { await WalletLogic.processPayment(state.activePaymentRequest, state.activePaymentRequest.fee); message = `Payment of $${state.activePaymentRequest.amount.toFixed(2)} sent!`; success = true; } else if (state.activeManualSend) { await WalletLogic.directSend(state.activeManualSend.address, state.activeManualSend.amount, state.activeManualSend.comment, state.activeManualSend.fee); message = `Payment of $${state.activeManualSend.amount.toFixed(2)} sent!`; success = true; } else { throw new Error("No active payment request."); } if (success) { setStatus(statusEl, message, 'success'); await BackgroundSync.performSync(); await new Promise(resolve => setTimeout(resolve, 1500)); state.activePaymentRequest = null; state.activeManualSend = null; await showView('wallet-view'); } } catch (err) { setStatus(statusEl, `Payment Failed: ${err.message}`, 'error'); } finally { button.disabled = false; } });
             document.getElementById('show-charge-view-button').addEventListener('click', () => { 
                 resetViewInputs('charge-view');
