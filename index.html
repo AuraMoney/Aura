@@ -579,7 +579,8 @@
             };
             return { 
                 getAppConfig: () => apiCall('getAppConfig'), 
-                prepareTransaction: (senderAddress, receiverAddress, amount, comment) => apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment }), 
+                // ##### FIX 2: ADD `senderTxHash` TO THE PAYLOAD #####
+                prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash) => apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash }), 
                 executeTransaction: (transactionIntentId, signature) => apiCall('executeTransaction', { transactionIntentId, signature }),
                 hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status on Supabase:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } }, 
                 findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }), 
@@ -623,6 +624,8 @@
                     state.userStore = userStore;
                     state.wallet = wallet;
                     localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(userStore));
+                    // ##### FIX 1: BUILD THE TRANSACTION INDEX ON RESTORE #####
+                    this.buildTransactionIndex();
                     return true;
                 } catch (e) {
                     console.error("Restore failed:", e);
@@ -642,7 +645,6 @@
                     
                     // ##### FIX 1: BUILD THE TRANSACTION INDEX ON UNLOCK #####
                     this.buildTransactionIndex();
-                    // #######################################################
                     
                     return true;
                 } catch (error) {
@@ -662,7 +664,6 @@
                 state.transactionIndex.clear();
                 if (!state.userStore || !state.userStore.chain) return;
                 state.userStore.chain.forEach(tx => {
-                    // Index by the authoritative hash if it exists, otherwise by the local hash
                     const txKey = tx.linkedTxHash || tx.hash;
                     if (txKey) {
                         state.transactionIndex.set(txKey, tx);
@@ -682,11 +683,20 @@
                     newTx.id = parseInt(newTx.hash.slice(-10), 16);
                 }
                 state.userStore.chain.push(newTx);
-                // Add the new transaction to the index immediately
                 const txKey = newTx.linkedTxHash || newTx.hash;
                 state.transactionIndex.set(txKey, newTx);
                 localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore));
                 return newTx;
+            },
+            // ##### FIX 2: NEW FUNCTION TO PRE-CALCULATE A HASH #####
+            precomputeTransactionHash: (txDetails) => {
+                const prevTx = WalletLogic.getLastTransaction();
+                const amountInt = ethers.parseUnits((txDetails.amount || 0).toString(), state.config.PRECISION);
+                const feeInt = ethers.parseUnits((txDetails.fee || 0).toString(), state.config.PRECISION);
+                return ethers.solidityPackedKeccak256(
+                    ['string', 'uint256', 'uint256', 'string', 'string', 'string'], 
+                    [txDetails.type, amountInt, feeInt, txDetails.from, txDetails.to, prevTx.hash]
+                );
             },
             calculateBalanceFromTxs: (incomingTxs, outgoingTxs) => {
                 const precision = state.config.PRECISION;
@@ -754,7 +764,6 @@
                 }
                 state.userStore.chain[receiveTxIndex].status = 'completed';
                 state.userStore.chain[receiveTxIndex].from = confirmation.senderAddress;
-                // Rebuild index after finalizing to include the new data
                 WalletLogic.buildTransactionIndex();
                 localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore));
                 CacheManager.invalidate(state.wallet.address);
@@ -763,17 +772,14 @@
 
             // ##### FIX 1: REWRITTEN DUPLICATE CHECK LOGIC #####
             processDiscoveredTransaction: async (confirmation) => {
-                // Ensure it's for us and has the authoritative hash
                 if (confirmation.receiverAddress !== state.wallet.address) return false;
                 const txKey = confirmation.linkedTxHash;
-                if (!txKey) return false; // Ignore transactions without a server-authoritative hash
+                if (!txKey) return false;
 
-                // Use the reliable index to check for existence. This is the core fix.
                 if (state.transactionIndex.has(txKey)) {
                     return false; // Already processed, ignore.
                 }
                 
-                // If it's new, add it to our local chain.
                 WalletLogic.addToChain({ 
                     id: confirmation.id, 
                     type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive', 
@@ -785,24 +791,15 @@
                     timestamp: confirmation.timestamp, 
                     comment: confirmation.comment 
                 });
-                return true; // Return true to indicate a new transaction was added
+                return true; 
             }
-            // #########################################################
         };
         function setLoader(loaderId, isLoading) { document.getElementById(loaderId).classList.toggle('hidden', !isLoading); }
         function setStatus(element, message, type = '') { if (!element) return; SecurityUtils.setTextContent(element, message); element.className = 'status-box'; if (type) element.classList.add(type); }
         function resetViewInputs(viewId) { const view = document.getElementById(viewId); if (!view) return; view.querySelectorAll('input, textarea').forEach(input => { if (input.type !== 'file') input.value = ''; }); const statusBox = view.querySelector('.status-box'); if (statusBox) SecurityUtils.setTextContent(statusBox, ''); }
         async function updateBalanceAndRender() {
             try {
-                const balance = await WalletLogic.getServerAuthoritativeBalance();
-                const balanceEl = document.getElementById('balance-display');
-                const startBalance = parseFloat(balanceEl.textContent.replace('$', '')) || 0;
-                const endBalance = parseFloat(ethers.formatUnits(balance, state.config.PRECISION));
-                if (Math.abs(startBalance - endBalance) > 0.01) {
-                    animateBalance(balanceEl, startBalance, endBalance, 1000);
-                } else {
-                    SecurityUtils.setTextContent(balanceEl, `$${endBalance.toFixed(2)}`);
-                }
+                await WalletLogic.getServerAuthoritativeBalance();
                 renderTransactionHistory();
             } catch (error) {
                 console.error("Could not update balance:", error);
@@ -862,7 +859,6 @@
             });
         }
         
-        // ##### FIX 2: STANDARDIZED TX ID DISPLAY #####
         function showTransactionDetails(tx) {
             const modal = document.getElementById('transaction-detail-modal');
             const confirmationData = tx.confirmation_data || tx;
@@ -882,12 +878,9 @@
             SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress);
             SecurityUtils.setTextContent(document.getElementById('detail-comment'), confirmationData.comment || 'N/A');
         
-            // The authoritative TxID is ALWAYS the linkedTxHash from the server
             SecurityUtils.setTextContent(document.getElementById('detail-linked-hash'), SecurityUtils.sanitizeTransactionId(confirmationData.linkedTxHash || 'N/A'));
-            // The local hash is a client-specific receipt
             SecurityUtils.setTextContent(document.getElementById('detail-local-hash'), SecurityUtils.sanitizeTransactionId(confirmationData.hash || 'N/A'));
             
-            // Ensure both fields are always visible for clarity
             document.getElementById('detail-local-hash').closest('p').style.display = 'block';
         
             modal.style.display = 'flex';
@@ -895,7 +888,6 @@
                 modal.style.display = 'none';
             };
         }
-        // ###############################################################
 
         async function initializeApp() {
             try {
@@ -1083,19 +1075,21 @@
                 setStatus(statusEl, 'Preparing transaction with server...', 'info');
 
                 try {
-                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, recipientAddress, amount, comment);
+                    // ##### FIX 2: PRE-COMPUTE THE SENDER'S HASH #####
+                    const senderTxHash = WalletLogic.precomputeTransactionHash({
+                        type: 'send',
+                        amount: amount,
+                        fee: 0, // Fee is calculated on server, not part of this hash
+                        from: state.wallet.address,
+                        to: recipientAddress
+                    });
+                    
+                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, recipientAddress, amount, comment, senderTxHash);
                     
                     state.activeTransactionIntent = {
                         transactionIntentId,
                         messageToSign,
-                        details: {
-                            id,
-                            receiverAddress: recipientAddress,
-                            amount, 
-                            comment, 
-                            fee, 
-                            totalDebit
-                        }
+                        details: { id, receiverAddress: recipientAddress, amount, comment, fee, totalDebit }
                     };
 
                     const confirmAmountEl = document.getElementById('confirm-amount-display');
