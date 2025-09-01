@@ -859,8 +859,7 @@
                 }
             } catch (e) {
                 console.error("Initialization Error:", e);
-                alert(`Critical error initializing app configuration: ${e.message}`);
-                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);">Critical Error: Could not start the application. Please refresh the page. Details: ${e.message}</div>`;
+                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not start the application. Please check your network connection and refresh the page. </p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
             }
         }
 
@@ -1022,18 +1021,10 @@
                 const comment = document.getElementById('send-comment-input').value.trim();
                 setStatus(statusEl, '');
 
-                if (!ethers.isAddress(recipientAddress)) {
-                    setStatus(statusEl, 'Invalid recipient address format.', 'error'); return;
-                }
-                if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) {
-                    setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return;
-                }
-                if (isNaN(amount) || amount <= 0 || amount > 1000000) {
-                    setStatus(statusEl, 'Invalid amount. Must be between $0.01 and $1,000,000.', 'error'); return;
-                }
-                if (comment.length > 50) {
-                    setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return;
-                }
+                if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; }
+                if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; }
+                if (isNaN(amount) || amount <= 0 || amount > 1000000) { setStatus(statusEl, 'Invalid amount.', 'error'); return; }
+                if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; }
 
                 button.disabled = true;
                 setStatus(statusEl, 'Preparing transaction with server...', 'info');
@@ -1045,8 +1036,8 @@
                         transactionIntentId,
                         messageToSign,
                         details: {
-                            id, // FIXED: Store the ID from the server
-                            receiverAddress: recipientAddress, // FIXED: Correctly assign recipientAddress to receiverAddress
+                            id,
+                            receiverAddress: recipientAddress,
                             amount, 
                             comment, 
                             fee, 
