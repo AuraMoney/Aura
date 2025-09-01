@@ -639,6 +639,11 @@
                     const wallet = new ethers.Wallet(privateKey);
                     state.userStore = userStore;
                     state.wallet = wallet;
+                    
+                    // ##### FIX 1: BUILD THE TRANSACTION INDEX ON UNLOCK #####
+                    this.buildTransactionIndex();
+                    // #######################################################
+                    
                     return true;
                 } catch (error) {
                     console.error("Unlock failed:", error);
@@ -657,8 +662,11 @@
                 state.transactionIndex.clear();
                 if (!state.userStore || !state.userStore.chain) return;
                 state.userStore.chain.forEach(tx => {
+                    // Index by the authoritative hash if it exists, otherwise by the local hash
                     const txKey = tx.linkedTxHash || tx.hash;
-                    state.transactionIndex.set(txKey, tx);
+                    if (txKey) {
+                        state.transactionIndex.set(txKey, tx);
+                    }
                 });
             },
             getLastTransaction: () => state.userStore.chain[state.userStore.chain.length - 1],
@@ -674,6 +682,7 @@
                     newTx.id = parseInt(newTx.hash.slice(-10), 16);
                 }
                 state.userStore.chain.push(newTx);
+                // Add the new transaction to the index immediately
                 const txKey = newTx.linkedTxHash || newTx.hash;
                 state.transactionIndex.set(txKey, newTx);
                 localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore));
@@ -745,17 +754,26 @@
                 }
                 state.userStore.chain[receiveTxIndex].status = 'completed';
                 state.userStore.chain[receiveTxIndex].from = confirmation.senderAddress;
+                // Rebuild index after finalizing to include the new data
+                WalletLogic.buildTransactionIndex();
                 localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore));
                 CacheManager.invalidate(state.wallet.address);
                 return true;
             },
-            processDiscoveredTransaction: async (confirmation) => {
-                if (confirmation.receiverAddress !== state.wallet.address) return false;
-                const txKey = confirmation.linkedTxHash || confirmation.id;
-                const existingTx = state.userStore.chain.find(tx => tx.linkedTxHash === txKey);
-                
-                if (existingTx) return false;
 
+            // ##### FIX 1: REWRITTEN DUPLICATE CHECK LOGIC #####
+            processDiscoveredTransaction: async (confirmation) => {
+                // Ensure it's for us and has the authoritative hash
+                if (confirmation.receiverAddress !== state.wallet.address) return false;
+                const txKey = confirmation.linkedTxHash;
+                if (!txKey) return false; // Ignore transactions without a server-authoritative hash
+
+                // Use the reliable index to check for existence. This is the core fix.
+                if (state.transactionIndex.has(txKey)) {
+                    return false; // Already processed, ignore.
+                }
+                
+                // If it's new, add it to our local chain.
                 WalletLogic.addToChain({ 
                     id: confirmation.id, 
                     type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive', 
@@ -767,8 +785,9 @@
                     timestamp: confirmation.timestamp, 
                     comment: confirmation.comment 
                 });
-                return true;
+                return true; // Return true to indicate a new transaction was added
             }
+            // #########################################################
         };
         function setLoader(loaderId, isLoading) { document.getElementById(loaderId).classList.toggle('hidden', !isLoading); }
         function setStatus(element, message, type = '') { if (!element) return; SecurityUtils.setTextContent(element, message); element.className = 'status-box'; if (type) element.classList.add(type); }
