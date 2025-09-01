@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF--8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aura Wallet (Supabase Ledger) - S Tier Pro</title>
     <style>
@@ -399,7 +399,12 @@
     <div id="transaction-detail-modal" class="modal-overlay" style="display:none;"><div class="modal-content card"><h2>Transaction Details</h2><div id="modal-details-content" style="text-align:left; font-size: 14px;"><p style="margin-bottom: 10px;"><strong>ID:</strong> <span id="detail-id"></span></p><p style="margin-bottom: 10px;"><strong>Status:</strong> <span id="detail-status"></span></p><p style="margin-bottom: 10px;"><strong>Type:</strong> <span id="detail-type"></span></p><p style="margin-bottom: 10px;"><strong>Date & Time:</strong> <span id="detail-datetime"></span></p><p style="margin-bottom: 10px;"><strong>Amount:</strong> <span id="detail-amount"></span></p><p style="margin-bottom: 10px;"><strong>Fee:</strong> <span id="detail-fee"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>From:</strong> <span id="detail-from"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>To:</strong> <span id="detail-to"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>Comment:</strong> <span id="detail-comment"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>Transaction Hash (TxID):</strong> <span id="detail-linked-hash"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>Local Receipt Hash:</strong> <span id="detail-local-hash"></span></p></div><button id="close-modal-button" class="back-button">Close</button></div></div>
 </main>
    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <script 
+        src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js" 
+        integrity="sha512-sayirZBl99oA/Hdw148iSoWeb28s2kLhYwY/d6JbI/seltnv3p_pW5SjClOUdrgQ2M233W8ImBfHjV0BYbXw5A==" 
+        crossorigin="anonymous" 
+        referrerpolicy="no-referrer"></script>
+    
     <script src="pako.min.js"></script>
     <script src="qrcode.js"></script>
     <script src="jsQR.js"></script>
@@ -563,7 +568,62 @@
         const CoreLogic = (() => { const Constants = { VALIDATION_PREFIX: "SADAT_V2_PART", MAX_IMAGE_DIMENSION: 2000, NUM_QR_CODES: 9 }; const Utils = { preprocessImage: (dataUrl) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.filter = 'grayscale(1) contrast(2.5) brightness(1.1)'; ctx.drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = dataUrl; }), resizeImage: (file, maxDimension) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { let { width, height } = img; if (width > height) { if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; } } else { if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; } } const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = e.target.result; }; reader.onerror = reject; reader.readAsDataURL(file); }), }; const Banknote = { getLayout: (imageWidth) => { const standardWidth = 790; const scale = imageWidth / standardWidth; return { qrSize: Math.round(250 * scale), xSpacing: Math.round(20 * scale), ySpacing: Math.round(20 * scale), }; }, decodeQrGrid: async (imageData, statusEl) => { const layout = Banknote.getLayout(imageData.width); const parts = {}; let count = 0; const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = imageData.width; canvas.height = imageData.height; ctx.putImageData(imageData, 0, 0); for (let i = 0; i < Constants.NUM_QR_CODES; i++) { setStatus(statusEl, `Scanning section ${i + 1}/${Constants.NUM_QR_CODES}...`, 'info'); await new Promise(r => setTimeout(r, 5)); const row = Math.floor(i / 3), col = i % 3; const regionX = col * (layout.qrSize + layout.xSpacing); const regionY = row * (layout.qrSize + layout.ySpacing); const data = ctx.getImageData(regionX, regionY, layout.qrSize, layout.qrSize); const code = jsQR(data.data, data.width, data.height); if (code && code.data.startsWith(Constants.VALIDATION_PREFIX)) { const match = code.data.substring(Constants.VALIDATION_PREFIX.length).match(/^(\d+)\/(\d+):(.*)$/s); if (match) { const partNum = parseInt(match[1], 10); if (!parts[partNum]) { parts[partNum] = match[3]; count++; } } } } if (count < Constants.NUM_QR_CODES) { throw new Error(`Scan failed. Found ${count}/${Constants.NUM_QR_CODES} valid sections.`); } let payload = ''; for (let i = 1; i <= Constants.NUM_QR_CODES; i++) { payload += parts[i]; } return payload; } }; return { Constants, Utils, Banknote }; })();
         const CacheManager = { cache: new Map(), DEFAULT_CACHE_DURATION: 30000, set(key, data, duration = this.DEFAULT_CACHE_DURATION) { this.cache.set(key, { data, expiresAt: Date.now() + duration }); }, get(key) { const cached = this.cache.get(key); if (!cached) return null; if (Date.now() > cached.expiresAt) { this.cache.delete(key); return null; } return cached.data; }, invalidate(pattern) { for (const key of this.cache.keys()) { if (key.includes(pattern)) { this.cache.delete(key); } } } };
         const NetworkOptimizer = { getSyncStrategy() { const speed = navigator.connection?.effectiveType || '4g'; switch (speed) { case 'slow-2g': case '2g': return { interval: 45000, useCache: true, cacheDuration: 120000 }; case '3g': return { interval: 20000, useCache: true, cacheDuration: 60000 }; case '4g': default: return { interval: 10000, useCache: true, cacheDuration: 20000 }; } } };
-        const BackgroundSync = { isRunning: false, syncIntervalId: null, start() { if (this.isRunning) return; console.log("Starting background sync..."); this.isRunning = true; const strategy = NetworkOptimizer.getSyncStrategy(); const performSyncCycle = () => { if (!this.isRunning) return; this.performSync().catch(err => console.error("Background sync error:", err)); }; performSyncCycle(); this.syncIntervalId = setInterval(performSyncCycle, strategy.interval); }, async performSync() { if (!state.wallet) { this.stop(); return; } const syncStatusEl = document.getElementById('sync-status'); try { const [incomingTxs, outgoingTxs] = await Promise.all([ SupabaseLedger.findIncomingTxs(state.wallet.address), SupabaseLedger.findOutgoingTxs(state.wallet.address) ]); let newTxCount = 0; for (const confirmation of incomingTxs) { if (await WalletLogic.processDiscoveredTransaction(confirmation)) { newTxCount++; } } const balance = WalletLogic.calculateBalanceFromTxs(incomingTxs, outgoingTxs); const balanceEl = document.getElementById('balance-display'); const startBalance = parseFloat(balanceEl.textContent.replace('$', '')) || 0; const endBalance = parseFloat(ethers.formatUnits(balance, state.config.PRECISION)); if (Math.abs(startBalance - endBalance) > 0.01) { animateBalance(balanceEl, startBalance, endBalance, 1000); } else { SecurityUtils.setTextContent(balanceEl, `$${endBalance.toFixed(2)}`); } state.currentBalance = balance; if (newTxCount > 0) { renderTransactionHistory(); if (syncStatusEl) { setStatus(syncStatusEl, '⚡ New transaction(s) detected!', 'success'); setTimeout(() => { if (syncStatusEl) setStatus(syncStatusEl, ''); }, 4000); } } } catch (error) { console.error("Background sync failed:", error); if (syncStatusEl) setStatus(syncStatusEl, 'Sync failed. Retrying...', 'error'); } }, stop() { if (!this.isRunning) return; console.log("Stopping background sync..."); clearInterval(this.syncIntervalId); this.syncIntervalId = null; this.isRunning = false; } };
+        const BackgroundSync = {
+            isRunning: false,
+            syncIntervalId: null,
+            start() {
+                if (this.isRunning) return;
+                console.log("Starting background sync...");
+                this.isRunning = true;
+                const strategy = NetworkOptimizer.getSyncStrategy();
+                const performSyncCycle = () => {
+                    if (!this.isRunning) return;
+                    this.performSync().catch(err => console.error("Background sync error:", err));
+                };
+                performSyncCycle();
+                this.syncIntervalId = setInterval(performSyncCycle, strategy.interval);
+            },
+            async performSync() {
+                if (!state.wallet) { this.stop(); return; }
+                const syncStatusEl = document.getElementById('sync-status');
+                try {
+                    const balanceResult = await WalletLogic.getServerAuthoritativeBalance();
+                    const balanceEl = document.getElementById('balance-display');
+                    
+                    const startBalanceStr = balanceEl.textContent.replace(/[^0-9.]/g, '') || '0';
+                    const endBalanceStr = ethers.formatUnits(balanceResult.balance, state.config.PRECISION);
+                    
+                    animateBalance(balanceEl, parseFloat(startBalanceStr), parseFloat(endBalanceStr), 1000);
+                    state.currentBalance = balanceResult.balance;
+
+                    const incomingTxs = await SupabaseLedger.findIncomingTxs(state.wallet.address);
+                    let newTxCount = 0;
+                    for (const confirmation of incomingTxs) {
+                        if (await WalletLogic.processDiscoveredTransaction(confirmation)) {
+                            newTxCount++;
+                        }
+                    }
+
+                    if (newTxCount > 0) {
+                        renderTransactionHistory();
+                        if (syncStatusEl) {
+                            setStatus(syncStatusEl, '⚡ New transaction(s) detected!', 'success');
+                            setTimeout(() => { if (syncStatusEl) setStatus(syncStatusEl, ''); }, 4000);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Background sync failed:", error);
+                    if (syncStatusEl) setStatus(syncStatusEl, 'Sync failed. Retrying...', 'error');
+                }
+            },
+            stop() {
+                if (!this.isRunning) return;
+                console.log("Stopping background sync...");
+                clearInterval(this.syncIntervalId);
+                this.syncIntervalId = null;
+                this.isRunning = false;
+            }
+        };
         const SupabaseLedger = (() => {
             const apiCall = async (action, payload) => {
                 const response = await fetch(EDGE_FUNCTION_URL, {
@@ -579,9 +639,10 @@
             };
             return { 
                 getAppConfig: () => apiCall('getAppConfig'), 
-                // ##### FIX 2: ADD `senderTxHash` TO THE PAYLOAD #####
-                prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash) => apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash }), 
+                prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuth) => 
+                    apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, ...preAuth }), 
                 executeTransaction: (transactionIntentId, signature) => apiCall('executeTransaction', { transactionIntentId, signature }),
+                getBalance: (address) => apiCall('getBalance', { address }),
                 hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status on Supabase:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } }, 
                 findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }), 
                 findIncomingTxs: async (receiverAddress) => { const cacheKey = `incoming_${receiverAddress}`; const strategy = NetworkOptimizer.getSyncStrategy(); if (strategy.useCache) { const cached = CacheManager.get(cacheKey); if (cached) return cached; } const txs = await apiCall('findIncomingTxs', { receiverAddress }); if (strategy.useCache) CacheManager.set(cacheKey, txs, strategy.cacheDuration); return txs; }, 
@@ -624,7 +685,6 @@
                     state.userStore = userStore;
                     state.wallet = wallet;
                     localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(userStore));
-                    // ##### FIX 1: BUILD THE TRANSACTION INDEX ON RESTORE #####
                     this.buildTransactionIndex();
                     return true;
                 } catch (e) {
@@ -642,10 +702,7 @@
                     const wallet = new ethers.Wallet(privateKey);
                     state.userStore = userStore;
                     state.wallet = wallet;
-                    
-                    // ##### FIX 1: BUILD THE TRANSACTION INDEX ON UNLOCK #####
                     this.buildTransactionIndex();
-                    
                     return true;
                 } catch (error) {
                     console.error("Unlock failed:", error);
@@ -688,7 +745,6 @@
                 localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore));
                 return newTx;
             },
-            // ##### FIX 2: NEW FUNCTION TO PRE-CALCULATE A HASH #####
             precomputeTransactionHash: (txDetails) => {
                 const prevTx = WalletLogic.getLastTransaction();
                 const amountInt = ethers.parseUnits((txDetails.amount || 0).toString(), state.config.PRECISION);
@@ -698,24 +754,12 @@
                     [txDetails.type, amountInt, feeInt, txDetails.from, txDetails.to, prevTx.hash]
                 );
             },
-            calculateBalanceFromTxs: (incomingTxs, outgoingTxs) => {
-                const precision = state.config.PRECISION;
-                let incomingTotal = 0n;
-                incomingTxs.forEach(tx => {
-                    incomingTotal += ethers.parseUnits((Number(tx.amount) || 0).toString(), precision);
-                });
-                let outgoingTotal = 0n;
-                outgoingTxs.forEach(tx => {
-                    outgoingTotal += ethers.parseUnits((Number(tx.amount) || 0).toString(), precision);
-                });
-                return incomingTotal - outgoingTotal;
-            },
             getServerAuthoritativeBalance: async () => {
-                if (!state.userStore) return 0n;
-                const [incomingTxs, outgoingTxs] = await Promise.all([SupabaseLedger.findIncomingTxs(state.wallet.address), SupabaseLedger.findOutgoingTxs(state.wallet.address)]);
-                const balance = WalletLogic.calculateBalanceFromTxs(incomingTxs, outgoingTxs);
-                state.currentBalance = balance;
-                return balance;
+                if (!state.userStore) return { balance: 0n };
+                const balanceResult = await SupabaseLedger.getBalance(state.wallet.address);
+                const balanceBigInt = BigInt(balanceResult.balance);
+                state.currentBalance = balanceBigInt;
+                return { balance: balanceBigInt };
             },
             createPaymentRequest: (amount) => {
                 const receiveTx = WalletLogic.addToChain({ type: 'receive', amount: amount, from: '', to: state.wallet.address, status: 'pending_request' });
@@ -769,8 +813,6 @@
                 CacheManager.invalidate(state.wallet.address);
                 return true;
             },
-
-            // ##### FIX 1: REWRITTEN DUPLICATE CHECK LOGIC #####
             processDiscoveredTransaction: async (confirmation) => {
                 if (confirmation.receiverAddress !== state.wallet.address) return false;
                 const txKey = confirmation.linkedTxHash;
@@ -799,7 +841,10 @@
         function resetViewInputs(viewId) { const view = document.getElementById(viewId); if (!view) return; view.querySelectorAll('input, textarea').forEach(input => { if (input.type !== 'file') input.value = ''; }); const statusBox = view.querySelector('.status-box'); if (statusBox) SecurityUtils.setTextContent(statusBox, ''); }
         async function updateBalanceAndRender() {
             try {
-                await WalletLogic.getServerAuthoritativeBalance();
+                const { balance } = await WalletLogic.getServerAuthoritativeBalance();
+                const balanceEl = document.getElementById('balance-display');
+                const formattedBalance = ethers.formatUnits(balance, state.config.PRECISION);
+                SecurityUtils.setTextContent(balanceEl, `$${parseFloat(formattedBalance).toFixed(2)}`);
                 renderTransactionHistory();
             } catch (error) {
                 console.error("Could not update balance:", error);
@@ -829,7 +874,7 @@
                 const isSent = tx.type === 'send';
                 const typeText = isSent ? 'Sent' : (tx.comment || (tx.type === 'charge' ? 'Charge' : 'Received'));
                 const typeClass = isSent ? 'sent' : 'received';
-                const totalAmount = SecurityUtils.sanitizeNumeric(tx.amount || 0);
+                const totalAmount = Number(tx.amount || 0);
                 const date = new Date(tx.timestamp).toLocaleString('en-US');
                 const item = document.createElement('li');
                 item.className = 'transaction-item animate-in';
@@ -865,8 +910,8 @@
         
             const fromAddress = confirmationData.from || confirmationData.senderAddress || 'N/A';
             const toAddress = confirmationData.to || confirmationData.receiverAddress || 'N/A';
-            const amount = !isNaN(parseFloat(confirmationData.amount)) ? parseFloat(confirmationData.amount) : 0;
-            const fee = !isNaN(parseFloat(confirmationData.fee)) ? parseFloat(confirmationData.fee) : 0;
+            const amount = !isNaN(Number(confirmationData.amount)) ? Number(confirmationData.amount) : 0;
+            const fee = !isNaN(Number(confirmationData.fee)) ? Number(confirmationData.fee) : 0;
         
             SecurityUtils.setTextContent(document.getElementById('detail-id'), confirmationData.id || 'N/A');
             SecurityUtils.setTextContent(document.getElementById('detail-status'), confirmationData.status || 'N/A');
@@ -1062,29 +1107,52 @@
                 const button = event.target;
                 const statusEl = document.getElementById('send-manual-status');
                 const recipientAddress = document.getElementById('send-address-input').value.trim();
-                const amount = parseFloat(document.getElementById('send-amount-input').value);
+                const amountStr = document.getElementById('send-amount-input').value;
                 const comment = document.getElementById('send-comment-input').value.trim();
                 setStatus(statusEl, '');
 
                 if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; }
                 if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; }
-                if (isNaN(amount) || amount <= 0 || amount > 1000000) { setStatus(statusEl, 'Invalid amount.', 'error'); return; }
                 if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; }
 
+                let amount;
+                try {
+                    ethers.parseUnits(amountStr, state.config.PRECISION);
+                    amount = parseFloat(amountStr);
+                } catch (e) {
+                    setStatus(statusEl, 'Invalid amount format.', 'error');
+                    return;
+                }
+
+                if (isNaN(amount) || amount <= 0) { setStatus(statusEl, 'Invalid amount.', 'error'); return; }
+                
                 button.disabled = true;
-                setStatus(statusEl, 'Preparing transaction with server...', 'info');
+                setStatus(statusEl, 'Awaiting pre-authorization...', 'info');
 
                 try {
-                    // ##### FIX 2: PRE-COMPUTE THE SENDER'S HASH #####
+                    const preAuthTimestamp = Date.now();
+                    const preAuthMessage = `Aura Wallet: Create Transaction Intent at ${preAuthTimestamp}`;
+                    const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
+                    const preAuthPayload = { preAuthTimestamp, preAuthSignature };
+
+                    setStatus(statusEl, 'Preparing transaction with server...', 'info');
+                    
                     const senderTxHash = WalletLogic.precomputeTransactionHash({
                         type: 'send',
                         amount: amount,
-                        fee: 0, // Fee is calculated on server, not part of this hash
+                        fee: 0, 
                         from: state.wallet.address,
                         to: recipientAddress
                     });
                     
-                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, recipientAddress, amount, comment, senderTxHash);
+                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(
+                        state.wallet.address, 
+                        recipientAddress, 
+                        amount, 
+                        comment, 
+                        senderTxHash,
+                        preAuthPayload
+                    );
                     
                     state.activeTransactionIntent = {
                         transactionIntentId,
