@@ -7,7 +7,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         /* --- THEME DEFINITIONS --- */
-        /* S-Tier Default Theme: Starlight */
         :root {
             --bg-color: #050810;
             --surface-color: rgba(18, 24, 43, 0.7);
@@ -424,6 +423,26 @@
         }
 
         import { ethers } from "./ethers.min.js";
+
+        // GENIUS FIX 1: Declare the application's state object at the top of the module.
+        // This ensures it exists before any other code tries to reference it.
+        let state = { 
+            wallet: null, 
+            userStore: null, 
+            tempUserStore: null,
+            tempWallet: null,
+            failedLoginAttempts: 0, 
+            isLockedOut: false, 
+            activePaymentRequest: null, 
+            activeManualSend: null, 
+            activePollingTimer: null, 
+            cameraStream: null, 
+            isScannerActive: false, 
+            currentBalance: 0n, 
+            transactionIndex: new Map(), 
+            config: null 
+        };
+
         const SUPABASE_URL = 'https://yuozqhimrkyjopgidqje.supabase.co'; 
         const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/api`;
         
@@ -497,7 +516,8 @@
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress })
             };
         })();
-
+        const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8, WALLET_STORAGE_KEY: 'aura_encrypted_user_store' };
+        
         const WalletLogic = {
             createWallet: (password) => {
                 const wallet = ethers.Wallet.createRandom();
@@ -770,23 +790,31 @@
         }
         function showTransactionDetails(tx) { const modal = document.getElementById('transaction-detail-modal'); const confirmationData = tx.confirmation_data || tx; const fromAddress = confirmationData.from && ethers.isAddress(confirmationData.from) ? confirmationData.from : 'Invalid Address'; const toAddress = confirmationData.to && ethers.isAddress(confirmationData.to) ? confirmationData.to : 'Invalid Address'; const amount = !isNaN(parseFloat(confirmationData.amount)) ? parseFloat(confirmationData.amount) : 0; const fee = !isNaN(parseFloat(confirmationData.fee)) ? parseFloat(confirmationData.fee) : 0; SecurityUtils.setTextContent(document.getElementById('detail-id'), confirmationData.id || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-status'), confirmationData.status || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-type'), confirmationData.type || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-datetime'), new Date(confirmationData.timestamp).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'medium' })); SecurityUtils.setTextContent(document.getElementById('detail-amount'), `$${amount.toFixed(2)}`); SecurityUtils.setTextContent(document.getElementById('detail-fee'), `$${fee.toFixed(2)}`); SecurityUtils.setTextContent(document.getElementById('detail-from'), fromAddress); SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress); SecurityUtils.setTextContent(document.getElementById('detail-comment'), confirmationData.comment || 'N/A'); const linkedHashEl = document.getElementById('detail-linked-hash'); const localHashEl = document.getElementById('detail-local-hash'); if (confirmationData.type === 'send' || (fromAddress === state.wallet.address && confirmationData.purpose !== 'fee')) { SecurityUtils.setTextContent(linkedHashEl, SecurityUtils.sanitizeTransactionId(confirmationData.hash || 'N/A')); document.getElementById('detail-local-hash').closest('p').style.display = 'none'; } else { SecurityUtils.setTextContent(linkedHashEl, SecurityUtils.sanitizeTransactionId(confirmationData.linkedTxHash || 'N/A')); SecurityUtils.setTextContent(localHashEl, SecurityUtils.sanitizeTransactionId(confirmationData.hash || 'N/A')); document.getElementById('detail-local-hash').closest('p').style.display = 'block'; } modal.style.display = 'flex'; document.getElementById('close-modal-button').onclick = () => { modal.style.display = 'none'; }; }
         
+        // GENIUS FIX 2: Restructure initializeApp to be more robust.
+        // It now ensures configuration is loaded before any other initialization steps run.
         async function initializeApp() {
             try {
+                // Phase 1: Load critical configuration first.
                 const fetchedConfig = await SupabaseLedger.getAppConfig();
                 state.config = { ...AppConstants, ...fetchedConfig };
+
+                // Phase 2: Now that config is loaded, initialize the rest of the app.
+                loadTheme();
+                document.getElementById('manual-address-icon').innerHTML = SvgIcons.address;
+                setupEventListeners();
+
+                // Phase 3: Determine which view to show.
+                const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
+                if (storedWallet) {
+                    showView('unlock-view');
+                } else {
+                    showView('onboarding-view');
+                }
             } catch (e) {
+                console.error("Initialization Error:", e);
                 alert(`Critical error initializing app configuration: ${e.message}`);
-                return;
+                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);">Critical Error: Could not start the application. Please refresh the page. Details: ${e.message}</div>`;
             }
-            loadTheme();
-            document.getElementById('manual-address-icon').innerHTML = SvgIcons.address;
-            const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
-            if (storedWallet) {
-                showView('unlock-view');
-            } else {
-                showView('onboarding-view');
-            }
-            setupEventListeners();
         }
         
         function setupEventListeners() {
