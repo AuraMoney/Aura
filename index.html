@@ -26,7 +26,6 @@
             border-bottom: 1px solid #eee;
             padding-bottom: 5px;
         }
-        /* <pre> allows us to display the long hash string cleanly */
         pre {
             background-color: #eee;
             padding: 10px;
@@ -68,7 +67,7 @@
         <pre id="hex-hash"></pre>
     </div>
 
-    <script src="argon2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/argon2-browser/dist/argon2.min.js"></script>
 
     <script>
         // Get references to our display elements
@@ -80,42 +79,36 @@
         // This function runs the hashing process
         async function runArgon2() {
             try {
-                // Update UI to show we are working
                 statusElem.textContent = 'Hashing with Argon2... ⏳';
                 statusElem.className = 'loading';
                 
                 const password = 'your-secret-password';
-                const salt = 'some-random-salt'; // In a real app, use a unique, cryptographically secure salt!
+                const salt = 'some-random-salt';
 
-                // Call the hash function from the library
                 const hashResult = await argon2.hash({
                     pass: password,
                     salt: salt,
-                    time: 1,       // iterations
-                    mem: 1024,     // memory in KiB
-                    hashLen: 24,   // desired hash length
+                    time: 1,
+                    mem: 1024,
+                    hashLen: 24,
                     parallelism: 1,
-                    type: argon2.Argon2id // Argon2id is recommended
+                    type: argon2.Argon2id
                 });
 
-                // Update UI with success message
                 statusElem.textContent = 'Hashing successful! ✅';
                 statusElem.className = 'success';
 
-                // Display the results on the page
                 encodedHashElem.textContent = hashResult.encoded;
                 hexHashElem.textContent = hashResult.hex;
-                resultsElem.style.display = 'block'; // Make the results div visible
+                resultsElem.style.display = 'block';
 
             } catch (error) {
-                // If something goes wrong, show the error on the page
                 statusElem.textContent = `Argon2 hashing failed: ${error.message}`;
                 statusElem.className = 'error';
                 console.error('Argon2 hashing failed:', error);
             }
         }
 
-        // Run the function when the page loads
         runArgon2();
     </script>
 </body>
