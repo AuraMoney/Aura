@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF--8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Argon2 Mobile Test</title>
+    <title>Argon2 Mobile Test (Skypack Module)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -55,7 +55,7 @@
     </style>
 </head>
 <body>
-    <h1>Argon2 Mobile Test</h1>
+    <h1>Argon2 Mobile Test (Skypack Module)</h1>
     
     <div id="status"></div>
 
@@ -67,11 +67,10 @@
         <pre id="hex-hash"></pre>
     </div>
 
-    <script>
-    !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).argon2={})}(this,function(e){"use strict";var t,r;(t=e.ArgonType||(e.ArgonType={})).Argon2d=0,t.Argon2i=1,t.Argon2id=2,(r=e.ArgonVersion||(e.ArgonVersion={})).V10=16,r.V13=19;const n=e=>e>>>0,i=e=>n(e),s=e=>`${e}`.padStart(2,"0"),o=e=>[...e].map(e=>s(e.toString(16))).join(""),a=e=>[...e].map(e=>String.fromCharCode(e)).join(""),c=e=>"string"==typeof e?function(e){const t=e.length,r=new Uint8Array(t);for(let n=0;n<t;n+=1)r[n]=e.charCodeAt(n);return r}(e):new Uint8Array(e),u=(e,t,r)=>{let n=e[t]^r;for(let i=1;i<8;i++)n^=e[t+i]<<8*i;return n},l=e=>e>>>0,h=e=>l(e[0]^e[1]),d=(e,t,r)=>{e[r]=l(e[r]+e[t]+2*h(e[t])*h(e[r]))},p=(e,t,r)=>{const n=e[t],i=e[r];let s=h(n);s=l(s*s);let o=h(i);o=l(o*o),e[r]=l(e[r]+e[t]+2*s*o)};async function f(t){const r="undefined"!=typeof process&&"undefined"!=typeof process.release&&"node"===process.release.name,n="undefined"!=typeof window,i="undefined"!=typeof self&&"undefined"!=typeof self.importScripts;if(!t.wasmUrl&&!t.wasmBinary){if(r){const e=eval("require");t.wasmBinary=e("fs").readFileSync(e("path").join(__dirname,"argon2.wasm"))}else if(n||i)throw new Error("Wasm binary or url must be provided for browsers")}let s;return t.wasmBinary?s=await WebAssembly.instantiate(t.wasmBinary,{env:{}}):s=await WebAssembly.instantiateStreaming(fetch(t.wasmUrl),{env:{}}),s.instance.exports}const m=(e,t)=>void 0===t?e.length:t,g=(e,t,r)=>new Uint8Array(r.buffer,e,t);async function y(t,r){let n;const i=t.pass,s=t.salt,a=m(i,t.passlen),u=m(s,t.saltlen),l=t.time,h=t.mem,d=t.hashLen,p=t.parallelism,f=t.secret,y=m(f,t.secretlen),v=t.ad,b=m(v,t.adlen),w=t.type,A=r||(n=await e.load(t),n.memory),x=n?n.exports:r.exports,E=x.malloc(u+a+y+b),S=c(i),U=c(s);x.argon2_init_mem(E,U,u),x.argon2_init_mem(E+u,S,a);const I=g(E,u,A),k=g(E+u,a,A);let L,T;if(I.set(U),k.set(S),f){const e=c(f);L=g(E+u+a,y,A),L.set(e)}if(v){const e=c(v);T=g(E+u+a+y,b,A),T.set(e)}const B=x.argon2_hash(l,h,p,E+u,a,E,u,d,0,w,19,E+u+a,y,E+u+a+y,b),D=B-E;if(0!==D){const e=new Error(`Argon2 error ${D}`);throw e.code=D,e}const C=x.malloc(d),F=g(C,d,A),N=g(x.argon2_encodedlen(l,h,p,u,d,w),1024,A),R=x.argon2_encode(N.byteOffset,C,d,E,u,l,h,p),H=N.slice(0,R);return x.free(E),x.free(C),{hash:F,encoded:H,hashHex:o(F)}}e.Argon2Error=class extends Error{constructor(e,t){super(e),this.code=t}},e.hash=(t,r)=>{let n,i;try{if(t.pass instanceof Promise||t.salt instanceof Promise){const e=Promise.all([t.pass,t.salt]);i=e.then(e=>{const r={...t};return r.pass=e[0],r.salt=e[1],r}),n=i.then(e=>y(e))}else n=Promise.resolve(y(t,r));return n.then(t=>({hash:t.hash,hashHex:t.hashHex,encoded:a(t.encoded)}))}catch(r){return n=Promise.reject(r)}return i?i.then(()=>n):n},e.load=f,e.unload=()=>{t=null},Object.defineProperty(e,"__esModule",{value:!0})});
-    </script>
+    <script type="module">
+        // Import the argon2 object from the Skypack CDN URL
+        import * as argon2 from 'https://cdn.skypack.dev/-/argon2@v0.44.0-3YKHxqncp5BELyYgwAN2/dist=es2019,mode=imports/optimized/argon2.js';
 
-    <script>
         // Get references to our display elements
         const statusElem = document.getElementById('status');
         const resultsElem = document.getElementById('results');
@@ -81,16 +80,13 @@
         // This function runs the hashing process
         async function runArgon2() {
             try {
-                // Since Argon2 is now embedded, we need to manually load its WebAssembly module.
-                // This is a necessary step for the embedded version.
-                await argon2.load();
-                
                 statusElem.textContent = 'Hashing with Argon2... ⏳';
                 statusElem.className = 'loading';
                 
                 const password = 'your-secret-password';
                 const salt = 'some-random-salt';
 
+                // The argon2.hash function is now available from our import
                 const hashResult = await argon2.hash({
                     pass: password,
                     salt: salt,
@@ -98,14 +94,14 @@
                     mem: 1024,
                     hashLen: 24,
                     parallelism: 1,
-                    type: argon2.Argon2id
+                    type: argon2.ArgonType.Argon2id // Note: Module might use ArgonType.Argon2id
                 });
 
                 statusElem.textContent = 'Hashing successful! ✅';
                 statusElem.className = 'success';
 
                 encodedHashElem.textContent = hashResult.encoded;
-                hexHashElem.textContent = hashResult.hex;
+                hexHashElem.textContent = hashResult.hashHex;
                 resultsElem.style.display = 'block';
 
             } catch (error) {
@@ -115,6 +111,7 @@
             }
         }
 
+        // Run the function when the page loads
         runArgon2();
     </script>
 </body>
