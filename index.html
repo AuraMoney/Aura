@@ -485,7 +485,8 @@
             sanitizeNumeric: (value) => { if (typeof value === 'number') return value;
             if (typeof value !== 'string') return 0; const cleaned = value.replace(/[^0-9.-]/g, ''); const parsed = parseFloat(cleaned); return isNaN(parsed) ? 0 : parsed; },
             sanitizeTransactionId: (txId) => { if (typeof txId !== 'string') return '';
-            const cleaned = txId.replace(/[^0-9a-fA-F]/g, ''); return SecurityUtils.sanitizeText(cleaned); }
+            const cleaned = txId.replace(/[^0-9a-fA-F-]/g, ''); // Allow hyphens for UUIDs
+            return SecurityUtils.sanitizeText(cleaned); }
         };
         const CryptoWallet = {
             async deriveKey(password, salt) {
@@ -609,7 +610,7 @@
             };
             return { 
                 getAppConfig: () => apiCall('getAppConfig'), 
-                 prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash) => apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash }), 
+                 prepareTransaction: (payload) => apiCall('prepareTransaction', payload),
                 executeTransaction: (transactionIntentId, signature) => apiCall('executeTransaction', { transactionIntentId, signature }),
                 hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier });
                 return result.spent; } catch (error) { console.error('Failed to check identifier status on Supabase:', error);
@@ -641,7 +642,7 @@
                     publicKey: wallet.publicKey,
                     address: wallet.address,
                     encryptedPrivateKey: encryptedPrivateKey,
-                    chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
+                    chain: [{ id: genesisHash.slice(-10), hash: genesisHash, type: 'creation', timestamp: Date.now() }] // Simplified ID
                  };
                 return { mnemonic, userStore, wallet };
             },
@@ -656,7 +657,7 @@
                         publicKey: wallet.publicKey,
                         address: wallet.address,
                         encryptedPrivateKey: encryptedPrivateKey,
-                         chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
+                         chain: [{ id: genesisHash.slice(-10), hash: genesisHash, type: 'creation', timestamp: Date.now() }] // Simplified ID
                     };
                     state.userStore = userStore;
                     state.wallet = wallet;
@@ -710,10 +711,8 @@
                 const amountInt = BigInt(newTx.amount || '0');
                 const feeInt = BigInt(newTx.fee || '0');
                 newTx.hash = ethers.solidityPackedKeccak256(['string', 'uint256', 'uint256', 'string', 'string', 'string'], [newTx.type, amountInt, feeInt, newTx.from || '', newTx.to || '', newTx.prevHash]);
-                if (txData.id) {
-                    newTx.id = txData.id;
-                } else {
-                    newTx.id = parseInt(newTx.hash.slice(-10), 16);
+                if (!newTx.id) {
+                    newTx.id = newTx.hash.slice(-10); // Simplified ID
                 }
                 state.userStore.chain.push(newTx);
                 const txKey = newTx.linkedTxHash || newTx.hash;
@@ -777,7 +776,7 @@
                         status: 'completed',
                         comment: details.comment,
                         linkedTxHash: result.txHash,
-                        id: details.id
+                        id: details.id // This is now a UUID
                     });
                     CacheManager.invalidate(state.wallet.address);
                     return true;
@@ -851,7 +850,24 @@
         const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info');
         let isPaymentRequest = false; try { const request = JSON.parse(code.data);
         if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true;
-        Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, `Payment for request ${request.linkedTxHash.slice(0,10)}`, request.linkedTxHash); state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit } }; const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountDecimal = ethers.formatUnits(request.amount, state.config.PRECISION); const feeDecimal = ethers.formatUnits(fee, state.config.PRECISION); const totalDebitDecimal = ethers.formatUnits(totalDebit, state.config.PRECISION); const confirmAmountHTML = `Amount: $${parseFloat(amountDecimal).toFixed(2)}<br><span style="font-size: 14px; opacity: 0.7;">Fee (${(state.config.FEE_PERCENTAGE*100).toFixed(1)}%): +$${parseFloat(feeDecimal).toFixed(2)}</span><br><strong style="font-size: 18px;">Total: $${parseFloat(totalDebitDecimal).toFixed(2)}</strong>`;
+        Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); 
+        
+        // FIX: Implement pre-authorization signature for QR code based transactions
+        const preAuthMessage = `Aura Wallet authorization: ${Date.now()}`;
+        const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
+        const senderTxHash = WalletLogic.precomputeTransactionHash({ type: 'send', amount: request.amount, fee: '0', from: state.wallet.address, to: request.receiverAddress });
+
+        const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction({
+             senderAddress: state.wallet.address, 
+             receiverAddress: request.receiverAddress, 
+             amount: request.amount, 
+             comment: `Payment for request ${request.linkedTxHash.slice(0,10)}`, 
+             senderTxHash, 
+             preAuthMessage, 
+             preAuthSignature
+        });
+        
+        state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit } }; const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountDecimal = ethers.formatUnits(request.amount, state.config.PRECISION); const feeDecimal = ethers.formatUnits(fee, state.config.PRECISION); const totalDebitDecimal = ethers.formatUnits(totalDebit, state.config.PRECISION); const confirmAmountHTML = `Amount: $${parseFloat(amountDecimal).toFixed(2)}<br><span style="font-size: 14px; opacity: 0.7;">Fee (${(state.config.FEE_PERCENTAGE*100).toFixed(1)}%): +$${parseFloat(feeDecimal).toFixed(2)}</span><br><strong style="font-size: 18px;">Total: $${parseFloat(totalDebitDecimal).toFixed(2)}</strong>`;
         SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); await showView('send-confirm-view'); }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); });
         } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data;
         setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus();
@@ -1108,6 +1124,7 @@
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
+            
             document.getElementById('send-manual-button').addEventListener('click', async (event) => {
                 const button = event.target;
                 const statusEl = document.getElementById('send-manual-status');
@@ -1131,9 +1148,15 @@
                 }
 
                 button.disabled = true;
-                setStatus(statusEl, 'Preparing transaction with server...', 'info');
+                setStatus(statusEl, 'Awaiting authorization...', 'info');
 
                 try {
+                    // FIX: Create and sign a pre-authorization message to prevent DoS.
+                    const preAuthMessage = `Aura Wallet authorization: ${Date.now()}`;
+                    const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
+                    
+                    setStatus(statusEl, 'Preparing transaction with server...', 'info');
+
                     const senderTxHash = WalletLogic.precomputeTransactionHash({
                         type: 'send',
                          amount: amountIntString,
@@ -1141,7 +1164,17 @@
                         from: state.wallet.address,
                         to: recipientAddress
                      });
-                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, recipientAddress, amountIntString, comment, senderTxHash);
+                     
+                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction({
+                        senderAddress: state.wallet.address,
+                        receiverAddress: recipientAddress,
+                        amount: amountIntString,
+                        comment,
+                        senderTxHash,
+                        preAuthMessage,
+                        preAuthSignature
+                    });
+
                     state.activeTransactionIntent = {
                         transactionIntentId,
                         messageToSign,
@@ -1163,6 +1196,7 @@
                     button.disabled = false;
                 }
             });
+
             document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } const localTransaction = state.userStore.chain.find(tx => tx.id && tx.id.toString() === searchId); if (localTransaction) { showTransactionDetails(localTransaction); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { const displayableTx = { id: serverTransaction.id, status: 'completed', type: serverTransaction.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : (serverTransaction.senderAddress === state.wallet.address ? 'send' : 'receive'), timestamp: serverTransaction.timestamp, amount: serverTransaction.amount, fee: serverTransaction.fee || '0', from: serverTransaction.senderAddress, to: serverTransaction.receiverAddress, hash: serverTransaction.hash, linkedTxHash: serverTransaction.linkedTxHash, comment: serverTransaction.comment };
             showTransactionDetails(displayableTx); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error);
             alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
