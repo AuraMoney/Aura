@@ -2,22 +2,90 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Argon2 Local Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Argon2 Mobile Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            color: #444;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        /* <pre> allows us to display the long hash string cleanly */
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 5px;
+            word-wrap: break-word; /* Wraps the long hash string */
+            white-space: pre-wrap;  /* Preserves whitespace but allows wrapping */
+            font-size: 0.9em;
+        }
+        #status {
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .loading {
+            background-color: #e0f0ff;
+            color: #0056b3;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
 </head>
 <body>
-    <h1>Argon2 Local Test</h1>
-    <p>Check the browser's developer console for the hash result.</p>
+    <h1>Argon2 Mobile Test</h1>
+    
+    <div id="status"></div>
+
+    <div id="results" style="display: none;">
+        <h3>Encoded Hash:</h3>
+        <pre id="encoded-hash"></pre>
+        
+        <h3>Hex Hash:</h3>
+        <pre id="hex-hash"></pre>
+    </div>
 
     <script src="argon2.min.js"></script>
 
     <script>
+        // Get references to our display elements
+        const statusElem = document.getElementById('status');
+        const resultsElem = document.getElementById('results');
+        const encodedHashElem = document.getElementById('encoded-hash');
+        const hexHashElem = document.getElementById('hex-hash');
+
         // This function runs the hashing process
         async function runArgon2() {
             try {
-                console.log('Hashing with Argon2...');
-
+                // Update UI to show we are working
+                statusElem.textContent = 'Hashing with Argon2... ⏳';
+                statusElem.className = 'loading';
+                
                 const password = 'your-secret-password';
-                const salt = 'some-random-salt'; // In a real app, use a unique, cryptographically secure salt for each user!
+                const salt = 'some-random-salt'; // In a real app, use a unique, cryptographically secure salt!
 
                 // Call the hash function from the library
                 const hashResult = await argon2.hash({
@@ -30,11 +98,19 @@
                     type: argon2.Argon2id // Argon2id is recommended
                 });
 
-                console.log('Hashing successful!');
-                console.log('Encoded Hash:', hashResult.encoded);
-                console.log('Hex Hash:', hashResult.hex);
+                // Update UI with success message
+                statusElem.textContent = 'Hashing successful! ✅';
+                statusElem.className = 'success';
+
+                // Display the results on the page
+                encodedHashElem.textContent = hashResult.encoded;
+                hexHashElem.textContent = hashResult.hex;
+                resultsElem.style.display = 'block'; // Make the results div visible
 
             } catch (error) {
+                // If something goes wrong, show the error on the page
+                statusElem.textContent = `Argon2 hashing failed: ${error.message}`;
+                statusElem.className = 'error';
                 console.error('Argon2 hashing failed:', error);
             }
         }
