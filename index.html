@@ -406,6 +406,7 @@
     <script src="jsQR.js"></script>
     <script src="crypto-js.min.js"></script>
     <script src="html2canvas.min.js"></script>
+    <script src="argon2.min.js"></script>
     
     <script type="module">
         if (typeof globalThis.Buffer === 'undefined') {
@@ -491,32 +492,39 @@
         };
         const CryptoWallet = {
             async deriveKey(password, salt) {
-                const enc = new TextEncoder();
-                const keyMaterial = await window.crypto.subtle.importKey(
+                // Initialize the Argon2 WASM module. The argon2() function is from argon2.min.js.
+                const argon2Instance = await argon2();
+
+                // Define Argon2 parameters. These are chosen for a good balance of security and performance.
+                const options = {
+                    pass: password,
+                    salt: salt,
+                    time: 3,        // Iterations (t_cost)
+                    mem: 65536,     // Memory cost in KiB (m_cost)
+                    hashLen: 32,    // Desired key length in bytes (for AES-256)
+                    parallelism: 4, // Degree of parallelism
+                    type: argon2Instance.ArgonType.Argon2id // Recommended type for general use
+                };
+
+                // Derive the raw key using Argon2.
+                const result = await argon2Instance.hash(options);
+                const rawKey = result.hash; // The result is a Uint8Array
+
+                // Import the raw key derived by Argon2 to create a formal CryptoKey
+                // that the Web Crypto API can use for symmetric encryption (AES-GCM).
+                return window.crypto.subtle.importKey(
                     "raw",
-                    enc.encode(password),
-                    { name: "PBKDF2" },
-                    false,
-                     ["deriveKey"]
-                );
-                return window.crypto.subtle.deriveKey(
-                    {
-                        "name": "PBKDF2",
-                        salt: salt,
-                        "iterations": 100000,
-                         "hash": "SHA-256"
-                    },
-                    keyMaterial,
-                    { "name": "AES-GCM", "length": 256},
-                     true,
-                    [ "encrypt", "decrypt" ]
+                    rawKey,
+                    { "name": "AES-GCM" },
+                    true, // The key is extractable, which is good practice
+                    ["encrypt", "decrypt"]
                 );
             },
         
             async encrypt(data, password) {
                 const salt = window.crypto.getRandomValues(new Uint8Array(16));
                 const iv = window.crypto.getRandomValues(new Uint8Array(12));
-                const key = await this.deriveKey(password, salt);
+                const key = await this.deriveKey(password, salt); // Uses the new Argon2 deriveKey
                 const enc = new TextEncoder();
                 const encrypted = await window.crypto.subtle.encrypt(
                     {
@@ -536,7 +544,7 @@
             async decrypt(encryptedData, password) {
                 const salt = this.b642ab(encryptedData.salt);
                 const iv = this.b642ab(encryptedData.iv);
-                const key = await this.deriveKey(password, salt);
+                const key = await this.deriveKey(password, salt); // Uses the new Argon2 deriveKey
                 const encrypted = this.b642ab(encryptedData.encrypted);
                 const decrypted = await window.crypto.subtle.decrypt(
                     {
