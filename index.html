@@ -406,6 +406,7 @@
     <script src="jsQR.js"></script>
     <script src="crypto-js.min.js"></script>
     <script src="html2canvas.min.js"></script>
+    <script src="argon2.min.js"></script>
     
     <script type="module">
         if (typeof globalThis.Buffer === 'undefined') {
@@ -423,10 +424,7 @@
             };
         }
 
-        // Import ethers and the argon2 library
         import { ethers } from "./ethers.min.js";
-        import argon2 from 'https://esm.sh/argon2-browser@1.18.0/dist/argon2-bundled.min.js';
-
         let state = { 
             wallet: null, 
             userStore: null, 
@@ -492,93 +490,71 @@
             sanitizeTransactionId: (txId) => { if (typeof txId !== 'string') return '';
             const cleaned = txId.replace(/[^0-9a-fA-F]/g, ''); return SecurityUtils.sanitizeText(cleaned); }
         };
-
-        // ### MODIFIED CryptoWallet OBJECT ###
         const CryptoWallet = {
-            /**
-             * Derives a cryptographic key from a password and salt using Argon2.
-             * @param {string} password The user's password.
-             * @param {Uint8Array} salt A random salt.
-             * @returns {Promise<CryptoKey>} A CryptoKey suitable for AES-GCM.
-             */
             async deriveKey(password, salt) {
+                // Use Argon2 to derive a 32-byte (256-bit) key.
                 const hashResult = await argon2.hash({
                     pass: password,
                     salt: salt,
-                    time: 2,           // Number of iterations
-                    mem: 24 * 1024,    // 24 MiB of memory
-                    hashLen: 32,       // 32 bytes for a 256-bit key
-                    parallelism: 1,
-                    type: argon2.ArgonType.Argon2id // Recommended type
+                    time: 2, // Iterations
+                    mem: 65536, // 64 MB memory
+                    hashLen: 32, // 32 bytes for AES-256
+                    parallelism: 4,
+                    type: argon2.ArgonType.Argon2id, // Recommended type
+                    raw: true // Output raw bytes
                 });
 
-                // Import the raw hash output as a key for AES-GCM
+                // Import the raw hash as a key for AES-GCM.
                 return window.crypto.subtle.importKey(
                     "raw",
-                    hashResult.hash, // Use the raw Uint8Array hash
+                    hashResult.hash, // This is the Uint8Array key
                     { "name": "AES-GCM" },
                     true,
                     ["encrypt", "decrypt"]
                 );
             },
-
-            /**
-             * Encrypts data using AES-GCM with a key derived via Argon2.
-             * @param {string} data The string data to encrypt.
-             * @param {string} password The password to derive the encryption key from.
-             * @returns {Promise<object>} An object containing the encrypted data, salt, and IV.
-             */
+        
             async encrypt(data, password) {
                 const salt = window.crypto.getRandomValues(new Uint8Array(16));
                 const iv = window.crypto.getRandomValues(new Uint8Array(12));
-                
-                // This now calls the Argon2-based key derivation
                 const key = await this.deriveKey(password, salt);
-                
                 const enc = new TextEncoder();
                 const encrypted = await window.crypto.subtle.encrypt(
-                    { name: "AES-GCM", iv: iv },
-                    key,
+                    {
+                        name: "AES-GCM",
+                        iv: iv
+                    },
+                     key,
                     enc.encode(data)
                 );
-
                 return {
                     encrypted: this.ab2b64(encrypted),
                     salt: this.ab2b64(salt),
                     iv: this.ab2b64(iv)
                 };
             },
-
-            /**
-             * Decrypts data using AES-GCM with a key derived via Argon2.
-             * @param {object} encryptedData An object containing encrypted data, salt, and IV.
-             * @param {string} password The password to derive the decryption key from.
-             * @returns {Promise<string>} The decrypted string data.
-             */
+        
             async decrypt(encryptedData, password) {
                 const salt = this.b642ab(encryptedData.salt);
                 const iv = this.b642ab(encryptedData.iv);
-
-                // This now calls the Argon2-based key derivation
                 const key = await this.deriveKey(password, salt);
-
                 const encrypted = this.b642ab(encryptedData.encrypted);
                 const decrypted = await window.crypto.subtle.decrypt(
-                    { name: "AES-GCM", iv: iv },
-                    key,
+                    {
+                        name: "AES-GCM",
+                        iv: iv
+                    },
+                     key,
                     encrypted
                 );
-                
                 const dec = new TextDecoder();
                 return dec.decode(decrypted);
             },
-
-            // Helper function: ArrayBuffer to Base64
+        
             ab2b64(ab) {
                 return btoa(String.fromCharCode.apply(null, new Uint8Array(ab)));
             },
-
-            // Helper function: Base64 to ArrayBuffer
+        
             b642ab(b64) {
                 const byteString = atob(b64);
                 const bytes = new Uint8Array(byteString.length);
@@ -588,7 +564,6 @@
                 return bytes;
             }
         };
-        // ### END MODIFIED CryptoWallet OBJECT ###
 
         const CoreLogic = (() => { const Constants = { VALIDATION_PREFIX: "SADAT_V2_PART", MAX_IMAGE_DIMENSION: 2000, NUM_QR_CODES: 9 }; const Utils = { preprocessImage: (dataUrl) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.filter = 'grayscale(1) contrast(2.5) brightness(1.1)'; ctx.drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = dataUrl; }), resizeImage: (file, maxDimension) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { let { width, height } = img; if (width > height) { if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; } } else { if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; } } const canvas = document.createElement('canvas');
         canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = e.target.result; };
