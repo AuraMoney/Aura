@@ -30,8 +30,8 @@
             background-color: #eee;
             padding: 10px;
             border-radius: 5px;
-            word-wrap: break-word; /* Wraps the long hash string */
-            white-space: pre-wrap;  /* Preserves whitespace but allows wrapping */
+            word-wrap: break-word; 
+            white-space: pre-wrap;
             font-size: 0.9em;
         }
         #status {
@@ -71,13 +71,11 @@
         // Import the argon2 object from the Skypack CDN URL
         import * as argon2 from 'https://cdn.skypack.dev/-/argon2@v0.44.0-3YKHxqncp5BELyYgwAN2/dist=es2019,mode=imports/optimized/argon2.js';
 
-        // Get references to our display elements
         const statusElem = document.getElementById('status');
         const resultsElem = document.getElementById('results');
         const encodedHashElem = document.getElementById('encoded-hash');
         const hexHashElem = document.getElementById('hex-hash');
 
-        // This function runs the hashing process
         async function runArgon2() {
             try {
                 statusElem.textContent = 'Hashing with Argon2... ⏳';
@@ -86,7 +84,6 @@
                 const password = 'your-secret-password';
                 const salt = 'some-random-salt';
 
-                // The argon2.hash function is now available from our import
                 const hashResult = await argon2.hash({
                     pass: password,
                     salt: salt,
@@ -94,14 +91,16 @@
                     mem: 1024,
                     hashLen: 24,
                     parallelism: 1,
-                    type: argon2.ArgonType.Argon2id // Note: Module might use ArgonType.Argon2id
+                    // FIX #1: Use argon2.ArgonType.Argon2id
+                    type: argon2.ArgonType.Argon2id 
                 });
 
                 statusElem.textContent = 'Hashing successful! ✅';
                 statusElem.className = 'success';
 
                 encodedHashElem.textContent = hashResult.encoded;
-                hexHashElem.textContent = hashResult.hashHex;
+                // FIX #2: Use hashResult.hashHex
+                hexHashElem.textContent = hashResult.hashHex; 
                 resultsElem.style.display = 'block';
 
             } catch (error) {
@@ -110,8 +109,7 @@
                 console.error('Argon2 hashing failed:', error);
             }
         }
-
-        // Run the function when the page loads
+        
         runArgon2();
     </script>
 </body>
