@@ -699,10 +699,12 @@
             calculateBalanceFromTxs: (incomingTxs, outgoingTxs) => {
                 let incomingTotal = 0n;
                 incomingTxs.forEach(tx => {
+                    // FIX: Use BigInt directly on the integer string from the server
                     incomingTotal += BigInt(tx.amount || '0');
                 });
                 let outgoingTotal = 0n;
                 outgoingTxs.forEach(tx => {
+                    // FIX: Use BigInt directly on the integer string from the server
                     outgoingTotal += BigInt(tx.amount || '0');
                 });
                 return incomingTotal - outgoingTotal;
