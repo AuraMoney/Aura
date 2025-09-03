@@ -755,31 +755,59 @@
                 }
             },
             finalizePayment: async (confirmation) => {
-                const receiveTxIndex = state.userStore.chain.findIndex(tx => tx.hash === confirmation.linkedTxHash && tx.status === 'pending_request');
-                if (receiveTxIndex === -1) {
-                     // This could be a new tx not initiated by a request, so add it
-                    if (await WalletLogic.processDiscoveredTransaction(confirmation)) {
-                        return true;
-                    }
-                    console.error("Finalize Error: Could not find pending transaction.");
+                const txKey = confirmation.linkedTxHash;
+                if (!txKey) {
+                    console.error("Finalize Error: Confirmation is missing linkedTxHash.");
                     return false;
                 }
-
-                // ##### FIX 3 START: Enhance local transaction with full details from server #####
-                const txToUpdate = state.userStore.chain[receiveTxIndex];
-                txToUpdate.status = 'completed';
-                txToUpdate.from = confirmation.senderAddress;
-                txToUpdate.id = confirmation.id;
-                txToUpdate.timestamp = confirmation.timestamp;
-                txToUpdate.comment = confirmation.comment;
-                txToUpdate.linkedTxHash = confirmation.linkedTxHash;
-                txToUpdate.fee = confirmation.fee || '0';
-                // ##### FIX 3 END #####
-
-                WalletLogic.buildTransactionIndex();
+            
+                // Check if the transaction is already fully processed and in our local state.
+                const existingTx = state.transactionIndex.get(txKey);
+                if (existingTx && existingTx.status === 'completed') {
+                    console.log("Finalize Info: Transaction already processed, ignoring duplicate finalization call.");
+                    return true; // It's already done, success.
+                }
+            
+                // If we are here, the transaction is either pending or missing from local state.
+                const receiveTxIndex = state.userStore.chain.findIndex(tx => tx.hash === txKey && tx.status === 'pending_request');
+                
+                if (receiveTxIndex !== -1) {
+                    // Found the pending request. Let's update it with the full server data.
+                    const txToUpdate = state.userStore.chain[receiveTxIndex];
+                    txToUpdate.status = 'completed';
+                    txToUpdate.from = confirmation.senderAddress;
+                    txToUpdate.id = confirmation.id;
+                    txToUpdate.timestamp = confirmation.timestamp;
+                    txToUpdate.comment = confirmation.comment;
+                    txToUpdate.fee = confirmation.fee || '0';
+            
+                    // Update the transaction in the index map as well.
+                    state.transactionIndex.set(txKey, txToUpdate);
+                } else {
+                    // Pending request not found. This can happen if a sync cleared it,
+                    // or if this was a direct transfer not initiated by a request.
+                    // We add it as a new, completed transaction.
+                    WalletLogic.addToChain({ 
+                        id: confirmation.id, 
+                        type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive', 
+                        amount: confirmation.amount,
+                        fee: confirmation.fee || '0',
+                        from: confirmation.senderAddress, 
+                        to: confirmation.receiverAddress, 
+                        status: 'completed', 
+                        linkedTxHash: txKey, 
+                        timestamp: confirmation.timestamp, 
+                        comment: confirmation.comment 
+                    });
+                }
+            
+                // Persist the updated chain to local storage.
                 localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore));
+                
+                // Invalidate network cache for our address since the balance has changed.
                 CacheManager.invalidate(state.wallet.address);
-                return true;
+                
+                return true; // Signal success.
             },
             processDiscoveredTransaction: async (confirmation) => {
                 const txKey = confirmation.linkedTxHash;
@@ -1256,17 +1284,16 @@
                 document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } };
                 updateTimer(); state.activePollingTimer = setInterval(async () => { updateTimer(); if (timeLeft <= 0) return; try { const confirmation = await SupabaseLedger.findConfirmation(request.linkedTxHash); if (confirmation) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; timerEl.style.display = 'none'; setStatus(statusMsg, 'Payment detected! Finalizing...', 'info'); 
                 
-                // ##### FIX 1 START: Add handling for finalization failure #####
                 if (await WalletLogic.finalizePayment(confirmation)) { 
                     const amountDecimal = ethers.formatUnits(confirmation.amount, state.config.PRECISION); 
                     setStatus(statusMsg, `Success! $${parseFloat(amountDecimal).toFixed(2)} received.`, 'success'); 
                     document.querySelector('#waiting-on-payment .loader').style.display = 'none'; 
+                    await updateBalanceAndRender(); // Update the main view's state immediately
                     setTimeout(async () => { await showView('wallet-view'); }, 2000); 
                 } else {
                     setStatus(statusMsg, 'Error: Failed to finalize transaction locally.', 'error');
                     document.querySelector('#waiting-on-payment .loader').style.display = 'none';
                 }
-                // ##### FIX 1 END #####
 
                 } } catch (err) { console.error("Polling error:", err); setStatus(statusMsg, 'Network error while checking for payment.', 'error'); clearInterval(state.activePollingTimer); state.activePollingTimer = null; } }, state.config.POLLING_INTERVAL);
             });
