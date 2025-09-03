@@ -579,7 +579,7 @@
             return { 
                 getAppConfig: () => apiCall('getAppConfig'), 
                 prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature) => 
-                     apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature }),
+                    apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature }),
                 executeTransaction: (transactionIntentId, signature) => apiCall('executeTransaction', { transactionIntentId, signature }),
                 hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status on Supabase:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } }, 
                 findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }), 
@@ -764,18 +764,8 @@
                     console.error("Finalize Error: Could not find pending transaction.");
                     return false;
                 }
-
-                // ##### FIX 3 START: Enhance local transaction with full details from server #####
-                const txToUpdate = state.userStore.chain[receiveTxIndex];
-                txToUpdate.status = 'completed';
-                txToUpdate.from = confirmation.senderAddress;
-                txToUpdate.id = confirmation.id;
-                txToUpdate.timestamp = confirmation.timestamp;
-                txToUpdate.comment = confirmation.comment;
-                txToUpdate.linkedTxHash = confirmation.linkedTxHash;
-                txToUpdate.fee = confirmation.fee || '0';
-                // ##### FIX 3 END #####
-
+                state.userStore.chain[receiveTxIndex].status = 'completed';
+                state.userStore.chain[receiveTxIndex].from = confirmation.senderAddress;
                 WalletLogic.buildTransactionIndex();
                 localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore));
                 CacheManager.invalidate(state.wallet.address);
@@ -849,11 +839,11 @@
         };
         function setLoader(loaderId, isLoading) { document.getElementById(loaderId).classList.toggle('hidden', !isLoading); }
         function setStatus(element, message, type = '') { if (!element) return;
-            SecurityUtils.setTextContent(element, message);
-            element.className = 'status-box'; if (type) element.classList.add(type); }
+        SecurityUtils.setTextContent(element, message);
+        element.className = 'status-box'; if (type) element.classList.add(type); }
         function resetViewInputs(viewId) { const view = document.getElementById(viewId);
-            if (!view) return; view.querySelectorAll('input, textarea').forEach(input => { if (input.type !== 'file') input.value = ''; }); const statusBox = view.querySelector('.status-box');
-            if (statusBox) SecurityUtils.setTextContent(statusBox, ''); }
+        if (!view) return; view.querySelectorAll('input, textarea').forEach(input => { if (input.type !== 'file') input.value = ''; }); const statusBox = view.querySelector('.status-box');
+        if (statusBox) SecurityUtils.setTextContent(statusBox, ''); }
         async function updateBalanceAndRender() {
             try {
                 await WalletLogic.getServerAuthoritativeBalance();
@@ -864,57 +854,55 @@
             }
         }
         function generateQrCode(data, containerId) { const container = document.getElementById(containerId);
-            container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10);
-            const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); }
+        container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10);
+        const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); }
         function abbreviateAddress(address) { if (!address) return ''; const sanitized = SecurityUtils.sanitizeAddress(address); return `${sanitized.substring(0, 6)}...${sanitized.substring(sanitized.length - 4)}`; }
         function stopScanner() { if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); state.cameraStream = null; state.isScannerActive = false; } }
         async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; 
-            const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status');
-            setStatus(sendStatusEl, '');
-            loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err);
-            SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false;
-            } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth;
-            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info');
-            let isPaymentRequest = false; try { const request = JSON.parse(code.data);
-            if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true;
-            Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); 
         
-            // ##### FIX: Create and sign pre-authorization message for DoS protection #####
-            const preAuthTimestamp = Date.now();
-            const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`;
-            const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
-            const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' /* FIX: No default comment */, request.linkedTxHash, preAuthTimestamp, preAuthSignature /* FIX: Added missing params */); 
+        const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status');
+        setStatus(sendStatusEl, '');
+        loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err);
+        SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false;
+        } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth;
+        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info');
+        let isPaymentRequest = false; try { const request = JSON.parse(code.data);
+        if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true;
+        Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); 
         
-            state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit } };
-            const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountDecimal = ethers.formatUnits(request.amount, state.config.PRECISION); const feeDecimal = ethers.formatUnits(fee, state.config.PRECISION); const totalDebitDecimal = ethers.formatUnits(totalDebit, state.config.PRECISION);
-            const confirmAmountHTML = `Amount: $${parseFloat(amountDecimal).toFixed(2)}<br><span style="font-size: 14px; opacity: 0.7;">Fee (${(state.config.FEE_PERCENTAGE*100).toFixed(1)}%): +$${parseFloat(feeDecimal).toFixed(2)}</span><br><strong style="font-size: 18px;">Total: $${parseFloat(totalDebitDecimal).toFixed(2)}</strong>`;
-            SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong']);
-            SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); 
-            SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); // FIX: Ensure comment display is blank
-            await showView('send-confirm-view');
-            }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); });
-            } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data;
-            setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus();
-            } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000);
-            } } return; } } requestAnimationFrame(tick); } }
+        // ##### FIX: Create and sign pre-authorization message for DoS protection #####
+        const preAuthTimestamp = Date.now();
+        const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`;
+        const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
+        
+        const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' /* FIX: No default comment */, request.linkedTxHash, preAuthTimestamp, preAuthSignature /* FIX: Added missing params */); 
+        
+        state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit } };
+        const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountDecimal = ethers.formatUnits(request.amount, state.config.PRECISION); const feeDecimal = ethers.formatUnits(fee, state.config.PRECISION); const totalDebitDecimal = ethers.formatUnits(totalDebit, state.config.PRECISION);
+        const confirmAmountHTML = `Amount: $${parseFloat(amountDecimal).toFixed(2)}<br><span style="font-size: 14px; opacity: 0.7;">Fee (${(state.config.FEE_PERCENTAGE*100).toFixed(1)}%): +$${parseFloat(feeDecimal).toFixed(2)}</span><br><strong style="font-size: 18px;">Total: $${parseFloat(totalDebitDecimal).toFixed(2)}</strong>`;
+        SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong']);
+        SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); 
+        SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); // FIX: Ensure comment display is blank
+        await showView('send-confirm-view');
+        }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); });
+        } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data;
+        setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus();
+        } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000);
+        } } return; } } requestAnimationFrame(tick); } }
         async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner();
-            if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active');
-            if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); BackgroundSync.start(); } if (id === 'send-view') { startScanner();
-            } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code');
-            } }
+        if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active');
+        if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); BackgroundSync.start(); } if (id === 'send-view') { startScanner();
+        } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code');
+        } }
         function renderTransactionHistory() {
             const listUl = document.getElementById('transaction-list-ul');
             listUl.innerHTML = '';
             if (!state.userStore || !state.userStore.chain) return;
-
-            // ##### FIX 2 START: Filter by status to hide pending requests #####
             const transactions = state.userStore.chain
-                .filter(tx => tx.type !== 'creation' && tx.status !== 'pending_request')
+                .filter(tx => tx.type !== 'creation' && tx.type !== 'pending_request')
                 .slice(-10).reverse();
-            // ##### FIX 2 END #####
-            
             if (transactions.length === 0) {
                 const item = document.createElement('li');
                 item.className = 'no-transactions';
@@ -1183,11 +1171,11 @@
                 try {
                     const senderTxHash = WalletLogic.precomputeTransactionHash({
                         type: 'send',
-                         amount: amountIntString,
+                        amount: amountIntString,
                         fee: '0', // Fee is calculated on server, not part of this hash
                         from: state.wallet.address,
                         to: recipientAddress
-                     });
+                    });
                     // ##### FIX: Create and sign pre-authorization message for DoS protection #####
                     const preAuthTimestamp = Date.now();
                     const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`;
@@ -1254,21 +1242,42 @@
                 SecurityUtils.setTextContent(timerEl, `Expires in: ${minutes}:${seconds}`);
                 if (timeLeft <= 0) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; setStatus(statusMsg, 'Payment request expired.', 'error');
                 document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } };
-                updateTimer(); state.activePollingTimer = setInterval(async () => { updateTimer(); if (timeLeft <= 0) return; try { const confirmation = await SupabaseLedger.findConfirmation(request.linkedTxHash); if (confirmation) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; timerEl.style.display = 'none'; setStatus(statusMsg, 'Payment detected! Finalizing...', 'info'); 
-                
-                // ##### FIX 1 START: Add handling for finalization failure #####
-                if (await WalletLogic.finalizePayment(confirmation)) { 
-                    const amountDecimal = ethers.formatUnits(confirmation.amount, state.config.PRECISION); 
-                    setStatus(statusMsg, `Success! $${parseFloat(amountDecimal).toFixed(2)} received.`, 'success'); 
-                    document.querySelector('#waiting-on-payment .loader').style.display = 'none'; 
-                    setTimeout(async () => { await showView('wallet-view'); }, 2000); 
-                } else {
-                    setStatus(statusMsg, 'Error: Failed to finalize transaction locally.', 'error');
-                    document.querySelector('#waiting-on-payment .loader').style.display = 'none';
-                }
-                // ##### FIX 1 END #####
+                updateTimer(); 
+                state.activePollingTimer = setInterval(async () => {
+                    updateTimer();
+                    if (timeLeft <= 0) return;
+                    try {
+                        const confirmation = await SupabaseLedger.findConfirmation(request.linkedTxHash);
+                        if (confirmation) {
+                            clearInterval(state.activePollingTimer);
+                            state.activePollingTimer = null;
+                            timerEl.style.display = 'none';
+                            setStatus(statusMsg, 'Payment detected! Finalizing...', 'info');
 
-                } } catch (err) { console.error("Polling error:", err); setStatus(statusMsg, 'Network error while checking for payment.', 'error'); clearInterval(state.activePollingTimer); state.activePollingTimer = null; } }, state.config.POLLING_INTERVAL);
+                            // FIX: Manually add the linkedTxHash back to the confirmation object.
+                            // The server 'findConfirmation' endpoint omits this crucial field.
+                            confirmation.linkedTxHash = request.linkedTxHash;
+
+                            if (await WalletLogic.finalizePayment(confirmation)) {
+                                const amountDecimal = ethers.formatUnits(confirmation.amount, state.config.PRECISION);
+                                setStatus(statusMsg, `Success! $${parseFloat(amountDecimal).toFixed(2)} received.`, 'success');
+                                document.querySelector('#waiting-on-payment .loader').style.display = 'none';
+                                setTimeout(async () => {
+                                    await showView('wallet-view');
+                                }, 2000);
+                            } else {
+                                // Handle the case where finalization fails unexpectedly.
+                                setStatus(statusMsg, 'Payment confirmed but failed to update wallet. Please restart.', 'error');
+                                document.querySelector('#waiting-on-payment .loader').style.display = 'none';
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Polling error:", err);
+                        setStatus(statusMsg, 'Network error while checking for payment.', 'error');
+                        clearInterval(state.activePollingTimer);
+                        state.activePollingTimer = null;
+                    }
+                }, state.config.POLLING_INTERVAL);
             });
 
             document.getElementById('confirm-payment-button').addEventListener('click', async (event) => {
@@ -1309,7 +1318,7 @@
                     return;
                 }
             
-                 setStatus(statusEl, 'Preparing image...', 'info');
+                setStatus(statusEl, 'Preparing image...', 'info');
                 try {
                     const resizedDataUrl = await CoreLogic.Utils.resizeImage(file, CoreLogic.Constants.MAX_IMAGE_DIMENSION);
                     const processedDataUrl = await CoreLogic.Utils.preprocessImage(resizedDataUrl);
