@@ -755,84 +755,95 @@
                 }
             },
             finalizePayment: async (confirmation) => {
-                const receiveTxIndex = state.userStore.chain.findIndex(tx => tx.hash === confirmation.linkedTxHash && tx.status === 'pending_request');
-                if (receiveTxIndex === -1) {
+                // Find the original pending request using its hash, which was used as the linkedTxHash in the QR code.
+                const receiveTxIndex = state.userStore.chain.findIndex(tx => tx.hash === confirmation.linkedTxHash && tx.status === 'pending_request'); [cite_start]// [cite: 296]
+
+                [cite_start]if (receiveTxIndex === -1) { // [cite: 297]
                      // This could be a new tx not initiated by a request, so add it
-                    if (await WalletLogic.processDiscoveredTransaction(confirmation)) {
-                        return true;
+                    [cite_start]if (await WalletLogic.processDiscoveredTransaction(confirmation)) { // [cite: 297]
+                        return true; [cite_start]// [cite: 297]
                     }
-                    console.error("Finalize Error: Could not find pending transaction.");
-                    return false;
+                    console.error("Finalize Error: Could not find pending transaction."); [cite_start]// [cite: 298]
+                    return false; [cite_start]// [cite: 299]
                 }
-                state.userStore.chain[receiveTxIndex].status = 'completed';
-                state.userStore.chain[receiveTxIndex].from = confirmation.senderAddress;
-                WalletLogic.buildTransactionIndex();
-                localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore));
-                CacheManager.invalidate(state.wallet.address);
-                return true;
+
+                // FIX: Update the local transaction with the final, authoritative details from the server.
+                const localTx = state.userStore.chain[receiveTxIndex];
+                localTx.status = 'completed'; [cite_start]// [cite: 300]
+                localTx.from = confirmation.senderAddress; [cite_start]// [cite: 300]
+                localTx.id = confirmation.id; 
+                localTx.timestamp = confirmation.timestamp;
+                localTx.comment = confirmation.comment;
+                localTx.linkedTxHash = confirmation.linkedTxHash;
+
+                // Rebuild the index to ensure data is fresh and synced.
+                WalletLogic.buildTransactionIndex(); [cite_start]// [cite: 300]
+                localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore)); [cite_start]// [cite: 300]
+                CacheManager.invalidate(state.wallet.address); [cite_start]// [cite: 300]
+                return true; [cite_start]// [cite: 300]
             },
             processDiscoveredTransaction: async (confirmation) => {
-                const txKey = confirmation.linkedTxHash;
-                if (!txKey || state.transactionIndex.has(txKey)) {
-                    return false; // Already processed or invalid, ignore.
+                const txKey = confirmation.linkedTxHash; [cite_start]// [cite: 301]
+                [cite_start]if (!txKey || state.transactionIndex.has(txKey)) { // [cite: 301]
+                    return false; [cite_start]// [cite: 302]
                 }
                 
-                WalletLogic.addToChain({ 
-                    id: confirmation.id, 
-                    type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive', 
-                    amount: confirmation.amount, // amount is integer string
-                    from: confirmation.senderAddress, 
-                    to: confirmation.receiverAddress, 
-                    status: 'completed', 
-                    linkedTxHash: confirmation.linkedTxHash, 
-                    timestamp: confirmation.timestamp, 
-                    comment: confirmation.comment 
+                [cite_start]WalletLogic.addToChain({  // [cite: 303]
+                    [cite_start]id: confirmation.id,  // [cite: 303]
+                    type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? [cite_start]'charge' : 'receive',  // [cite: 303]
+                    [cite_start]amount: confirmation.amount, // [cite: 303]
+                    [cite_start]from: confirmation.senderAddress,  // [cite: 303]
+                    [cite_start]to: confirmation.receiverAddress,  // [cite: 303]
+                    [cite_start]status: 'completed',  // [cite: 303]
+                    [cite_start]linkedTxHash: confirmation.linkedTxHash,  // [cite: 304]
+                    [cite_start]timestamp: confirmation.timestamp,  // [cite: 304]
+                    [cite_start]comment: confirmation.comment  // [cite: 304]
                 });
-                return true; 
+                return true; [cite_start]// [cite: 305]
             },
              synchronizeChainFromServer: async () => {
-                if (!state.wallet) return;
-                console.log("Synchronizing full transaction history from server...");
+                if (!state.wallet) return; [cite_start]// [cite: 306]
+                console.log("Synchronizing full transaction history from server..."); [cite_start]// [cite: 306]
                 try {
-                    const [incoming, outgoing] = await Promise.all([
-                        SupabaseLedger.findIncomingTxs(state.wallet.address),
-                        SupabaseLedger.findOutgoingTxs(state.wallet.address)
+                    [cite_start]const [incoming, outgoing] = await Promise.all([ // [cite: 306]
+                        [cite_start]SupabaseLedger.findIncomingTxs(state.wallet.address), // [cite: 306]
+                        [cite_start]SupabaseLedger.findOutgoingTxs(state.wallet.address) // [cite: 306]
                     ]);
 
-                    const allTxs = [...incoming, ...outgoing];
+                    const allTxs = [...incoming, ...outgoing]; [cite_start]// [cite: 307]
                     // Remove duplicates that might occur if a user sends to themselves (though blocked by UI)
-                    const uniqueTxs = Array.from(new Map(allTxs.map(tx => [tx.linkedTxHash, tx])).values());
+                    const uniqueTxs = Array.from(new Map(allTxs.map(tx => [tx.linkedTxHash, tx])).values()); [cite_start]// [cite: 307]
                     // Keep only transactions that aren't fees
-                    const userTxs = uniqueTxs.filter(tx => tx.type !== 'fee');
-                    userTxs.sort((a, b) => a.timestamp - b.timestamp);
+                    const userTxs = uniqueTxs.filter(tx => tx.type !== 'fee'); [cite_start]// [cite: 308]
+                    userTxs.sort((a, b) => a.timestamp - b.timestamp); [cite_start]// [cite: 309]
                     
                     // Reset the chain but keep the genesis block
-                    const genesisBlock = state.userStore.chain[0];
-                    state.userStore.chain = [genesisBlock];
-                    state.transactionIndex.clear();
-                    state.transactionIndex.set(genesisBlock.hash, genesisBlock);
+                    const genesisBlock = state.userStore.chain[0]; [cite_start]// [cite: 309]
+                    state.userStore.chain = [genesisBlock]; [cite_start]// [cite: 310]
+                    state.transactionIndex.clear(); [cite_start]// [cite: 310]
+                    state.transactionIndex.set(genesisBlock.hash, genesisBlock); [cite_start]// [cite: 310]
 
-                    for (const tx of userTxs) {
-                        const txType = tx.senderAddress.toLowerCase() === state.wallet.address.toLowerCase() 
-                            ? 'send' 
-                            : (tx.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive');
-                        WalletLogic.addToChain({
-                            id: tx.id,
-                            type: txType,
-                            amount: tx.amount,
-                            fee: tx.fee || '0',
-                            from: tx.senderAddress,
-                            to: tx.receiverAddress,
-                            status: 'completed',
-                            linkedTxHash: tx.linkedTxHash,
-                            timestamp: tx.timestamp,
-                            comment: tx.comment
+                    [cite_start]for (const tx of userTxs) { // [cite: 310]
+                        [cite_start]const txType = tx.senderAddress.toLowerCase() === state.wallet.address.toLowerCase()  // [cite: 310]
+                            ? [cite_start]'send' // [cite: 311]
+                            : (tx.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive'); [cite_start]// [cite: 311]
+                        [cite_start]WalletLogic.addToChain({ // [cite: 312]
+                            [cite_start]id: tx.id, // [cite: 312]
+                            [cite_start]type: txType, // [cite: 312]
+                            [cite_start]amount: tx.amount, // [cite: 312]
+                            fee: tx.fee || [cite_start]'0', // [cite: 313]
+                            [cite_start]from: tx.senderAddress, // [cite: 313]
+                            [cite_start]to: tx.receiverAddress, // [cite: 313]
+                            [cite_start]status: 'completed', // [cite: 314]
+                            [cite_start]linkedTxHash: tx.linkedTxHash, // [cite: 314]
+                            [cite_start]timestamp: tx.timestamp, // [cite: 314]
+                            [cite_start]comment: tx.comment // [cite: 314]
                         });
                     }
-                    console.log(`Synchronization complete. Local chain has ${state.userStore.chain.length} transactions.`);
-                    localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore));
+                    console.log(`Synchronization complete. Local chain has ${state.userStore.chain.length} transactions.`); [cite_start]// [cite: 316]
+                    localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.userStore)); [cite_start]// [cite: 317]
                 } catch(e) {
-                    console.error("Failed to synchronize chain from server:", e);
+                    console.error("Failed to synchronize chain from server:", e); [cite_start]// [cite: 317]
                     // Do not throw, as this shouldn't block the app from starting
                 }
             }
@@ -872,139 +883,139 @@
         if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true;
         Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); 
         
-        // ##### FIX: Create and sign pre-authorization message for DoS protection #####
-        const preAuthTimestamp = Date.now();
-        const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`;
-        const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
+        [cite_start]const preAuthTimestamp = Date.now(); // [cite: 337]
+        const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`; [cite_start]// [cite: 337]
+        const preAuthSignature = await state.wallet.signMessage(preAuthMessage); [cite_start]// [cite: 337]
         
-        const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' /* FIX: No default comment */, request.linkedTxHash, preAuthTimestamp, preAuthSignature /* FIX: Added missing params */); 
+        const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' /* FIX: No default comment */, request.linkedTxHash, preAuthTimestamp, preAuthSignature /* FIX: Added missing params */);  [cite_start]// [cite: 337]
         
-        state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit } };
-        const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountDecimal = ethers.formatUnits(request.amount, state.config.PRECISION); const feeDecimal = ethers.formatUnits(fee, state.config.PRECISION); const totalDebitDecimal = ethers.formatUnits(totalDebit, state.config.PRECISION);
-        const confirmAmountHTML = `Amount: $${parseFloat(amountDecimal).toFixed(2)}<br><span style="font-size: 14px; opacity: 0.7;">Fee (${(state.config.FEE_PERCENTAGE*100).toFixed(1)}%): +$${parseFloat(feeDecimal).toFixed(2)}</span><br><strong style="font-size: 18px;">Total: $${parseFloat(totalDebitDecimal).toFixed(2)}</strong>`;
-        SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong']);
-        SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); 
-        SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); // FIX: Ensure comment display is blank
-        await showView('send-confirm-view');
-        }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); });
-        } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data;
-        setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus();
-        } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000);
+        state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit } }; [cite_start]// [cite: 337]
+        const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountDecimal = ethers.formatUnits(request.amount, state.config.PRECISION); const feeDecimal = ethers.formatUnits(fee, state.config.PRECISION); const totalDebitDecimal = ethers.formatUnits(totalDebit, state.config.PRECISION); [cite_start]// [cite: 338]
+        const confirmAmountHTML = `Amount: $${parseFloat(amountDecimal).toFixed(2)}<br><span style="font-size: 14px; opacity: 0.7;">Fee (${(state.config.FEE_PERCENTAGE*100).toFixed(1)}%): +$${parseFloat(feeDecimal).toFixed(2)}</span><br><strong style="font-size: 18px;">Total: $${parseFloat(totalDebitDecimal).toFixed(2)}</strong>`; [cite_start]// [cite: 339]
+        SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong']); [cite_start]// [cite: 339]
+        SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress);  [cite_start]// [cite: 340]
+        SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); [cite_start]// FIX: Ensure comment display is blank // [cite: 340]
+        await showView('send-confirm-view'); [cite_start]// [cite: 340]
+        }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); }); [cite_start]// [cite: 341]
+        } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data; [cite_start]// [cite: 342]
+        setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus(); [cite_start]// [cite: 343]
+        } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000); [cite_start]// [cite: 344]
         } } return; } } requestAnimationFrame(tick); } }
-        async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner();
-        if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active');
-        if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); BackgroundSync.start(); } if (id === 'send-view') { startScanner();
-        } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code');
+        async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner(); [cite_start]// [cite: 345]
+        if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active'); [cite_start]// [cite: 346]
+        if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); BackgroundSync.start(); } if (id === 'send-view') { startScanner(); [cite_start]// [cite: 347]
+        } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code'); [cite_start]// [cite: 348]
         } }
         function renderTransactionHistory() {
-            const listUl = document.getElementById('transaction-list-ul');
-            listUl.innerHTML = '';
-            if (!state.userStore || !state.userStore.chain) return;
-            const transactions = state.userStore.chain
-                .filter(tx => tx.type !== 'creation' && tx.type !== 'pending_request')
-                .slice(-10).reverse();
-            if (transactions.length === 0) {
-                const item = document.createElement('li');
-                item.className = 'no-transactions';
-                SecurityUtils.setTextContent(item, 'No transactions found.');
-                listUl.appendChild(item);
+            const listUl = document.getElementById('transaction-list-ul'); [cite_start]// [cite: 349]
+            listUl.innerHTML = ''; [cite_start]// [cite: 350]
+            if (!state.userStore || !state.userStore.chain) return; [cite_start]// [cite: 350]
+            [cite_start]const transactions = state.userStore.chain // [cite: 350]
+                [cite_start].filter(tx => tx.type !== 'creation' && tx.type !== 'pending_request') // [cite: 350]
+                .slice(-10).reverse(); [cite_start]// [cite: 350]
+            [cite_start]if (transactions.length === 0) { // [cite: 351]
+                const item = document.createElement('li'); [cite_start]// [cite: 351]
+                item.className = 'no-transactions'; [cite_start]// [cite: 352]
+                SecurityUtils.setTextContent(item, 'No transactions found.'); [cite_start]// [cite: 352]
+                listUl.appendChild(item); [cite_start]// [cite: 352]
                 return;
             }
             transactions.forEach((tx, index) => {
-                const isSent = tx.type === 'send';
-                const typeText = isSent ? 'Sent' : (tx.comment || (tx.type === 'charge' ? 'Charge' : 'Received'));
-                const typeClass = isSent ? 'sent' : 'received';
-                const amountDecimal = ethers.formatUnits(tx.amount || '0', state.config.PRECISION);
-                const date = new Date(tx.timestamp).toLocaleString('en-US');
-                const item = document.createElement('li');
-                item.className = 'transaction-item animate-in';
-                item.style.cursor = 'pointer';
-                item.style.animationDelay = `${index * 0.07}s`;
-                const iconDiv = document.createElement('div');
-                iconDiv.className = `transaction-icon ${typeClass}`;
-                iconDiv.innerHTML = isSent ? SvgIcons.txSend : SvgIcons.txReceive;
-                const detailsDiv = document.createElement('div');
-                detailsDiv.className = 'transaction-details';
-                const typeSpan = document.createElement('span');
-                typeSpan.className = 'transaction-type';
-                SecurityUtils.setTextContent(typeSpan, typeText);
-                const dateSpan = document.createElement('span');
-                dateSpan.className = 'transaction-date';
-                SecurityUtils.setTextContent(dateSpan, date);
-                detailsDiv.appendChild(typeSpan);
-                detailsDiv.appendChild(dateSpan);
-                const amountSpan = document.createElement('span');
-                amountSpan.className = `transaction-amount ${typeClass}`;
-                SecurityUtils.setTextContent(amountSpan, `${isSent ? '−' : '+'}$${parseFloat(amountDecimal).toFixed(2)}`);
-                item.appendChild(iconDiv);
-                item.appendChild(detailsDiv);
-                item.appendChild(amountSpan);
-                item.addEventListener('click', () => showTransactionDetails(tx));
-                listUl.appendChild(item);
+                [cite_start]const isSent = tx.type === 'send'; // [cite: 352]
+                const typeText = isSent ? 'Sent' : (tx.comment || (tx.type === 'charge' ? 'Charge' : 'Received')); [cite_start]// [cite: 352]
+                const typeClass = isSent ? 'sent' : 'received'; [cite_start]// [cite: 352]
+                const amountDecimal = ethers.formatUnits(tx.amount || '0', state.config.PRECISION); [cite_start]// [cite: 353]
+                const date = new Date(tx.timestamp).toLocaleString('en-US'); [cite_start]// [cite: 353]
+                const item = document.createElement('li'); [cite_start]// [cite: 353]
+                item.className = 'transaction-item animate-in'; [cite_start]// [cite: 353]
+                item.style.cursor = 'pointer'; [cite_start]// [cite: 353]
+                item.style.animationDelay = `${index * 0.07}s`; [cite_start]// [cite: 354]
+                const iconDiv = document.createElement('div'); [cite_start]// [cite: 354]
+                iconDiv.className = `transaction-icon ${typeClass}`; [cite_start]// [cite: 354]
+                iconDiv.innerHTML = isSent ? SvgIcons.txSend : SvgIcons.txReceive; [cite_start]// [cite: 354]
+                const detailsDiv = document.createElement('div'); [cite_start]// [cite: 354]
+                detailsDiv.className = 'transaction-details'; [cite_start]// [cite: 355]
+                const typeSpan = document.createElement('span'); [cite_start]// [cite: 356]
+                typeSpan.className = 'transaction-type'; [cite_start]// [cite: 356]
+                SecurityUtils.setTextContent(typeSpan, typeText); [cite_start]// [cite: 356]
+                const dateSpan = document.createElement('span'); [cite_start]// [cite: 356]
+                dateSpan.className = 'transaction-date'; [cite_start]// [cite: 356]
+                SecurityUtils.setTextContent(dateSpan, date); [cite_start]// [cite: 356]
+                detailsDiv.appendChild(typeSpan); [cite_start]// [cite: 356]
+                detailsDiv.appendChild(dateSpan); [cite_start]// [cite: 356]
+                const amountSpan = document.createElement('span'); [cite_start]// [cite: 357]
+                amountSpan.className = `transaction-amount ${typeClass}`; [cite_start]// [cite: 357]
+                SecurityUtils.setTextContent(amountSpan, `${isSent ? '−' : '+'}$${parseFloat(amountDecimal).toFixed(2)}`); [cite_start]// [cite: 357]
+                item.appendChild(iconDiv); [cite_start]// [cite: 357]
+                item.appendChild(detailsDiv); [cite_start]// [cite: 357]
+                item.appendChild(amountSpan); [cite_start]// [cite: 357]
+                item.addEventListener('click', () => showTransactionDetails(tx)); [cite_start]// [cite: 358]
+                listUl.appendChild(item); [cite_start]// [cite: 358]
             });
         }
         
         function showTransactionDetails(tx) {
-            const modal = document.getElementById('transaction-detail-modal');
-            const confirmationData = tx.confirmation_data || tx;
+            const modal = document.getElementById('transaction-detail-modal'); [cite_start]// [cite: 358]
+            const confirmationData = tx.confirmation_data || tx; [cite_start]// [cite: 359]
         
-            const fromAddress = confirmationData.from || confirmationData.senderAddress || 'N/A';
-            const toAddress = confirmationData.to || confirmationData.receiverAddress || 'N/A';
-            const amountDecimal = ethers.formatUnits(confirmationData.amount || '0', state.config.PRECISION);
-            const feeDecimal = ethers.formatUnits(confirmationData.fee || '0', state.config.PRECISION);
-            SecurityUtils.setTextContent(document.getElementById('detail-id'), confirmationData.id || 'N/A');
-            SecurityUtils.setTextContent(document.getElementById('detail-status'), confirmationData.status || 'N/A');
-            SecurityUtils.setTextContent(document.getElementById('detail-type'), confirmationData.type || 'N/A');
-            SecurityUtils.setTextContent(document.getElementById('detail-datetime'), new Date(confirmationData.timestamp).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'medium' }));
-            SecurityUtils.setTextContent(document.getElementById('detail-amount'), `$${parseFloat(amountDecimal).toFixed(2)}`);
-            SecurityUtils.setTextContent(document.getElementById('detail-fee'), `$${parseFloat(feeDecimal).toFixed(2)}`);
-            SecurityUtils.setTextContent(document.getElementById('detail-from'), fromAddress);
-            SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress);
-            SecurityUtils.setTextContent(document.getElementById('detail-comment'), confirmationData.comment || 'N/A');
+            const fromAddress = confirmationData.from || confirmationData.senderAddress || 'N/A'; [cite_start]// [cite: 359]
+            const toAddress = confirmationData.to || [cite_start]// [cite: 359]
+            confirmationData.receiverAddress || 'N/A'; [cite_start]// [cite: 360]
+            const amountDecimal = ethers.formatUnits(confirmationData.amount || '0', state.config.PRECISION); [cite_start]// [cite: 360]
+            const feeDecimal = ethers.formatUnits(confirmationData.fee || '0', state.config.PRECISION); [cite_start]// [cite: 360]
+            SecurityUtils.setTextContent(document.getElementById('detail-id'), confirmationData.id || 'N/A'); [cite_start]// [cite: 361]
+            SecurityUtils.setTextContent(document.getElementById('detail-status'), confirmationData.status || 'N/A'); [cite_start]// [cite: 361]
+            SecurityUtils.setTextContent(document.getElementById('detail-type'), confirmationData.type || 'N/A'); [cite_start]// [cite: 361]
+            SecurityUtils.setTextContent(document.getElementById('detail-datetime'), new Date(confirmationData.timestamp).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'medium' })); [cite_start]// [cite: 362]
+            SecurityUtils.setTextContent(document.getElementById('detail-amount'), `$${parseFloat(amountDecimal).toFixed(2)}`); [cite_start]// [cite: 362]
+            SecurityUtils.setTextContent(document.getElementById('detail-fee'), `$${parseFloat(feeDecimal).toFixed(2)}`); [cite_start]// [cite: 362]
+            SecurityUtils.setTextContent(document.getElementById('detail-from'), fromAddress); [cite_start]// [cite: 362]
+            SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress); [cite_start]// [cite: 362]
+            SecurityUtils.setTextContent(document.getElementById('detail-comment'), confirmationData.comment || 'N/A'); [cite_start]// [cite: 363]
         
-            SecurityUtils.setTextContent(document.getElementById('detail-linked-hash'), SecurityUtils.sanitizeTransactionId(confirmationData.linkedTxHash || 'N/A'));
-            SecurityUtils.setTextContent(document.getElementById('detail-local-hash'), SecurityUtils.sanitizeTransactionId(confirmationData.hash || 'N/A'));
+            SecurityUtils.setTextContent(document.getElementById('detail-linked-hash'), SecurityUtils.sanitizeTransactionId(confirmationData.linkedTxHash || 'N/A')); [cite_start]// [cite: 363]
+            SecurityUtils.setTextContent(document.getElementById('detail-local-hash'), SecurityUtils.sanitizeTransactionId(confirmationData.hash || 'N/A')); [cite_start]// [cite: 363]
             
-            document.getElementById('detail-local-hash').closest('p').style.display = 'block';
+            document.getElementById('detail-local-hash').closest('p').style.display = 'block'; [cite_start]// [cite: 363]
         
-            modal.style.display = 'flex';
-            document.getElementById('close-modal-button').onclick = () => {
-                modal.style.display = 'none';
+            modal.style.display = 'flex'; [cite_start]// [cite: 363]
+            [cite_start]document.getElementById('close-modal-button').onclick = () => { // [cite: 364]
+                modal.style.display = 'none'; [cite_start]// [cite: 364]
             };
         }
 
         async function initializeApp() {
             try {
-                const fetchedConfig = await SupabaseLedger.getAppConfig();
-                state.config = { ...AppConstants, ...fetchedConfig };
-                loadTheme();
-                document.getElementById('manual-address-icon').innerHTML = SvgIcons.address;
-                setupEventListeners();
-                const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
-                if (storedWallet) {
-                    showView('unlock-view');
+                const fetchedConfig = await SupabaseLedger.getAppConfig(); [cite_start]// [cite: 365]
+                state.config = { ...AppConstants, ...fetchedConfig }; [cite_start]// [cite: 366]
+                loadTheme(); [cite_start]// [cite: 366]
+                document.getElementById('manual-address-icon').innerHTML = SvgIcons.address; [cite_start]// [cite: 366]
+                setupEventListeners(); [cite_start]// [cite: 366]
+                const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY); [cite_start]// [cite: 366]
+                [cite_start]if (storedWallet) { // [cite: 367]
+                    showView('unlock-view'); [cite_start]// [cite: 367]
                 } else {
-                    showView('onboarding-view');
+                    showView('onboarding-view'); [cite_start]// [cite: 368]
                 }
             } catch (e) {
-                console.error("Initialization Error:", e);
-                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not start the application. Please check your network connection and refresh the page. </p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
+                console.error("Initialization Error:", e); [cite_start]// [cite: 369]
+                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not start the application. Please check your network connection and refresh the page. </p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`; [cite_start]// [cite: 370]
             }
         }
 
         function handleFailedLoginAttempt(statusEl) {
-            state.failedLoginAttempts++;
-            const remainingAttempts = AppConstants.MAX_LOGIN_ATTEMPTS - state.failedLoginAttempts;
+            state.failedLoginAttempts++; [cite_start]// [cite: 372]
+            const remainingAttempts = AppConstants.MAX_LOGIN_ATTEMPTS - state.failedLoginAttempts; [cite_start]// [cite: 373]
         
-            if (remainingAttempts <= 0) {
-                const lockoutDurations = [2, 15, 30]; // in minutes
-                const lockoutIndex = Math.min(state.failedLoginAttempts - AppConstants.MAX_LOGIN_ATTEMPTS, lockoutDurations.length - 1);
-                const lockoutMinutes = lockoutDurations[lockoutIndex];
-                state.lockoutUntil = Date.now() + lockoutMinutes * 60 * 1000;
-                state.isLockedOut = true;
-                setStatus(statusEl, `Too many failed attempts. Please try again in ${lockoutMinutes} minutes.`, 'error');
+            [cite_start]if (remainingAttempts <= 0) { // [cite: 373]
+                const lockoutDurations = [2, 15, 30]; [cite_start]// [cite: 373]
+                const lockoutIndex = Math.min(state.failedLoginAttempts - AppConstants.MAX_LOGIN_ATTEMPTS, lockoutDurations.length - 1); [cite_start]// [cite: 374]
+                const lockoutMinutes = lockoutDurations[lockoutIndex]; [cite_start]// [cite: 375]
+                state.lockoutUntil = Date.now() + lockoutMinutes * 60 * 1000; [cite_start]// [cite: 375]
+                state.isLockedOut = true; [cite_start]// [cite: 375]
+                setStatus(statusEl, `Too many failed attempts. Please try again in ${lockoutMinutes} minutes.`, 'error'); [cite_start]// [cite: 376]
             } else {
-                setStatus(statusEl, `Incorrect password. ${remainingAttempts} attempts remaining.`, 'error');
+                setStatus(statusEl, `Incorrect password. ${remainingAttempts} attempts remaining.`, 'error'); [cite_start]// [cite: 377]
             }
         }
         
@@ -1014,89 +1025,89 @@
                 const statusEl = document.getElementById('unlock-status');
                 const pass = document.getElementById('unlock-password-input').value;
 
-                if (state.isLockedOut) {
-                    const timeLeft = Math.ceil((state.lockoutUntil - Date.now()) / 60000);
-                    if (timeLeft > 0) {
-                        setStatus(statusEl, `Account is locked. Please try again in ${timeLeft} minutes.`, 'error');
+                [cite_start]if (state.isLockedOut) { // [cite: 379]
+                    const timeLeft = Math.ceil((state.lockoutUntil - Date.now()) / 60000); [cite_start]// [cite: 379]
+                    [cite_start]if (timeLeft > 0) { // [cite: 379]
+                        setStatus(statusEl, `Account is locked. Please try again in ${timeLeft} minutes.`, 'error'); [cite_start]// [cite: 379]
                         return;
                     } else {
-                        state.isLockedOut = false;
-                        state.failedLoginAttempts = 0;
+                        state.isLockedOut = false; [cite_start]// [cite: 380]
+                        state.failedLoginAttempts = 0; [cite_start]// [cite: 380]
                     }
                 }
             
-                setStatus(statusEl, '');
-                if (!pass) {
-                    setStatus(statusEl, 'Password is required.', 'error');
-                    return;
+                setStatus(statusEl, ''); [cite_start]// [cite: 381]
+                [cite_start]if (!pass) { // [cite: 381]
+                    setStatus(statusEl, 'Password is required.', 'error'); [cite_start]// [cite: 382]
+                    return; [cite_start]// [cite: 382]
                 }
             
-                button.disabled = true;
-                setLoader('unlock-loader', true);
+                button.disabled = true; [cite_start]// [cite: 383]
+                setLoader('unlock-loader', true); [cite_start]// [cite: 384]
             
-                const success = await WalletLogic.unlockWallet(pass);
+                const success = await WalletLogic.unlockWallet(pass); [cite_start]// [cite: 384]
             
-                if (success) {
-                    state.failedLoginAttempts = 0;
-                    await showView('wallet-view');
-                    resetViewInputs('unlock-view');
+                [cite_start]if (success) { // [cite: 384]
+                    state.failedLoginAttempts = 0; [cite_start]// [cite: 384]
+                    await showView('wallet-view'); [cite_start]// [cite: 385]
+                    resetViewInputs('unlock-view'); [cite_start]// [cite: 385]
                 } else {
-                    handleFailedLoginAttempt(statusEl);
+                    handleFailedLoginAttempt(statusEl); [cite_start]// [cite: 385]
                 }
             
-                button.disabled = false;
-                setLoader('unlock-loader', false);
+                button.disabled = false; [cite_start]// [cite: 386]
+                setLoader('unlock-loader', false); [cite_start]// [cite: 387]
             });
             document.getElementById('forget-wallet-button').addEventListener('click', () => {
                 if (confirm('Are you sure you want to forget this wallet? You will need your 12-word recovery phrase to access it again.')) {
                     WalletLogic.logout();
                 }
             });
-            document.getElementById('go-to-create-wallet').addEventListener('click', () => showView('create-wallet-view'));
-            document.getElementById('go-to-restore-wallet').addEventListener('click', () => showView('restore-wallet-view'));
-            document.getElementById('back-from-create').addEventListener('click', () => { resetViewInputs('create-wallet-view'); showView('onboarding-view'); });
-            document.getElementById('back-from-restore').addEventListener('click', () => { resetViewInputs('restore-wallet-view'); showView('onboarding-view'); });
-            document.getElementById('back-from-charge').addEventListener('click', () => showView('wallet-view'));
-            document.getElementById('back-from-banknote-confirm').addEventListener('click', () => showView('charge-view'));
-            document.getElementById('back-from-receive').addEventListener('click', () => showView('wallet-view'));
-            document.getElementById('back-from-send-confirm').addEventListener('click', () => showView('send-manual-view'));
-            document.getElementById('back-from-qr-display').addEventListener('click', () => { showView('wallet-view'); });
-            document.getElementById('show-send-view-button').addEventListener('click', () => { resetViewInputs('send-manual-view'); resetViewInputs('send-view'); showView('send-options-view'); });
-            document.getElementById('go-to-send-manual').addEventListener('click', () => showView('send-manual-view'));
-            document.getElementById('go-to-send-scan').addEventListener('click', () => showView('send-view'));
-            document.getElementById('back-from-send-options').addEventListener('click', () => showView('wallet-view'));
-            document.getElementById('back-from-send').addEventListener('click', () => showView('send-options-view'));
-            document.getElementById('back-from-send-manual').addEventListener('click', () => showView('send-options-view'));
-            let generatedMnemonic = '';
+            document.getElementById('go-to-create-wallet').addEventListener('click', () => showView('create-wallet-view')); [cite_start]// [cite: 388]
+            document.getElementById('go-to-restore-wallet').addEventListener('click', () => showView('restore-wallet-view')); [cite_start]// [cite: 388]
+            document.getElementById('back-from-create').addEventListener('click', () => { resetViewInputs('create-wallet-view'); showView('onboarding-view'); }); [cite_start]// [cite: 388]
+            document.getElementById('back-from-restore').addEventListener('click', () => { resetViewInputs('restore-wallet-view'); showView('onboarding-view'); }); [cite_start]// [cite: 389]
+            document.getElementById('back-from-charge').addEventListener('click', () => showView('wallet-view')); [cite_start]// [cite: 389]
+            document.getElementById('back-from-banknote-confirm').addEventListener('click', () => showView('charge-view')); [cite_start]// [cite: 389]
+            document.getElementById('back-from-receive').addEventListener('click', () => showView('wallet-view')); [cite_start]// [cite: 389]
+            document.getElementById('back-from-send-confirm').addEventListener('click', () => showView('send-manual-view')); [cite_start]// [cite: 390]
+            document.getElementById('back-from-qr-display').addEventListener('click', () => { showView('wallet-view'); }); [cite_start]// [cite: 390]
+            document.getElementById('show-send-view-button').addEventListener('click', () => { resetViewInputs('send-manual-view'); resetViewInputs('send-view'); showView('send-options-view'); }); [cite_start]// [cite: 390]
+            document.getElementById('go-to-send-manual').addEventListener('click', () => showView('send-manual-view')); [cite_start]// [cite: 391]
+            document.getElementById('go-to-send-scan').addEventListener('click', () => showView('send-view')); [cite_start]// [cite: 391]
+            document.getElementById('back-from-send-options').addEventListener('click', () => showView('wallet-view')); [cite_start]// [cite: 391]
+            document.getElementById('back-from-send').addEventListener('click', () => showView('send-options-view')); [cite_start]// [cite: 391]
+            document.getElementById('back-from-send-manual').addEventListener('click', () => showView('send-options-view')); [cite_start]// [cite: 391]
+            let generatedMnemonic = ''; [cite_start]// [cite: 392]
             document.getElementById('create-wallet-button').addEventListener('click', async (event) => { 
                 const button = event.target;
                 const statusEl = document.getElementById('create-status'); 
                 const pass = document.getElementById('create-password-input').value.trim();
                 const confirmPass = document.getElementById('confirm-password-input').value.trim(); 
-                setStatus(statusEl, ''); 
-                if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } 
-                if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } 
-                button.disabled = true; setLoader('create-loader', true); 
+                [cite_start]setStatus(statusEl, '');  // [cite: 393]
+                if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; [cite_start]}  // [cite: 393]
+                if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; [cite_start]}  // [cite: 393]
+                button.disabled = true; setLoader('create-loader', true);  [cite_start]// [cite: 393]
                 
-                const { mnemonic, userStore, wallet } = await WalletLogic.createWallet(pass); 
-                generatedMnemonic = mnemonic; 
-                state.tempUserStore = userStore;
-                state.tempWallet = wallet;
-                SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic);
-                showView('seed-phrase-view'); 
-                button.disabled = false; setLoader('create-loader', false); 
+                const { mnemonic, userStore, wallet } = await WalletLogic.createWallet(pass);  [cite_start]// [cite: 394]
+                generatedMnemonic = mnemonic;  [cite_start]// [cite: 394]
+                state.tempUserStore = userStore; [cite_start]// [cite: 394]
+                state.tempWallet = wallet; [cite_start]// [cite: 394]
+                SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic); [cite_start]// [cite: 395]
+                showView('seed-phrase-view');  [cite_start]// [cite: 395]
+                button.disabled = false; setLoader('create-loader', false);  [cite_start]// [cite: 395]
             });
             document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => {
                 const words = generatedMnemonic.split(' ');
                 const idx1 = Math.floor(Math.random() * 6);
                 const idx2 = Math.floor(Math.random() * 6) + 6;
                 const verifyBtn = document.getElementById('verify-seed-button');
-                verifyBtn.dataset.word1 = words[idx1];
-                verifyBtn.dataset.word2 = words[idx2];
-                document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`;
-                document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`;
-                resetViewInputs('seed-confirm-view');
-                showView('seed-confirm-view');
+                [cite_start]verifyBtn.dataset.word1 = words[idx1]; // [cite: 396]
+                verifyBtn.dataset.word2 = words[idx2]; [cite_start]// [cite: 396]
+                document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`; [cite_start]// [cite: 396]
+                document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`; [cite_start]// [cite: 396]
+                resetViewInputs('seed-confirm-view'); [cite_start]// [cite: 396]
+                showView('seed-confirm-view'); [cite_start]// [cite: 397]
             });
             document.getElementById('verify-seed-button').addEventListener('click', async () => {
                 const verifyBtn = document.getElementById('verify-seed-button');
@@ -1104,44 +1115,44 @@
                 const expectedWord1 = verifyBtn.dataset.word1;
                 const expectedWord2 = verifyBtn.dataset.word2;
                 const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase();
-                const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase();
+                [cite_start]const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); // [cite: 399]
                 if (input1 === expectedWord1 && input2 === expectedWord2) {
                     localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(state.tempUserStore));
                     state.userStore = state.tempUserStore;
-                    state.wallet = state.tempWallet;
-                    state.tempUserStore = null;
-                    state.tempWallet = null;
-                    generatedMnemonic = '';
-                    resetViewInputs('seed-confirm-view');
-                    resetViewInputs('create-wallet-view');
-                    SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); 
-                    await showView('wallet-view');
+                    state.wallet = state.tempWallet; [cite_start]// [cite: 400]
+                    state.tempUserStore = null; [cite_start]// [cite: 400]
+                    state.tempWallet = null; [cite_start]// [cite: 400]
+                    generatedMnemonic = ''; [cite_start]// [cite: 400]
+                    resetViewInputs('seed-confirm-view'); [cite_start]// [cite: 401]
+                    resetViewInputs('create-wallet-view'); [cite_start]// [cite: 401]
+                    SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), '');  [cite_start]// [cite: 401]
+                    await showView('wallet-view'); [cite_start]// [cite: 401]
                 } else {
-                    setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error');
+                    setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error'); [cite_start]// [cite: 401]
                 }
             });
             document.getElementById('restore-wallet-button').addEventListener('click', async () => { 
                 const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); 
                 const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); 
                 setStatus(statusEl, ''); 
-                if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; 
+                [cite_start]if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; // [cite: 403]
                 } 
-                if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } 
-                button.disabled = true; setLoader('restore-loader', true); 
-                const success = await WalletLogic.restoreWallet(mnemonic, pass); 
-                if (success) { 
-                     await showView('wallet-view'); 
+                if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; [cite_start]}  // [cite: 404]
+                button.disabled = true; setLoader('restore-loader', true);  [cite_start]// [cite: 404]
+                const success = await WalletLogic.restoreWallet(mnemonic, pass);  [cite_start]// [cite: 404]
+                [cite_start]if (success) {  // [cite: 405]
+                     await showView('wallet-view');  [cite_start]// [cite: 405]
                 } else { 
-                    setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); 
+                    setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error');  [cite_start]// [cite: 405]
                 } 
-                button.disabled = false;
-                setLoader('restore-loader', false); 
-                resetViewInputs('restore-wallet-view'); 
+                button.disabled = false; [cite_start]// [cite: 406]
+                setLoader('restore-loader', false);  [cite_start]// [cite: 407]
+                resetViewInputs('restore-wallet-view');  [cite_start]// [cite: 407]
             });
-            document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); });
-            document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
-            document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
-            document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
+            document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); }); [cite_start]// [cite: 407]
+            document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); }); [cite_start]// [cite: 408]
+            document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); }); [cite_start]// [cite: 409]
+            document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); }); [cite_start]// [cite: 409]
             document.getElementById('send-manual-button').addEventListener('click', async (event) => {
                 const button = event.target;
                 const statusEl = document.getElementById('send-manual-status');
@@ -1149,99 +1160,99 @@
                 const amountDecimalString = document.getElementById('send-amount-input').value;
                 const comment = document.getElementById('send-comment-input').value.trim();
 
-                setStatus(statusEl, '');
+                [cite_start]setStatus(statusEl, ''); // [cite: 411]
 
-                if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; }
-                if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; }
-                if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; }
+                if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; [cite_start]} // [cite: 411]
+                if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; [cite_start]} // [cite: 411]
+                if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); [cite_start]// [cite: 411]
+                    return; [cite_start]} // [cite: 412]
 
-                let amountIntString;
+                let amountIntString; [cite_start]// [cite: 412]
                 try {
-                    const amount = parseFloat(amountDecimalString);
-                    if (isNaN(amount) || amount <= 0) throw new Error();
-                    amountIntString = ethers.parseUnits(amountDecimalString, state.config.PRECISION).toString();
+                    const amount = parseFloat(amountDecimalString); [cite_start]// [cite: 413]
+                    if (isNaN(amount) || amount <= 0) throw new Error(); [cite_start]// [cite: 414]
+                    amountIntString = ethers.parseUnits(amountDecimalString, state.config.PRECISION).toString(); [cite_start]// [cite: 414]
                 } catch (e) {
-                    setStatus(statusEl, 'Invalid amount.', 'error');
-                    return;
+                    setStatus(statusEl, 'Invalid amount.', 'error'); [cite_start]// [cite: 415]
+                    return; [cite_start]// [cite: 416]
                 }
 
-                button.disabled = true;
-                setStatus(statusEl, 'Preparing transaction with server...', 'info');
+                button.disabled = true; [cite_start]// [cite: 416]
+                setStatus(statusEl, 'Preparing transaction with server...', 'info'); [cite_start]// [cite: 417]
 
                 try {
-                    const senderTxHash = WalletLogic.precomputeTransactionHash({
-                        type: 'send',
-                        amount: amountIntString,
-                        fee: '0', // Fee is calculated on server, not part of this hash
-                        from: state.wallet.address,
-                        to: recipientAddress
-                    });
-                    // ##### FIX: Create and sign pre-authorization message for DoS protection #####
-                    const preAuthTimestamp = Date.now();
-                    const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`;
-                    const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
+                    [cite_start]const senderTxHash = WalletLogic.precomputeTransactionHash({ // [cite: 417]
+                        [cite_start]type: 'send', // [cite: 417]
+                         [cite_start]amount: amountIntString, // [cite: 417]
+                        [cite_start]fee: '0', // Fee is calculated on server, not part of this hash // [cite: 418]
+                        [cite_start]from: state.wallet.address, // [cite: 418]
+                        [cite_start]to: recipientAddress // [cite: 418]
+                     });
+                    const preAuthTimestamp = Date.now(); [cite_start]// [cite: 419]
+                    const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`; [cite_start]// [cite: 420]
+                    const preAuthSignature = await state.wallet.signMessage(preAuthMessage); [cite_start]// [cite: 420]
 
-                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(
-                        state.wallet.address, 
-                        recipientAddress, 
-                        amountIntString, 
-                        comment, 
-                        senderTxHash,
-                        preAuthTimestamp,
-                        preAuthSignature
+                    [cite_start]const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction( // [cite: 420]
+                        [cite_start]state.wallet.address,  // [cite: 420]
+                        [cite_start]recipientAddress,  // [cite: 420]
+                        [cite_start]amountIntString,  // [cite: 420]
+                        [cite_start]comment,  // [cite: 421]
+                        [cite_start]senderTxHash, // [cite: 421]
+                        [cite_start]preAuthTimestamp, // [cite: 421]
+                        [cite_start]preAuthSignature // [cite: 421]
                     );
-                    state.activeTransactionIntent = {
-                        transactionIntentId,
-                        messageToSign,
-                        details: { id, receiverAddress: recipientAddress, amount: amountIntString, comment, fee, totalDebit }
+                    [cite_start]state.activeTransactionIntent = { // [cite: 423]
+                        [cite_start]transactionIntentId, // [cite: 423]
+                        [cite_start]messageToSign, // [cite: 423]
+                        [cite_start]details: { id, receiverAddress: recipientAddress, amount: amountIntString, comment, fee, totalDebit } // [cite: 423]
                     };
 
-                    const confirmAmountEl = document.getElementById('confirm-amount-display');
-                    const feeDecimal = ethers.formatUnits(fee, state.config.PRECISION);
-                    const totalDebitDecimal = ethers.formatUnits(totalDebit, state.config.PRECISION);
-                    const confirmAmountHTML = `Amount: $${parseFloat(amountDecimalString).toFixed(2)}<br><span style="font-size: 14px; opacity: 0.7;">Fee (${(state.config.FEE_PERCENTAGE*100).toFixed(1)}%): +$${parseFloat(feeDecimal).toFixed(2)}</span><br><strong style="font-size: 18px;">Total: $${parseFloat(totalDebitDecimal).toFixed(2)}</strong>`;
-                    SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong']);
-                    SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress);
-                    SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : '');
+                    const confirmAmountEl = document.getElementById('confirm-amount-display'); [cite_start]// [cite: 424]
+                    const feeDecimal = ethers.formatUnits(fee, state.config.PRECISION); [cite_start]// [cite: 424]
+                    const totalDebitDecimal = ethers.formatUnits(totalDebit, state.config.PRECISION); [cite_start]// [cite: 424]
+                    const confirmAmountHTML = `Amount: $${parseFloat(amountDecimalString).toFixed(2)}<br><span style="font-size: 14px; opacity: 0.7;">Fee (${(state.config.FEE_PERCENTAGE*100).toFixed(1)}%): +$${parseFloat(feeDecimal).toFixed(2)}</span><br><strong style="font-size: 18px;">Total: $${parseFloat(totalDebitDecimal).toFixed(2)}</strong>`; [cite_start]// [cite: 425]
+                    SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong']); [cite_start]// [cite: 425]
+                    SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress); [cite_start]// [cite: 426]
+                    SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : ''); [cite_start]// [cite: 426]
                     
-                    await showView('send-confirm-view');
+                    await showView('send-confirm-view'); [cite_start]// [cite: 426]
                 } catch (err) {
-                    setStatus(statusEl, err.message, 'error');
+                    setStatus(statusEl, err.message, 'error'); [cite_start]// [cite: 427]
                 } finally {
-                    button.disabled = false;
+                    button.disabled = false; [cite_start]// [cite: 428]
                 }
             });
-            document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } const localTransaction = state.userStore.chain.find(tx => tx.id && tx.id.toString() === searchId); if (localTransaction) { showTransactionDetails(localTransaction); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { const displayableTx = { id: serverTransaction.id, status: 'completed', type: serverTransaction.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : (serverTransaction.senderAddress === state.wallet.address ? 'send' : 'receive'), timestamp: serverTransaction.timestamp, amount: serverTransaction.amount, fee: serverTransaction.fee || '0', from: serverTransaction.senderAddress, to: serverTransaction.receiverAddress, hash: serverTransaction.hash, linkedTxHash: serverTransaction.linkedTxHash, comment: serverTransaction.comment };
-            showTransactionDetails(displayableTx);
-            } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error);
-            alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
+            document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } const localTransaction = state.userStore.chain.find(tx => tx.id && tx.id.toString() === searchId); if (localTransaction) { showTransactionDetails(localTransaction); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { const displayableTx = { id: serverTransaction.id, status: 'completed', type: serverTransaction.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : (serverTransaction.senderAddress === state.wallet.address ? 'send' : 'receive'), timestamp: serverTransaction.timestamp, amount: serverTransaction.amount, fee: serverTransaction.fee || '0', from: serverTransaction.senderAddress, to: serverTransaction.receiverAddress, hash: serverTransaction.hash, linkedTxHash: serverTransaction.linkedTxHash, comment: serverTransaction.comment }; [cite_start]// [cite: 430, 431]
+            showTransactionDetails(displayableTx); [cite_start]// [cite: 431]
+            } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); [cite_start]// [cite: 432]
+            alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } }); [cite_start]// [cite: 433]
             document.getElementById('create-request-qr-button').addEventListener('click', () => { 
                 const amountDecimalString = document.getElementById('request-amount-input').value;
                 const statusEl = document.getElementById('receive-status'); 
 
                 let amountIntString;
                 try {
-                    const amount = parseFloat(amountDecimalString);
-                    if (isNaN(amount) || amount <= 0) throw new Error();
-                    amountIntString = ethers.parseUnits(amountDecimalString, state.config.PRECISION).toString();
+                    [cite_start]const amount = parseFloat(amountDecimalString); // [cite: 434, 435]
+                    if (isNaN(amount) || amount <= 0) throw new Error(); [cite_start]// [cite: 435]
+                    amountIntString = ethers.parseUnits(amountDecimalString, state.config.PRECISION).toString(); [cite_start]// [cite: 435]
                 } catch (e) {
-                     setStatus(statusEl, 'Please enter a valid amount.', 'error'); return; 
+                     setStatus(statusEl, 'Please enter a valid amount.', 'error'); return;  [cite_start]// [cite: 435]
                 }
 
-                const request = WalletLogic.createPaymentRequest(amountIntString); 
-                SecurityUtils.setTextContent(document.getElementById('qr-display-title'), 'Payment Request'); 
-                SecurityUtils.setTextContent(document.getElementById('qr-display-instruction'), `Show this QR to the sender to pay $${parseFloat(amountDecimalString).toFixed(2)}.`);
-                document.getElementById('qr-display-box').style.display = 'block'; 
-                generateQrCode(JSON.stringify(request), 'qr-display-box'); 
-                document.getElementById('waiting-on-payment').style.display = 'block'; 
-                const statusMsg = document.getElementById('final-status-message'), timerEl = document.getElementById('payment-timer');
-                setStatus(statusMsg, 'Waiting for sender to pay...', 'info');
-                document.querySelector('#waiting-on-payment .loader').style.display = 'block'; showView('qr-display-view'); let timeLeft = state.config.PAYMENT_REQUEST_EXPIRY;
-                const updateTimer = () => { timeLeft -= 1000;
-                const minutes = Math.floor(timeLeft / 60000), seconds = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0');
-                SecurityUtils.setTextContent(timerEl, `Expires in: ${minutes}:${seconds}`);
-                if (timeLeft <= 0) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; setStatus(statusMsg, 'Payment request expired.', 'error');
-                document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } };
+                const request = WalletLogic.createPaymentRequest(amountIntString);  [cite_start]// [cite: 436]
+                SecurityUtils.setTextContent(document.getElementById('qr-display-title'), 'Payment Request');  [cite_start]// [cite: 436]
+                SecurityUtils.setTextContent(document.getElementById('qr-display-instruction'), `Show this QR to the sender to pay $${parseFloat(amountDecimalString).toFixed(2)}.`); [cite_start]// [cite: 436]
+                document.getElementById('qr-display-box').style.display = 'block';  [cite_start]// [cite: 437]
+                generateQrCode(JSON.stringify(request), 'qr-display-box');  [cite_start]// [cite: 437]
+                document.getElementById('waiting-on-payment').style.display = 'block';  [cite_start]// [cite: 437]
+                const statusMsg = document.getElementById('final-status-message'), timerEl = document.getElementById('payment-timer'); [cite_start]// [cite: 437]
+                setStatus(statusMsg, 'Waiting for sender to pay...', 'info'); [cite_start]// [cite: 438]
+                document.querySelector('#waiting-on-payment .loader').style.display = 'block'; showView('qr-display-view'); let timeLeft = state.config.PAYMENT_REQUEST_EXPIRY; [cite_start]// [cite: 438]
+                const updateTimer = () => { timeLeft -= 1000; [cite_start]// [cite: 439]
+                const minutes = Math.floor(timeLeft / 60000), seconds = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0'); [cite_start]// [cite: 439]
+                SecurityUtils.setTextContent(timerEl, `Expires in: ${minutes}:${seconds}`); [cite_start]// [cite: 440]
+                if (timeLeft <= 0) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; setStatus(statusMsg, 'Payment request expired.', 'error'); [cite_start]// [cite: 440]
+                document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } }; [cite_start]// [cite: 441]
                 updateTimer(); 
                 state.activePollingTimer = setInterval(async () => {
                     updateTimer();
@@ -1287,20 +1298,20 @@
                 setStatus(statusEl, 'Awaiting signature and sending...', 'info');
 
                 try {
-                    const result = await WalletLogic.executePreparedTransaction();
+                    [cite_start]const result = await WalletLogic.executePreparedTransaction(); // [cite: 443]
                     if (result.success) {
                         const amountDecimal = ethers.formatUnits(state.activeTransactionIntent.details.amount, state.config.PRECISION);
-                        setStatus(statusEl, `Payment of $${parseFloat(amountDecimal).toFixed(2)} sent successfully!`, 'success');
-                        renderTransactionHistory();
-                        await BackgroundSync.performSync(); // Update balance
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                        state.activeTransactionIntent = null;
-                        await showView('wallet-view');
+                        setStatus(statusEl, `Payment of $${parseFloat(amountDecimal).toFixed(2)} sent successfully!`, 'success'); [cite_start]// [cite: 443, 444]
+                        renderTransactionHistory(); [cite_start]// [cite: 444]
+                        await BackgroundSync.performSync(); [cite_start]// Update balance // [cite: 444]
+                        await new Promise(resolve => setTimeout(resolve, 1500)); [cite_start]// [cite: 444]
+                        state.activeTransactionIntent = null; [cite_start]// [cite: 445]
+                        await showView('wallet-view'); [cite_start]// [cite: 445]
                     }
                 } catch (err) {
-                    setStatus(statusEl, `Payment Failed: ${err.message}`, 'error');
+                    setStatus(statusEl, `Payment Failed: ${err.message}`, 'error'); [cite_start]// [cite: 446]
                 } finally {
-                    button.disabled = false;
+                    button.disabled = false; [cite_start]// [cite: 447]
                 }
             });
             document.getElementById('show-charge-view-button').addEventListener('click', () => { 
@@ -1313,45 +1324,45 @@
                 if (!file) return;
                 const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
                 if (!allowedTypes.includes(file.type)) {
-                    setStatus(statusEl, 'Invalid file type. Please upload a JPEG, PNG, or WebP file.', 'error');
+                    [cite_start]setStatus(statusEl, 'Invalid file type. Please upload a JPEG, PNG, or WebP file.', 'error'); // [cite: 451]
                     event.target.value = '';
                     return;
                 }
             
-                setStatus(statusEl, 'Preparing image...', 'info');
+                setStatus(statusEl, 'Preparing image...', 'info'); [cite_start]// [cite: 452]
                 try {
                     const resizedDataUrl = await CoreLogic.Utils.resizeImage(file, CoreLogic.Constants.MAX_IMAGE_DIMENSION);
                     const processedDataUrl = await CoreLogic.Utils.preprocessImage(resizedDataUrl);
-                    const imageData = await new Promise((resolve, reject) => {
+                    [cite_start]const imageData = await new Promise((resolve, reject) => { // [cite: 453]
                         const img = new Image();
-                        img.onload = () => {
+                        [cite_start]img.onload = () => { // [cite: 454]
                             const c = document.createElement('canvas');
-                            c.width = img.width; c.height = img.height;
+                            c.width = img.width; c.height = img.height; [cite_start]// [cite: 455]
                             const ctx = c.getContext('2d');
                             ctx.drawImage(img, 0, 0);
                             resolve(ctx.getImageData(0, 0, img.width, img.height));
                         };
-                        img.onerror = reject;
+                        img.onerror = reject; [cite_start]// [cite: 456]
                         img.src = processedDataUrl;
                     });
                     const banknotePayload = await CoreLogic.Banknote.decodeQrGrid(imageData, statusEl);
                     setStatus(statusEl, 'Banknote scanned. Validating with server...', 'info');
-                    const validationResult = await SupabaseLedger.validateBanknote(banknotePayload);
+                    const validationResult = await SupabaseLedger.validateBanknote(banknotePayload); [cite_start]// [cite: 457]
 
                     if (validationResult.success) {
-                        state.tempBanknotePayload = banknotePayload;
-                        const amountDecimal = ethers.formatUnits(validationResult.amount, state.config.PRECISION);
-                        SecurityUtils.setTextContent(document.getElementById('confirm-banknote-amount-display'), `$${parseFloat(amountDecimal).toFixed(2)}`);
-                        SecurityUtils.setTextContent(document.getElementById('confirm-banknote-serial-display'), validationResult.serial);
-                        resetViewInputs('charge-view');
-                        showView('banknote-confirm-view');
+                        state.tempBanknotePayload = banknotePayload; [cite_start]// [cite: 457]
+                        const amountDecimal = ethers.formatUnits(validationResult.amount, state.config.PRECISION); [cite_start]// [cite: 458]
+                        SecurityUtils.setTextContent(document.getElementById('confirm-banknote-amount-display'), `$${parseFloat(amountDecimal).toFixed(2)}`); [cite_start]// [cite: 458]
+                        SecurityUtils.setTextContent(document.getElementById('confirm-banknote-serial-display'), validationResult.serial); [cite_start]// [cite: 458]
+                        resetViewInputs('charge-view'); [cite_start]// [cite: 458]
+                        showView('banknote-confirm-view'); [cite_start]// [cite: 458]
                     } else {
-                        throw new Error("Validation failed for an unknown reason.");
+                        throw new Error("Validation failed for an unknown reason."); [cite_start]// [cite: 459]
                     }
                 } catch (err) {
-                    setStatus(statusEl, `Validation Failed: ${SecurityUtils.sanitizeText(err.message)}`, 'error');
+                    setStatus(statusEl, `Validation Failed: ${SecurityUtils.sanitizeText(err.message)}`, 'error'); [cite_start]// [cite: 460]
                 } finally {
-                    event.target.value = '';
+                    event.target.value = ''; [cite_start]// [cite: 461]
                 }
             });
             document.getElementById('confirm-banknote-button').addEventListener('click', async (event) => {
@@ -1360,42 +1371,42 @@
 
                 if (!state.tempBanknotePayload) {
                     setStatus(statusEl, 'No banknote data to confirm.', 'error');
-                    return;
+                    [cite_start]return; // [cite: 464]
                 }
 
                 button.disabled = true;
                 setStatus(statusEl, 'Redeeming banknote...', 'info');
 
                 try {
-                    const result = await SupabaseLedger.redeemBanknote(state.tempBanknotePayload, state.wallet.address);
+                    const result = await SupabaseLedger.redeemBanknote(state.tempBanknotePayload, state.wallet.address); [cite_start]// [cite: 464, 465]
                     if (result.success) {
                         // Manually add to local chain for immediate visibility
-                        WalletLogic.addToChain({ ...result.confirmation, status: 'completed' });
-                        renderTransactionHistory();
+                        WalletLogic.addToChain({ ...result.confirmation, status: 'completed' }); [cite_start]// [cite: 465]
+                        renderTransactionHistory(); [cite_start]// [cite: 466]
 
-                        const amountDecimal = ethers.formatUnits(result.amount, state.config.PRECISION);
-                        setStatus(statusEl, `Success! $${parseFloat(amountDecimal).toFixed(2)} added.`, 'success');
+                        const amountDecimal = ethers.formatUnits(result.amount, state.config.PRECISION); [cite_start]// [cite: 466]
+                        setStatus(statusEl, `Success! $${parseFloat(amountDecimal).toFixed(2)} added.`, 'success'); [cite_start]// [cite: 467]
                         
-                        CacheManager.invalidate(state.wallet.address);
-                        await BackgroundSync.performSync(); // Trigger balance update
+                        CacheManager.invalidate(state.wallet.address); [cite_start]// [cite: 467]
+                        await BackgroundSync.performSync(); [cite_start]// Trigger balance update // [cite: 467]
                         
                         setTimeout(() => {
                             state.tempBanknotePayload = null;
-                            showView('wallet-view');
+                            [cite_start]showView('wallet-view'); // [cite: 468]
                         }, 2000);
                     }
                 } catch (err) {
-                    setStatus(statusEl, `Redemption Failed: ${err.message}`, 'error');
-                    button.disabled = false;
+                    setStatus(statusEl, `Redemption Failed: ${err.message}`, 'error'); [cite_start]// [cite: 469]
+                    button.disabled = false; [cite_start]// [cite: 470]
                 }
             });
-            document.querySelectorAll('.theme-button').forEach(button => {
+            [cite_start]document.querySelectorAll('.theme-button').forEach(button => { // [cite: 471]
                 button.addEventListener('click', (e) => {
                     applyTheme(e.target.dataset.theme);
                 });
             });
         }
-        document.addEventListener('DOMContentLoaded', initializeApp);
+        document.addEventListener('DOMContentLoaded', initializeApp); [cite_start]// [cite: 472]
     </script>
 </body>
 </html>
