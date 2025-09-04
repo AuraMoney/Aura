@@ -283,11 +283,72 @@
              .card { padding: 3rem; }
              #wallet-view .card { padding: 2.5rem 3rem; }
         }
-    </style>
+    
+/* Fiat settings and display */
+.fiat-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.fiat-main {
+  font-size: clamp(1.1rem, 2.6vw, 1.6rem);
+  font-weight: 700;
+  opacity: 0.95;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.fiat-secondary {
+  font-size: clamp(0.9rem, 1.6vw, 1.0rem);
+  opacity: 0.7;
+}
+.currency-settings-button {
+  position: absolute;
+  right: 24px;
+  top: 18px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 6px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--text-light);
+  font-size: 13px;
+}
+.currency-settings-button:hover { border-color: var(--primary-color); transform: translateY(-2px); }
+
+</style>
 </head>
 <body>
 <main>
-    <div id="unlock-view" class="view"><div class="card"><h1>Unlock Wallet</h1><p>Enter your password to unlock your Aura Wallet.</p><div class="password-wrapper"><input type="password" id="unlock-password-input" placeholder="Enter Password" required></div><div class="loader hidden" id="unlock-loader"></div><button id="unlock-wallet-button">Unlock</button><div id="unlock-status" class="status-box" aria-live="polite"></div><button id="forget-wallet-button" class="link-button">Forget wallet on this device</button></div></div>
+    <div id="unlock-view" class="view"><div class="card"><h1>Unlock Wallet</h1><p>Enter your password to unlock your Aura Wallet.</p><div class="password-wrapper"><input type="password" id="unlock-password-input" placeholder="Enter Password" required>
+<button id="currency-settings-button" class="currency-settings-button" title="Fiat settings">Fiat</button>
+
+<div id="fiat-container" class="fiat-display" aria-live="polite" style="margin-top:6px;">
+  <div id="fiat-main" class="fiat-main" aria-hidden="true"></div>
+  <div id="fiat-secondary" class="fiat-secondary" aria-hidden="true"></div>
+</div>
+
+<div id="fiat-settings-modal" class="modal-overlay" style="display: none;">
+  <div class="modal-content card" style="max-width:420px;">
+    <h2>Fiat display settings</h2>
+    <p style="opacity:.85;">Choose main (large) and optional secondary (small) fiat conversions.</p>
+    <label>Main fiat (big)</label>
+    <select id="fiat-main-select" style="width:100%; padding:10px; margin-bottom:10px;"></select>
+
+    <label>Secondary fiat (small, optional)</label>
+    <select id="fiat-secondary-select" style="width:100%; padding:10px; margin-bottom:10px;"></select>
+
+    <label>Decimals (precision)</label>
+    <input id="fiat-decimals-input" type="number" min="0" max="8" step="1" value="2" style="width:100%; padding:10px; margin-bottom:12px;">
+
+    <div style="display:flex; gap:10px;">
+      <button id="fiat-save-button">Save</button>
+      <button id="fiat-cancel-button" class="back-button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+</div><div class="loader hidden" id="unlock-loader"></div><button id="unlock-wallet-button">Unlock</button><div id="unlock-status" class="status-box" aria-live="polite"></div><button id="forget-wallet-button" class="link-button">Forget wallet on this device</button></div></div>
     <div id="onboarding-view" class="view"><div class="card"><h1>Aura Wallet</h1><p>A new generation of asset security and control</p><button id="go-to-create-wallet">Create a New Wallet</button><button id="go-to-restore-wallet" class="back-button">Restore Wallet</button></div></div>
     <div id="create-wallet-view" class="view"><div class="card"><h2>Create Password</h2><p>Choose a strong password to encrypt your wallet. This password cannot be recovered.</p><div class="password-wrapper"><input type="password" id="create-password-input" placeholder="Enter Password" required minlength="8"></div><div class="password-wrapper"><input type="password" id="confirm-password-input" placeholder="Confirm Password" required minlength="8"></div><div class="loader hidden" id="create-loader"></div><button id="create-wallet-button">Create Wallet</button><div id="create-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-create">Back</button></div></div>
     <div id="seed-phrase-view" class="view"><div class="card"><h2>Your Recovery Phrase</h2><p class="error">Write down these 12 words in a safe, offline place. This is the only way to recover your wallet.</p><div id="seed-phrase-display" class="seed-phrase-box"></div><button id="seed-phrase-confirm-button">I Have Saved My Phrase</button></div></div>
@@ -414,383 +475,93 @@
 </main>
    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js">
-// Multi-provider FX fetch with fallback (free sources)
-async function fetchFxRates(base = 'USD', symbols = []) {
-  const cacheKey = `fx:${base}:${symbols.join(',')}`;
-  const cached = CacheManager.get(cacheKey);
-  if (cached) return cached;
+// ===== FIAT SETTINGS MODULE =====
+const FIAT_CURRENCIES = [
+  { code: 'USD', label: 'US Dollar' },
+  { code: 'EUR', label: 'Euro' },
+  { code: 'AFN', label: 'Afghani' },
+  { code: 'RUB', label: 'Russian Ruble' },
+  { code: 'CNY', label: 'Chinese Yuan' },
+  { code: 'INR', label: 'Indian Rupee' },
+  { code: 'PKR', label: 'Pakistani Rupee' }
+];
 
-  const apis = [
-    // exchangerate.host
-    (b, s) => `https://api.exchangerate.host/latest?base=${encodeURIComponent(b)}${s.length ? '&symbols=' + encodeURIComponent(s.join(',')) : ''}`,
-    // ExchangeRate-API (free)
-    (b, s) => `https://open.er-api.com/v6/latest/${encodeURIComponent(b)}`,
-    // Open Exchange Rates free (requires app_id=demo for testing)
-    (b, s) => `https://openexchangerates.org/api/latest.json?app_id=demo&base=${encodeURIComponent(b)}`
-  ];
+const fiatSettings = {
+  main: localStorage.getItem('fiat_main') || 'USD',
+  secondary: localStorage.getItem('fiat_secondary') || '',
+  decimals: parseInt(localStorage.getItem('fiat_decimals') || '2', 10)
+};
 
-  let lastError;
-  for (let buildUrl of apis) {
-    const url = buildUrl(base, symbols);
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Bad response');
-      const json = await res.json();
-      let rates = null;
-
-      if (json && json.rates) {
-        rates = json.rates;
-      } else if (json && json.result === 'success' && json.rates) {
-        rates = json.rates;
-      }
-
-      if (rates) {
-        // Filter only needed symbols if provided
-        if (symbols.length) {
-          const filtered = {};
-          symbols.forEach(sym => { if (rates[sym]) filtered[sym] = rates[sym]; });
-          rates = filtered;
-        }
-        CacheManager.set(cacheKey, rates, 30000);
-        return rates;
-      }
-    } catch (err) {
-      lastError = err;
-      continue;
-    }
-  }
-
-  // fallback: last cache even if expired
-  const fallback = CacheManager.get(`${cacheKey}_fallback`);
-  if (fallback) return fallback;
-  throw lastError || new Error('All FX providers failed');
+function populateFiatSelects() {
+  const mainSelect = document.getElementById('fiat-main-select');
+  const secSelect = document.getElementById('fiat-secondary-select');
+  if (!mainSelect || !secSelect) return;
+  mainSelect.innerHTML = '<option value="">(none)</option>';
+  secSelect.innerHTML = '<option value="">(none)</option>';
+  FIAT_CURRENCIES.forEach(c => {
+    const opt1 = document.createElement('option'); opt1.value = c.code; opt1.textContent = c.code + ' — ' + c.label;
+    const opt2 = opt1.cloneNode(true);
+    mainSelect.appendChild(opt1);
+    secSelect.appendChild(opt2);
+  });
+  mainSelect.value = fiatSettings.main;
+  secSelect.value = fiatSettings.secondary;
+  document.getElementById('fiat-decimals-input').value = fiatSettings.decimals;
 }
 
-</script>
-    <script src="pako.min.js">
-// Multi-provider FX fetch with fallback (free sources)
-async function fetchFxRates(base = 'USD', symbols = []) {
-  const cacheKey = `fx:${base}:${symbols.join(',')}`;
-  const cached = CacheManager.get(cacheKey);
-  if (cached) return cached;
+document.getElementById('currency-settings-button')?.addEventListener('click', () => {
+  populateFiatSelects();
+  document.getElementById('fiat-settings-modal').style.display = 'flex';
+});
+document.getElementById('fiat-cancel-button')?.addEventListener('click', () => {
+  document.getElementById('fiat-settings-modal').style.display = 'none';
+});
+document.getElementById('fiat-save-button')?.addEventListener('click', () => {
+  fiatSettings.main = document.getElementById('fiat-main-select').value || 'USD';
+  fiatSettings.secondary = document.getElementById('fiat-secondary-select').value || '';
+  fiatSettings.decimals = parseInt(document.getElementById('fiat-decimals-input').value || '2', 10);
+  localStorage.setItem('fiat_main', fiatSettings.main);
+  localStorage.setItem('fiat_secondary', fiatSettings.secondary);
+  localStorage.setItem('fiat_decimals', fiatSettings.decimals);
+  document.getElementById('fiat-settings-modal').style.display = 'none';
+  try { updateFiatDisplay(state.currentBalance); } catch(e){}
+});
 
-  const apis = [
-    // exchangerate.host
-    (b, s) => `https://api.exchangerate.host/latest?base=${encodeURIComponent(b)}${s.length ? '&symbols=' + encodeURIComponent(s.join(',')) : ''}`,
-    // ExchangeRate-API (free)
-    (b, s) => `https://open.er-api.com/v6/latest/${encodeURIComponent(b)}`,
-    // Open Exchange Rates free (requires app_id=demo for testing)
-    (b, s) => `https://openexchangerates.org/api/latest.json?app_id=demo&base=${encodeURIComponent(b)}`
-  ];
-
-  let lastError;
-  for (let buildUrl of apis) {
-    const url = buildUrl(base, symbols);
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Bad response');
-      const json = await res.json();
-      let rates = null;
-
-      if (json && json.rates) {
-        rates = json.rates;
-      } else if (json && json.result === 'success' && json.rates) {
-        rates = json.rates;
-      }
-
-      if (rates) {
-        // Filter only needed symbols if provided
-        if (symbols.length) {
-          const filtered = {};
-          symbols.forEach(sym => { if (rates[sym]) filtered[sym] = rates[sym]; });
-          rates = filtered;
-        }
-        CacheManager.set(cacheKey, rates, 30000);
-        return rates;
-      }
-    } catch (err) {
-      lastError = err;
-      continue;
-    }
+async function updateFiatDisplay(balance) {
+  let balanceDecimal;
+  if (typeof balance === 'bigint') {
+    balanceDecimal = parseFloat(ethers.formatUnits(balance, state.config.PRECISION));
+  } else {
+    balanceDecimal = Number(balance) || 0;
   }
+  const mainEl = document.getElementById('fiat-main');
+  const secEl = document.getElementById('fiat-secondary');
+  if (!mainEl || !secEl) return;
+  if (!fiatSettings.main) { mainEl.textContent=''; secEl.textContent=''; return; }
 
-  // fallback: last cache even if expired
-  const fallback = CacheManager.get(`${cacheKey}_fallback`);
-  if (fallback) return fallback;
-  throw lastError || new Error('All FX providers failed');
+  const symbols = [fiatSettings.main]; if (fiatSettings.secondary) symbols.push(fiatSettings.secondary);
+  let rates;
+  try { rates = await fetchFxRates('USD', symbols); } catch(e) { console.error('FX fail',e); return; }
+  const mainRate = rates[fiatSettings.main]; const secRate = fiatSettings.secondary ? rates[fiatSettings.secondary] : null;
+  const mainValue = balanceDecimal * (Number(mainRate)||0);
+  mainEl.textContent = fiatSettings.main + ' ' + mainValue.toFixed(fiatSettings.decimals);
+  if (secRate) {
+    const secValue = balanceDecimal * (Number(secRate)||0);
+    secEl.textContent = fiatSettings.secondary + ' ' + secValue.toFixed(fiatSettings.decimals);
+  } else { secEl.textContent = ''; }
 }
 
-</script>
-    <script src="qrcode.js">
-// Multi-provider FX fetch with fallback (free sources)
-async function fetchFxRates(base = 'USD', symbols = []) {
-  const cacheKey = `fx:${base}:${symbols.join(',')}`;
-  const cached = CacheManager.get(cacheKey);
-  if (cached) return cached;
-
-  const apis = [
-    // exchangerate.host
-    (b, s) => `https://api.exchangerate.host/latest?base=${encodeURIComponent(b)}${s.length ? '&symbols=' + encodeURIComponent(s.join(',')) : ''}`,
-    // ExchangeRate-API (free)
-    (b, s) => `https://open.er-api.com/v6/latest/${encodeURIComponent(b)}`,
-    // Open Exchange Rates free (requires app_id=demo for testing)
-    (b, s) => `https://openexchangerates.org/api/latest.json?app_id=demo&base=${encodeURIComponent(b)}`
-  ];
-
-  let lastError;
-  for (let buildUrl of apis) {
-    const url = buildUrl(base, symbols);
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Bad response');
-      const json = await res.json();
-      let rates = null;
-
-      if (json && json.rates) {
-        rates = json.rates;
-      } else if (json && json.result === 'success' && json.rates) {
-        rates = json.rates;
-      }
-
-      if (rates) {
-        // Filter only needed symbols if provided
-        if (symbols.length) {
-          const filtered = {};
-          symbols.forEach(sym => { if (rates[sym]) filtered[sym] = rates[sym]; });
-          rates = filtered;
-        }
-        CacheManager.set(cacheKey, rates, 30000);
-        return rates;
-      }
-    } catch (err) {
-      lastError = err;
-      continue;
-    }
-  }
-
-  // fallback: last cache even if expired
-  const fallback = CacheManager.get(`${cacheKey}_fallback`);
-  if (fallback) return fallback;
-  throw lastError || new Error('All FX providers failed');
-}
+setInterval(() => {
+  try { if (state && state.currentBalance !== undefined) updateFiatDisplay(state.currentBalance); } catch(e) {}
+}, 10000);
 
 </script>
-    <script src="jsQR.js">
-// Multi-provider FX fetch with fallback (free sources)
-async function fetchFxRates(base = 'USD', symbols = []) {
-  const cacheKey = `fx:${base}:${symbols.join(',')}`;
-  const cached = CacheManager.get(cacheKey);
-  if (cached) return cached;
-
-  const apis = [
-    // exchangerate.host
-    (b, s) => `https://api.exchangerate.host/latest?base=${encodeURIComponent(b)}${s.length ? '&symbols=' + encodeURIComponent(s.join(',')) : ''}`,
-    // ExchangeRate-API (free)
-    (b, s) => `https://open.er-api.com/v6/latest/${encodeURIComponent(b)}`,
-    // Open Exchange Rates free (requires app_id=demo for testing)
-    (b, s) => `https://openexchangerates.org/api/latest.json?app_id=demo&base=${encodeURIComponent(b)}`
-  ];
-
-  let lastError;
-  for (let buildUrl of apis) {
-    const url = buildUrl(base, symbols);
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Bad response');
-      const json = await res.json();
-      let rates = null;
-
-      if (json && json.rates) {
-        rates = json.rates;
-      } else if (json && json.result === 'success' && json.rates) {
-        rates = json.rates;
-      }
-
-      if (rates) {
-        // Filter only needed symbols if provided
-        if (symbols.length) {
-          const filtered = {};
-          symbols.forEach(sym => { if (rates[sym]) filtered[sym] = rates[sym]; });
-          rates = filtered;
-        }
-        CacheManager.set(cacheKey, rates, 30000);
-        return rates;
-      }
-    } catch (err) {
-      lastError = err;
-      continue;
-    }
-  }
-
-  // fallback: last cache even if expired
-  const fallback = CacheManager.get(`${cacheKey}_fallback`);
-  if (fallback) return fallback;
-  throw lastError || new Error('All FX providers failed');
-}
-
-</script>
-    <script src="crypto-js.min.js">
-// Multi-provider FX fetch with fallback (free sources)
-async function fetchFxRates(base = 'USD', symbols = []) {
-  const cacheKey = `fx:${base}:${symbols.join(',')}`;
-  const cached = CacheManager.get(cacheKey);
-  if (cached) return cached;
-
-  const apis = [
-    // exchangerate.host
-    (b, s) => `https://api.exchangerate.host/latest?base=${encodeURIComponent(b)}${s.length ? '&symbols=' + encodeURIComponent(s.join(',')) : ''}`,
-    // ExchangeRate-API (free)
-    (b, s) => `https://open.er-api.com/v6/latest/${encodeURIComponent(b)}`,
-    // Open Exchange Rates free (requires app_id=demo for testing)
-    (b, s) => `https://openexchangerates.org/api/latest.json?app_id=demo&base=${encodeURIComponent(b)}`
-  ];
-
-  let lastError;
-  for (let buildUrl of apis) {
-    const url = buildUrl(base, symbols);
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Bad response');
-      const json = await res.json();
-      let rates = null;
-
-      if (json && json.rates) {
-        rates = json.rates;
-      } else if (json && json.result === 'success' && json.rates) {
-        rates = json.rates;
-      }
-
-      if (rates) {
-        // Filter only needed symbols if provided
-        if (symbols.length) {
-          const filtered = {};
-          symbols.forEach(sym => { if (rates[sym]) filtered[sym] = rates[sym]; });
-          rates = filtered;
-        }
-        CacheManager.set(cacheKey, rates, 30000);
-        return rates;
-      }
-    } catch (err) {
-      lastError = err;
-      continue;
-    }
-  }
-
-  // fallback: last cache even if expired
-  const fallback = CacheManager.get(`${cacheKey}_fallback`);
-  if (fallback) return fallback;
-  throw lastError || new Error('All FX providers failed');
-}
-
-</script>
-    <script src="html2canvas.min.js">
-// Multi-provider FX fetch with fallback (free sources)
-async function fetchFxRates(base = 'USD', symbols = []) {
-  const cacheKey = `fx:${base}:${symbols.join(',')}`;
-  const cached = CacheManager.get(cacheKey);
-  if (cached) return cached;
-
-  const apis = [
-    // exchangerate.host
-    (b, s) => `https://api.exchangerate.host/latest?base=${encodeURIComponent(b)}${s.length ? '&symbols=' + encodeURIComponent(s.join(',')) : ''}`,
-    // ExchangeRate-API (free)
-    (b, s) => `https://open.er-api.com/v6/latest/${encodeURIComponent(b)}`,
-    // Open Exchange Rates free (requires app_id=demo for testing)
-    (b, s) => `https://openexchangerates.org/api/latest.json?app_id=demo&base=${encodeURIComponent(b)}`
-  ];
-
-  let lastError;
-  for (let buildUrl of apis) {
-    const url = buildUrl(base, symbols);
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Bad response');
-      const json = await res.json();
-      let rates = null;
-
-      if (json && json.rates) {
-        rates = json.rates;
-      } else if (json && json.result === 'success' && json.rates) {
-        rates = json.rates;
-      }
-
-      if (rates) {
-        // Filter only needed symbols if provided
-        if (symbols.length) {
-          const filtered = {};
-          symbols.forEach(sym => { if (rates[sym]) filtered[sym] = rates[sym]; });
-          rates = filtered;
-        }
-        CacheManager.set(cacheKey, rates, 30000);
-        return rates;
-      }
-    } catch (err) {
-      lastError = err;
-      continue;
-    }
-  }
-
-  // fallback: last cache even if expired
-  const fallback = CacheManager.get(`${cacheKey}_fallback`);
-  if (fallback) return fallback;
-  throw lastError || new Error('All FX providers failed');
-}
-
-</script>
-    <script src="argon2.min.js">
-// Multi-provider FX fetch with fallback (free sources)
-async function fetchFxRates(base = 'USD', symbols = []) {
-  const cacheKey = `fx:${base}:${symbols.join(',')}`;
-  const cached = CacheManager.get(cacheKey);
-  if (cached) return cached;
-
-  const apis = [
-    // exchangerate.host
-    (b, s) => `https://api.exchangerate.host/latest?base=${encodeURIComponent(b)}${s.length ? '&symbols=' + encodeURIComponent(s.join(',')) : ''}`,
-    // ExchangeRate-API (free)
-    (b, s) => `https://open.er-api.com/v6/latest/${encodeURIComponent(b)}`,
-    // Open Exchange Rates free (requires app_id=demo for testing)
-    (b, s) => `https://openexchangerates.org/api/latest.json?app_id=demo&base=${encodeURIComponent(b)}`
-  ];
-
-  let lastError;
-  for (let buildUrl of apis) {
-    const url = buildUrl(base, symbols);
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Bad response');
-      const json = await res.json();
-      let rates = null;
-
-      if (json && json.rates) {
-        rates = json.rates;
-      } else if (json && json.result === 'success' && json.rates) {
-        rates = json.rates;
-      }
-
-      if (rates) {
-        // Filter only needed symbols if provided
-        if (symbols.length) {
-          const filtered = {};
-          symbols.forEach(sym => { if (rates[sym]) filtered[sym] = rates[sym]; });
-          rates = filtered;
-        }
-        CacheManager.set(cacheKey, rates, 30000);
-        return rates;
-      }
-    } catch (err) {
-      lastError = err;
-      continue;
-    }
-  }
-
-  // fallback: last cache even if expired
-  const fallback = CacheManager.get(`${cacheKey}_fallback`);
-  if (fallback) return fallback;
-  throw lastError || new Error('All FX providers failed');
-}
-
-</script>
+    <script src="pako.min.js"></script>
+    <script src="qrcode.js"></script>
+    <script src="jsQR.js"></script>
+    <script src="crypto-js.min.js"></script>
+    <script src="html2canvas.min.js"></script>
+    <script src="argon2.min.js"></script>
     
     <script type="module">
         if (typeof globalThis.Buffer === 'undefined') {
@@ -1834,59 +1605,6 @@ async function fetchFxRates(base = 'USD', symbols = []) {
             });
         }
         document.addEventListener('DOMContentLoaded', initializeApp);
-    
-// Multi-provider FX fetch with fallback (free sources)
-async function fetchFxRates(base = 'USD', symbols = []) {
-  const cacheKey = `fx:${base}:${symbols.join(',')}`;
-  const cached = CacheManager.get(cacheKey);
-  if (cached) return cached;
-
-  const apis = [
-    // exchangerate.host
-    (b, s) => `https://api.exchangerate.host/latest?base=${encodeURIComponent(b)}${s.length ? '&symbols=' + encodeURIComponent(s.join(',')) : ''}`,
-    // ExchangeRate-API (free)
-    (b, s) => `https://open.er-api.com/v6/latest/${encodeURIComponent(b)}`,
-    // Open Exchange Rates free (requires app_id=demo for testing)
-    (b, s) => `https://openexchangerates.org/api/latest.json?app_id=demo&base=${encodeURIComponent(b)}`
-  ];
-
-  let lastError;
-  for (let buildUrl of apis) {
-    const url = buildUrl(base, symbols);
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Bad response');
-      const json = await res.json();
-      let rates = null;
-
-      if (json && json.rates) {
-        rates = json.rates;
-      } else if (json && json.result === 'success' && json.rates) {
-        rates = json.rates;
-      }
-
-      if (rates) {
-        // Filter only needed symbols if provided
-        if (symbols.length) {
-          const filtered = {};
-          symbols.forEach(sym => { if (rates[sym]) filtered[sym] = rates[sym]; });
-          rates = filtered;
-        }
-        CacheManager.set(cacheKey, rates, 30000);
-        return rates;
-      }
-    } catch (err) {
-      lastError = err;
-      continue;
-    }
-  }
-
-  // fallback: last cache even if expired
-  const fallback = CacheManager.get(`${cacheKey}_fallback`);
-  if (fallback) return fallback;
-  throw lastError || new Error('All FX providers failed');
-}
-
-</script>
+    </script>
 </body>
 </html>
