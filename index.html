@@ -847,7 +847,7 @@
         };
 
         const FXRateProvider = (() => {
-            const API_URL = 'https://exchangerate.host/latest?from=USD&to=USD,EUR,AFN,AED,RUB';
+            const API_URL = 'https://api.exchangerate.host/latest?base=USD&symbols=USD,EUR,AFN,AED,RUB';
             return {
                 async fetchRates() {
                     try {
