@@ -847,7 +847,8 @@
         };
 
         const FXRateProvider = (() => {
-            const API_URL = 'https://api.exchangerate.host/latest?base=USD&symbols=USD,EUR,AFN,AED,RUB';
+            const API_KEY = 'a10324cb5d16bebd20ae9b2de5639463';
+            const API_URL = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/USD`;
             return {
                 async fetchRates() {
                     try {
@@ -862,7 +863,10 @@
                             throw new Error(`Failed to fetch FX rates. Status: ${response.status}`);
                         }
                         const data = await response.json();
-                        state.fxRates = { ...data.rates, USD: 1 };
+                        if (data.result === 'error') {
+                            throw new Error(`Failed to fetch FX rates: ${data['error-type']}`);
+                        }
+                        state.fxRates = { ...data.conversion_rates, USD: 1 };
                         CacheManager.set('fxRates', state.fxRates, 3600000); // Cache for 1 hour
                         console.log("Fetched and cached new FX rates:", state.fxRates);
                     } catch (error) {
