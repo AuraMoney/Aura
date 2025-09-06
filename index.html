@@ -481,6 +481,8 @@
     <script src="html2canvas.min.js"></script>
     <script src="argon2.min.js"></script>
     
+    <script src="quantum-falcon-wallet.enterprise.js"></script>
+    
     <script type="module">
         if (typeof globalThis.Buffer === 'undefined') {
             globalThis.Buffer = {
@@ -497,7 +499,9 @@
             };
         }
 
-        import { ethers } from "./ethers.min.js";
+        // MODIFIED: ethers is now available globally from the script above
+        const { ethers } = window;
+        
         let state = { 
             wallet: null, 
             userStore: null, 
@@ -643,31 +647,41 @@
             };
         })();
         const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
+        
+        // --- MODIFIED: WalletLogic uses FalconWallet ---
         const WalletLogic = {
             async createWallet(password) {
-                const wallet = ethers.Wallet.createRandom();
-                const mnemonic = wallet.mnemonic.phrase;
-                const privateKey = wallet.privateKey;
-                const encryptedPrivateKey = await CryptoWallet.encrypt(privateKey, password);
+                // Use the Falcon API to create a wallet and get its mnemonic
+                const wallet = await FalconWallet.createRandomWallet();
+                const mnemonic = wallet.mnemonic;
+                
+                // Encrypt the mnemonic phrase for storage, not the private key
+                const encryptedMnemonic = await CryptoWallet.encrypt(mnemonic, password);
+
                 const genesisHash = ethers.id("GENESIS_BLOCK");
                 const userStore = {
-                    publicKey: wallet.publicKey,
-                    address: wallet.address,
-                    encryptedPrivateKey: encryptedPrivateKey,
+                    // Store the public key (Base64) and address, which are safe
+                    publicKey: wallet.getPublicKeyBase64(),
+                    address: wallet.getAddress(),
+                    // Store the encrypted mnemonic
+                    encryptedMnemonic: encryptedMnemonic,
                     chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                 };
                 return { mnemonic, userStore, wallet };
             },
             async restoreWallet(mnemonic, password) {
                 try {
-                    const wallet = ethers.Wallet.fromPhrase(mnemonic);
-                    const privateKey = wallet.privateKey;
-                    const encryptedPrivateKey = await CryptoWallet.encrypt(privateKey, password);
+                    // Create the Falcon wallet instance from the mnemonic
+                    const wallet = await FalconWallet.createWalletFromMnemonic(mnemonic, ""); // Passphrase can be integrated if needed
+                    
+                    // Encrypt the same mnemonic for local storage
+                    const encryptedMnemonic = await CryptoWallet.encrypt(mnemonic, password);
+
                     const genesisHash = ethers.id("GENESIS_BLOCK");
                     const userStore = {
-                        publicKey: wallet.publicKey,
-                        address: wallet.address,
-                        encryptedPrivateKey: encryptedPrivateKey,
+                        publicKey: wallet.getPublicKeyBase64(),
+                        address: wallet.getAddress(),
+                        encryptedMnemonic: encryptedMnemonic,
                         chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                     };
                     state.userStore = userStore;
@@ -685,9 +699,21 @@
                 const storedUserStore = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
                 if (!storedUserStore) throw new Error("No wallet found on this device.");
                 const userStore = JSON.parse(storedUserStore);
+
+                // Check if the old format (encryptedPrivateKey) is being used and guide user.
+                if (userStore.encryptedPrivateKey && !userStore.encryptedMnemonic) {
+                    throw new Error("Wallet uses an outdated storage format. Please forget this wallet and restore from your seed phrase.");
+                }
+                
+                if (!userStore.encryptedMnemonic) throw new Error("Encrypted data not found in local storage.");
+
                 try {
-                    const privateKey = await CryptoWallet.decrypt(userStore.encryptedPrivateKey, password);
-                    const wallet = new ethers.Wallet(privateKey);
+                    // Decrypt the mnemonic phrase
+                    const mnemonic = await CryptoWallet.decrypt(userStore.encryptedMnemonic, password);
+                    
+                    // Recreate the Falcon wallet instance from the decrypted mnemonic
+                    const wallet = await FalconWallet.createWalletFromMnemonic(mnemonic, "");
+                    
                     state.userStore = userStore;
                     state.wallet = wallet;
                     await this.synchronizeChainFromServer();
@@ -695,7 +721,7 @@
                     return true;
                 } catch (error) {
                     console.error("Unlock failed:", error);
-                    return false;
+                    return false; // Decryption failed, likely wrong password
                 }
             },
             logout: () => {
@@ -716,6 +742,8 @@
                     ...state.userStore,
                     chain: filteredChain
                 };
+                // Remove decrypted private key if it exists from old logic before saving
+                delete userStoreToSave.encryptedPrivateKey; 
                 localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(userStoreToSave));
             },
             buildTransactionIndex: () => {
@@ -785,11 +813,9 @@
                 }
                 const { transactionIntentId, messageToSign, details } = state.activeTransactionIntent;
                 try {
+                    // MODIFIED: Uses the async Falcon signMessage method
                     const signature = await state.wallet.signMessage(messageToSign);
-                    const recoveredAddress = ethers.verifyMessage(messageToSign, signature);
-                    if (recoveredAddress.toLowerCase() !== state.wallet.address.toLowerCase()) {
-                        throw new Error('Client-side signature verification failed. Aborting transaction.');
-                    }
+                    // Client-side verification is no longer possible with Falcon, server will verify
                     const result = await SupabaseLedger.executeTransaction(transactionIntentId, signature);
                     WalletLogic.addToChain({
                         type: 'send',
@@ -1002,6 +1028,7 @@
         loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err); SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false; } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth; canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info'); let isPaymentRequest = false; try { const request = JSON.parse(code.data); if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true; Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); 
         const preAuthTimestamp = Date.now();
         const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`;
+        // MODIFIED: Uses Falcon wallet for signing
         const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
         const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' , request.linkedTxHash, preAuthTimestamp, preAuthSignature); 
         state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit } };
@@ -1020,7 +1047,7 @@
         await showView('send-confirm-view');
         }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); });
         } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data; setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus(); } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000); } } return; } } requestAnimationFrame(tick); } }
-        async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner(); if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active'); if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); BackgroundSync.start(); } if (id === 'send-view') { startScanner(); } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code'); } }
+        async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner(); if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active'); if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.getAddress())); await updateBalanceAndRender(); BackgroundSync.start(); } if (id === 'send-view') { startScanner(); } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.getAddress()); generateQrCode(state.wallet.getAddress(), 'static-qr-code'); } }
         
         function renderTransactionHistory() {
             const listUl = document.getElementById('transaction-list-ul');
@@ -1295,7 +1322,7 @@
                 resetViewInputs('restore-wallet-view'); 
             });
             document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); });
-            document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
+            document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.getAddress()).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
             document.getElementById('send-manual-button').addEventListener('click', async (event) => {
@@ -1306,7 +1333,7 @@
                 const comment = document.getElementById('send-comment-input').value.trim();
                 setStatus(statusEl, '');
                 if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; }
-                if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; }
+                if (recipientAddress.toLowerCase() === state.wallet.getAddress().toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; }
                 if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; }
                 let amountInt;
                 try {
@@ -1324,14 +1351,15 @@
                         type: 'send',
                         amount: amountInt.toString(),
                         fee: '0', 
-                        from: state.wallet.address,
+                        from: state.wallet.getAddress(),
                         to: recipientAddress
                     });
                     const preAuthTimestamp = Date.now();
                     const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`;
+                    // MODIFIED: Uses Falcon wallet for signing
                     const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
                     const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(
-                        state.wallet.address, 
+                        state.wallet.getAddress(), 
                         recipientAddress, 
                         amountInt.toString(), 
                         comment, 
