@@ -503,6 +503,7 @@
             }
         };
 
+        // --- NEW: Real-time update functions ---
         async function handleRealtimePayload(payload) {
             console.log('New real-time transaction received:', payload);
             const newTx = payload.new;
@@ -551,6 +552,7 @@
                 console.log('Unsubscribed from real-time updates.');
             }
         }
+        // --- END: Real-time update functions ---
         
         const FXRateProvider = (() => {
             const API_URL = 'https://open.er-api.com/v6/latest/USD';
