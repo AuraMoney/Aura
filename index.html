@@ -616,6 +616,22 @@
         } } catch (error) { console.error("Background sync failed:", error); if (syncStatusEl) setStatus(syncStatusEl, 'Sync failed. Retrying...', 'error'); } }, stop() { if (!this.isRunning) return; console.log("Stopping background sync..."); clearInterval(this.syncIntervalId); this.syncIntervalId = null; this.isRunning = false; } };
         const SupabaseLedger = (() => {
             const apiCall = async (action, payload) => {
+                // --- FIX: Add signature-based authentication to the API call ---
+                const dataFetchActions = ['findIncomingTxs', 'findOutgoingTxs'];
+                if (dataFetchActions.includes(action)) {
+                    if (!state.wallet) throw new Error("Wallet is locked. Cannot sign request.");
+                    
+                    const address = payload.receiverAddress || payload.senderAddress;
+                    if (!address) throw new Error("Address is required for this action.");
+
+                    const timestamp = Date.now();
+                    const message = `${action.toUpperCase()}:${address}:${timestamp}`;
+                    const signature = await state.wallet.signMessage(message);
+
+                    // Add auth info to the payload itself for the server to verify
+                    payload.auth = { timestamp, signature, address };
+                }
+
                 const response = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -763,8 +779,7 @@
                 
                 // --- FIX: Simplified and robust outgoing total calculation ---
                 // This correctly sums the 'amount' of all outgoing records, which includes
-                // both the main transfer and the separate fee transaction record. This is more
-                // reliable than the previous complex calculation.
+                // both the main transfer and the separate fee transaction record.
                 let outgoingTotal = 0n;
                 outgoingTxs.forEach(tx => {
                     outgoingTotal += BigInt(tx.amount || '0');
