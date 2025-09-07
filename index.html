@@ -760,12 +760,16 @@
                 incomingTxs.forEach(tx => {
                     incomingTotal += BigInt(tx.amount || '0');
                 });
+                
+                // --- FIX: Simplified and robust outgoing total calculation ---
+                // This correctly sums the 'amount' of all outgoing records, which includes
+                // both the main transfer and the separate fee transaction record. This is more
+                // reliable than the previous complex calculation.
                 let outgoingTotal = 0n;
                 outgoingTxs.forEach(tx => {
-                    if(tx.type !== 'fee') {
-                        outgoingTotal += BigInt(tx.amount || '0') + BigInt(tx.fee || '0');
-                    }
+                    outgoingTotal += BigInt(tx.amount || '0');
                 });
+
                 return incomingTotal - outgoingTotal;
             },
             getServerAuthoritativeBalance: async () => {
