@@ -206,12 +206,11 @@
 
         import { ethers } from "./ethers.min.js";
         
-        const SUPABASE_URL = 'https://yuozqhimrkyjopgidqje.supabase.co';
-        // IMPORTANT: Replace with your actual Supabase Public Anon Key
-        
-        const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/api`;
+        // --- UPDATED: No hardcoded Supabase keys ---
+        const EDGE_FUNCTION_URL = `https://yuozqhimrkyjopgidqje.supabase.co/functions/v1/api`;
 
-        
+        // This client is for REAL-TIME subscriptions ONLY. It will be initialized in initializeApp().
+        let supabaseClient;
 
         let state = { 
             wallet: null, 
@@ -229,7 +228,7 @@
             currentBalance: 0n, 
             transactionIndex: new Map(), 
             realtimeChannel: null,
-            config: null,
+            config: null, // This will be fetched from the server
             displayCurrency: 'USD',
             fxRates: { 'USD': 1 }
         };
@@ -305,18 +304,18 @@
                 });
                 const result = await response.json();
                 if (!response.ok || result.error) {
-                    throw new Error(result.error || `Supabase API error! Status: ${response.status}`);
+                    throw new Error(result.error || `Server API error! Status: ${response.status}`);
                 }
                 return result.data;
             };
             return { 
+                getPublicConfig: () => apiCall('getPublicConfig'), // <-- NEW
                 getAppConfig: () => apiCall('getAppConfig'), 
                 prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature) => 
                     apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature }),
                 executeTransaction: (transactionIntentId, signature) => apiCall('executeTransaction', { transactionIntentId, signature }),
-                // ADDED: Function to call the new server action
                 cancelTransactionIntent: (transactionIntentId) => apiCall('cancelTransactionIntent', { transactionIntentId }),
-                hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status on Supabase:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } }, 
+                hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } }, 
                 findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }), 
                 findIncomingTxs: async (receiverAddress) => { const cacheKey = `incoming_${receiverAddress}`; const cached = CacheManager.get(cacheKey); if (cached) return cached; const txs = await apiCall('findIncomingTxs', { receiverAddress }); CacheManager.set(cacheKey, txs, 20000); return txs; }, 
                 findOutgoingTxs: async (senderAddress) => { const cacheKey = `outgoing_${senderAddress}`; const cached = CacheManager.get(cacheKey); if (cached) return cached; const txs = await apiCall('findOutgoingTxs', { senderAddress }); CacheManager.set(cacheKey, txs, 20000); return txs; }, 
@@ -326,7 +325,7 @@
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress })
             };
         })();
-        const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
+        const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
         const WalletLogic = {
             async createWallet(password) {
                 const wallet = ethers.Wallet.createRandom();
@@ -503,22 +502,15 @@
             }
         };
 
-        // --- UPDATED REAL-TIME FUNCTIONS ---
-        // Updated payload handler to process both incoming and outgoing transactions
         async function handleRealtimePayload(payload, direction) {
             console.log(`New real-time ${direction} transaction received:`, payload);
-            
             const newTx = payload.new;
-            
-            // Determine transaction type based on direction and sender
             let txType;
             if (direction === 'incoming') {
                 txType = newTx.sender_address === 'BANKNOTE_ISSUER' ? 'charge' : 'receive';
             } else {
-                // For outgoing, check if it's a fee transaction
                 txType = newTx.confirmation_data?.type === 'fee' ? 'fee' : 'send';
             }
-            
             const formattedTx = {
                 id: newTx.confirmation_data?.id,
                 type: txType,
@@ -531,14 +523,9 @@
                 timestamp: new Date(newTx.created_at).getTime(),
                 comment: newTx.confirmation_data?.comment
             };
-            
-            // Only add if we don't already have this transaction
             if (!state.transactionIndex.has(formattedTx.linkedTxHash)) {
                 WalletLogic.addToChain(formattedTx);
-                
-                // Force balance update and UI refresh
                 await updateBalanceAndRender();
-                
                 const syncStatusEl = document.getElementById('sync-status');
                 if (syncStatusEl) {
                     const directionText = direction === 'incoming' ? 'received' : 'sent';
@@ -548,55 +535,23 @@
             }
         }
 
-        // Fixed real-time subscription that catches both incoming and outgoing transactions
+        // --- UPDATED: Real-time listener now checks if supabaseClient exists ---
         function startRealtimeListener() {
-            if (state.realtimeChannel || !state.wallet) return;
+            if (state.realtimeChannel || !state.wallet || !supabaseClient) return;
             
             const channel = supabaseClient.channel(`wallet-updates:${state.wallet.address}`);
             
-            // Listen for incoming transactions (where this wallet is the receiver)
-            channel.on(
-                'postgres_changes',
-                { 
-                    event: 'INSERT', 
-                    schema: 'public', 
-                    table: 'confirmations', 
-                    filter: `receiver_address=eq.${state.wallet.address}` 
-                },
-                (payload) => handleRealtimePayload(payload, 'incoming')
-            );
-            
-            // Listen for outgoing transactions (where this wallet is the sender)
-            channel.on(
-                'postgres_changes',
-                { 
-                    event: 'INSERT', 
-                    schema: 'public', 
-                    table: 'confirmations', 
-                    filter: `sender_address=eq.${state.wallet.address}` 
-                },
-                (payload) => handleRealtimePayload(payload, 'outgoing')
-            );
+            channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `receiver_address=eq.${state.wallet.address}` }, (payload) => handleRealtimePayload(payload, 'incoming'));
+            channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `sender_address=eq.${state.wallet.address}` }, (payload) => handleRealtimePayload(payload, 'outgoing'));
             
             channel.subscribe((status, err) => {
                 console.log('Subscription status:', status);
                 const syncStatusEl = document.getElementById('sync-status');
-                
-                if (status === 'SUBSCRIBED') { 
-                    console.log('Successfully subscribed to real-time wallet updates!');
-                    if(syncStatusEl) setStatus(syncStatusEl, '🟢 Real-time sync active', 'success');
-                }
-                if (status === 'CHANNEL_ERROR') {
-                    console.error(`Real-time connection error:`, err);
-                    if(syncStatusEl) setStatus(syncStatusEl, 'Real-time sync failed.', 'error');
-                }
-                if (status === 'CLOSED') {
-                    console.log('Real-time connection closed');
-                    if(syncStatusEl) setStatus(syncStatusEl, '🔴 Real-time sync disconnected', 'error');
-                }
-                if (status === 'TIMED_OUT') {
-                    console.log('Real-time connection timed out');
-                    if(syncStatusEl) setStatus(syncStatusEl, '⏰ Real-time sync timeout', 'error');
+                if(syncStatusEl) {
+                    if (status === 'SUBSCRIBED') setStatus(syncStatusEl, '🟢 Real-time sync active', 'success');
+                    if (status === 'CHANNEL_ERROR') setStatus(syncStatusEl, 'Real-time sync failed.', 'error');
+                    if (status === 'CLOSED') setStatus(syncStatusEl, '🔴 Real-time sync disconnected', 'error');
+                    if (status === 'TIMED_OUT') setStatus(syncStatusEl, '⏰ Real-time sync timeout', 'error');
                 }
             });
             
@@ -610,8 +565,7 @@
                 console.log('Unsubscribed from real-time updates.');
             }
         }
-        // --- END: Real-time update functions ---
-        
+
         const FXRateProvider = (() => {
             const API_URL = 'https://open.er-api.com/v6/latest/USD';
             return {
@@ -735,20 +689,33 @@
             if (savedSettings) { try { const settings = JSON.parse(savedSettings); state.displayCurrency = settings.display || 'USD'; } catch (e) { console.error("Could not parse currency settings, using defaults."); } }
         }
 
+        // --- UPDATED: Main app initialization ---
         async function initializeApp() {
             try {
-                const fetchedConfig = await SupabaseLedger.getAppConfig();
-                state.config = { ...AppConstants, ...fetchedConfig };
+                // 1. Fetch ALL configuration from the Edge Function
+                const publicConfig = await SupabaseLedger.getPublicConfig();
+                const appConfig = await SupabaseLedger.getAppConfig();
+                state.config = { ...AppConstants, ...appConfig };
+
+                // 2. Create the Supabase client for REAL-TIME ONLY
+                supabaseClient = supabase.createClient(publicConfig.supabaseUrl, publicConfig.supabaseAnonKey);
+
+                // 3. Continue with the rest of the initialization
                 loadTheme();
                 loadCurrencySettings();
                 await FXRateProvider.fetchRates();
                 document.getElementById('manual-address-icon').innerHTML = SvgIcons.address;
                 setupEventListeners();
+                
                 const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
-                if (storedWallet) { showView('unlock-view'); } else { showView('onboarding-view'); }
+                if (storedWallet) { 
+                    showView('unlock-view'); 
+                } else { 
+                    showView('onboarding-view'); 
+                }
             } catch (e) {
                 console.error("Initialization Error:", e);
-                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not start the application. Please check your network connection and refresh the page. </p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
+                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not contact the server to start the application. Please check your network connection and refresh the page.</p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
             }
         }
 
@@ -781,7 +748,6 @@
             document.getElementById('back-from-charge').addEventListener('click', () => showView('wallet-view'));
             document.getElementById('back-from-banknote-confirm').addEventListener('click', () => showView('charge-view'));
             document.getElementById('back-from-receive').addEventListener('click', () => showView('wallet-view'));
-            // --- MODIFIED: Event listener for cancel button ---
             document.getElementById('back-from-send-confirm').addEventListener('click', () => {
                 if (state.activeTransactionIntent && state.activeTransactionIntent.transactionIntentId) {
                     SupabaseLedger.cancelTransactionIntent(state.activeTransactionIntent.transactionIntentId)
