@@ -8,257 +8,257 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        [cite_start]:root { [cite: 200]
+        :root {
             --bg-color: #050810;
             --surface-color: rgba(18, 24, 43, 0.7);
-            [cite_start]--primary-color: #2563eb; [cite: 201]
+            --primary-color: #2563eb;
             --accent-color: #4f46e5;
             --danger-color: #e11d48;
             --success-color: #22c55e;
             --text-light: #cbd5e1;
             --text-dark: #f8fafc;
             --border-color: rgba(56, 73, 127, 0.2);
-            [cite_start]--input-bg: rgba(0, 0, 0, 0.25); [cite: 202]
+            --input-bg: rgba(0, 0, 0, 0.25);
             --shadow-color: rgba(0, 0, 0, 0.5);
             --backdrop-blur: 24px;
-            [cite_start]--bg-image: radial-gradient(ellipse 80% 80% at 50% -20%,rgba(120,119,198,0.3), transparent), [cite: 203]
+            --bg-image: radial-gradient(ellipse 80% 80% at 50% -20%,rgba(120,119,198,0.3), transparent),
                         radial-gradient(ellipse 80% 80% at 50% 120%,rgba(43, 8, 122, 0.3), transparent);
-            [cite_start]--border-radius-md: 12px; [cite: 204]
+            --border-radius-md: 12px;
             --border-radius-lg: 24px;
         }
         body[data-theme='aurora'] {
             --bg-color: #0a0f1f;
-            [cite_start]--surface-color: rgba(16, 23, 43, 0.75); [cite: 205]
+            --surface-color: rgba(16, 23, 43, 0.75);
             --primary-color: #00f5d4; --accent-color: #9b5de5; --danger-color: #ef476f;
             --success-color: #25a244; --text-light: #e0e0e0; --text-dark: #ffffff;
-            [cite_start]--border-color: rgba(255, 255, 255, 0.1); [cite: 206]
+            --border-color: rgba(255, 255, 255, 0.1);
             --bg-image: radial-gradient(at 20% 25%, hsla(212,80%,50%,0.3) 0px, transparent 50%),
                         radial-gradient(at 80% 75%, hsla(289,80%,50%,0.3) 0px, transparent 50%);
-        [cite_start]} [cite: 207]
+        }
         body[data-theme='neon-noir'] {
             --bg-color: #000000;
-            [cite_start]--surface-color: rgba(20, 20, 20, 0.85); [cite: 208]
+            --surface-color: rgba(20, 20, 20, 0.85);
             --primary-color: #39ff14; --accent-color: #39ff14; --danger-color: #ff3131;
             --success-color: #00ff7f; --text-light: #f0f0f0; --text-dark: #ffffff;
-            --border-color: rgba(57, 255, 20, 0.3); [cite_start]--shadow-color: rgba(0, 0, 0, 0.5); [cite: 209]
+            --border-color: rgba(57, 255, 20, 0.3); --shadow-color: rgba(0, 0, 0, 0.5);
             --bg-image: none;
-        [cite_start]} [cite: 210]
+        }
         body[data-theme='solana-breeze'] {
             --bg-color: #f8f9fa;
-            [cite_start]--surface-color: rgba(255, 255, 255, 0.8); [cite: 211]
+            --surface-color: rgba(255, 255, 255, 0.8);
             --primary-color: #8A2BE2; --accent-color: #00BFFF; --danger-color: #d9534f;
             --success-color: #1e8e3e; --text-light: #343a40; --text-dark: #212529;
-            --border-color: rgba(0, 0, 0, 0.1); [cite_start]--shadow-color: rgba(0, 0, 0, 0.1); [cite: 212]
-            [cite_start]--bg-image: radial-gradient(at 10% 20%, hsla(271, 91%, 63%, 0.1) 0px, transparent 50%), [cite: 213]
+            --border-color: rgba(0, 0, 0, 0.1); --shadow-color: rgba(0, 0, 0, 0.1);
+            --bg-image: radial-gradient(at 10% 20%, hsla(271, 91%, 63%, 0.1) 0px, transparent 50%),
                         radial-gradient(at 80% 80%, hsla(198, 91%, 63%, 0.1) 0px, transparent 50%);
-        [cite_start]} [cite: 214]
+        }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1;
-        [cite_start]} } [cite: 215]
+        } }
         @keyframes spin { 0% { transform: rotate(0deg);
-        } 100% { transform: rotate(360deg); [cite_start]} } [cite: 216]
+        } 100% { transform: rotate(360deg); } }
         @keyframes slideInUp { from { opacity: 0;
-        transform: translateY(20px); } to { opacity: 1; transform: translateY(0); [cite_start]} } [cite: 217]
+        transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUpItem { from { opacity: 0;
-        transform: translateY(10px) scale(0.98); [cite_start]} to { opacity: 1; transform: translateY(0) scale(1); [cite: 218]
-        [cite_start]} } [cite: 219]
+        transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1);
+        } }
         * { box-sizing: border-box;
-        [cite_start]} [cite: 220]
+        }
         html { scroll-behavior: smooth;
-        [cite_start]} [cite: 221]
+        }
         body {
             font-family: 'Inter', sans-serif;
-            [cite_start]background-color: var(--bg-color); [cite: 222]
+            background-color: var(--bg-color);
             background-image: var(--bg-image);
             background-attachment: fixed;
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; margin: 0; 
             color: var(--text-light); overflow: hidden;
-            [cite_start]transition: background-color 0.5s ease; [cite: 223]
+            transition: background-color: 0.5s ease;
         }
         .aura-icon { width: 1em; height: 1em; vertical-align: -0.15em;
-        margin-right: 0.2em; [cite_start]} [cite: 224]
+        margin-right: 0.2em; }
         main { position: relative; width: 100%; height: 100%; display: flex;
-        justify-content: center; align-items: center; zoom: 0.65; [cite_start]} [cite: 225]
+        justify-content: center; align-items: center; zoom: 0.65; }
         .view { position: absolute; opacity: 0;
-        [cite_start]pointer-events: none; transform: translateY(20px); transition: opacity 0.4s ease, transform 0.4s ease; width: 100%; display: flex; justify-content: center; [cite: 226]
+        pointer-events: none; transform: translateY(20px); transition: opacity: 0.4s ease, transform 0.4s ease; width: 100%; display: flex; justify-content: center;
         }
         .view.active { opacity: 1; pointer-events: auto; transform: translateY(0);
-        [cite_start]} [cite: 228]
+        }
         .card {
             background-color: var(--surface-color);
-            [cite_start]backdrop-filter: blur(var(--backdrop-blur)); [cite: 229]
+            backdrop-filter: blur(var(--backdrop-blur));
             -webkit-backdrop-filter: blur(var(--backdrop-blur));
             padding: 2.5rem 2rem; border-radius: var(--border-radius-lg);
             box-shadow: 0 10px 40px var(--shadow-color);
             width: 100%; max-width: 450px; text-align: center;
-            [cite_start]border: 1px solid var(--border-color); [cite: 230]
+            border: 1px solid var(--border-color);
             transition: all 0.3s ease;
             animation: slideInUp 0.6s ease forwards;
-        [cite_start]} [cite: 231]
+        }
         #wallet-view .card { max-width: 520px; position: relative;
-        [cite_start]} [cite: 232]
+        }
         #settings-button { position: absolute; top: 20px; left: 20px; background: none; border: none;
-        [cite_start]padding: 5px; width: auto; height: auto; cursor: pointer; color: var(--text-light); opacity: 0.6; z-index: 10; [cite: 233]
+        padding: 5px; width: auto; height: auto; cursor: pointer; color: var(--text-light); opacity: 0.6; z-index: 10;
         }
         #settings-button:hover { opacity: 1; background: none; box-shadow: none; transform: none;
-        [cite_start]} [cite: 235]
+        }
         #settings-view .card { max-width: 380px;
-        [cite_start]} [cite: 236]
+        }
         h1, h2 { color: var(--text-dark); font-weight: 700; text-shadow: 0 0 10px rgba(255,255,255,0.1);
-        [cite_start]} [cite: 237]
+        }
         h1 { font-size: clamp(2.2rem, 8vw, 2.8rem); margin: 0 0 10px;
-        [cite_start]} [cite: 238]
+        }
         h2 { font-size: clamp(1.6rem, 6vw, 1.8rem); margin-bottom: 15px;
-        [cite_start]} [cite: 239]
+        }
         p { line-height: 1.7; margin-bottom: 25px; color: var(--text-light);
-        [cite_start]} [cite: 240]
+        }
         .input-wrapper, .password-wrapper { position: relative; margin-bottom: 15px;
-        [cite_start]} [cite: 241]
+        }
         .input-wrapper .icon { position: absolute; top: 50%; left: 18px; transform: translateY(-50%);
-        color: var(--text-light); opacity: 0.5; pointer-events: none; [cite_start]} [cite: 242]
+        color: var(--text-light); opacity: 0.5; pointer-events: none; }
         input, textarea, select { width: 100%;
-        [cite_start]padding: 14px 20px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); font-size: 16px; font-family: 'Inter', sans-serif; background-color: var(--input-bg); color: var(--text-dark); text-align: center; [cite: 243]
-        transition: all 0.3s ease; [cite_start]} [cite: 244]
+        padding: 14px 20px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); font-size: 16px; font-family: 'Inter', sans-serif; background-color: var(--input-bg); color: var(--text-dark); text-align: center;
+        transition: all 0.3s ease; }
         .input-wrapper input { padding-left: 50px; text-align: left;
-        [cite_start]} [cite: 245]
+        }
         #seed-confirm-view .input-wrapper input { padding-left: 20px; text-align: left;
-        [cite_start]} [cite: 246]
+        }
         .password-wrapper input { margin-bottom: 0;
-        [cite_start]} [cite: 247]
+        }
         input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary-color);
-        box-shadow: 0 0 20px color-mix(in srgb, var(--primary-color) 30%, transparent); [cite_start]} [cite: 248]
+        box-shadow: 0 0 20px color-mix(in srgb, var(--primary-color) 30%, transparent); }
         input:focus ~ .icon { opacity: 1;
-        color: var(--primary-color); [cite_start]} [cite: 249]
+        color: var(--primary-color); }
         textarea { resize: vertical; height: 80px;
-        [cite_start]} [cite: 250]
+        }
         button { width: 100%; padding: 16px; background: linear-gradient(95deg, var(--primary-color), var(--accent-color)); color: white;
-        [cite_start]border: none; border-radius: var(--border-radius-md); font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; [cite: 251]
-        gap: 8px; position: relative; overflow: hidden; [cite_start]} [cite: 252]
+        border: none; border-radius: var(--border-radius-md); font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;
+        gap: 8px; position: relative; overflow: hidden; }
         button:hover { opacity: 0.9; transform: translateY(-3px);
-        box-shadow: 0 8px 25px color-mix(in srgb, var(--primary-color) 25%, transparent); [cite_start]} [cite: 253]
+        box-shadow: 0 8px 25px color-mix(in srgb, var(--primary-color) 25%, transparent); }
         button:active { transform: translateY(-1px) scale(0.99);
-        [cite_start]} [cite: 254]
+        }
         button:disabled { background: color-mix(in srgb, var(--surface-color) 50%, #555);
-        [cite_start]color: color-mix(in srgb, var(--text-light) 50%, transparent); cursor: not-allowed; transform: translateY(0); box-shadow: none; [cite: 255]
+        color: color-mix(in srgb, var(--text-light) 50%, transparent); cursor: not-allowed; transform: translateY(0); box-shadow: none;
         }
         .back-button { background: color-mix(in srgb, var(--surface-color), transparent 20%); color: var(--text-light); margin-top: 10px;
-        [cite_start]} [cite: 257]
+        }
         .back-button:hover { background: color-mix(in srgb, var(--border-color), transparent 50%); box-shadow: none;
-        [cite_start]} [cite: 258]
+        }
         .logout-button { background: var(--danger-color); color: var(--text-dark); margin-top: 10px;
-        [cite_start]} [cite: 259]
+        }
         .logout-button:hover { box-shadow: 0 6px 20px color-mix(in srgb, var(--danger-color) 30%, transparent);
-        [cite_start]} [cite: 260]
+        }
         .link-button { background: none; border: none; color: var(--primary-color); text-decoration: underline; cursor: pointer;
-        padding: 5px; width: auto; font-size: 14px; display: inline; [cite_start]} [cite: 261]
+        padding: 5px; width: auto; font-size: 14px; display: inline; }
         .status-box { font-weight: 500;
-        [cite_start]min-height: 24px; margin-top: 15px; word-wrap: break-word; font-size: 14px; transition: color 0.3s; [cite: 262]
+        min-height: 24px; margin-top: 15px; word-wrap: break-word; font-size: 14px; transition: color 0.3s;
         }
         .error { color: var(--danger-color);
-        [cite_start]} [cite: 264]
+        }
         .success { color: var(--success-color);
-        [cite_start]} [cite: 265]
+        }
         .info { color: #38bdf8;
-        [cite_start]} [cite: 266]
+        }
         .loader { border: 4px solid color-mix(in srgb, var(--border-color), transparent 50%); border-radius: 50%;
-        [cite_start]border-top: 4px solid var(--primary-color); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 10px auto; [cite: 267]
+        border-top: 4px solid var(--primary-color); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 10px auto;
         }
         .loader.hidden { display: none;
-        [cite_start]} [cite: 269]
+        }
         .seed-phrase-box { padding: 20px; border: 1px dashed var(--danger-color); border-radius: var(--border-radius-md);
-        [cite_start]margin: 20px 0; background-color: color-mix(in srgb, var(--danger-color) 10%, transparent); color: var(--text-light); font-size: 1.1rem; letter-spacing: 1.5px; font-family: monospace; line-height: 1.8; [cite: 270]
-        user-select: all; [cite_start]} [cite: 271]
+        margin: 20px 0; background-color: color-mix(in srgb, var(--danger-color) 10%, transparent); color: var(--text-light); font-size: 1.1rem; letter-spacing: 1.5px; font-family: monospace; line-height: 1.8;
+        user-select: all; }
         #my-qr-code img, #qr-display-box img, #static-qr-code img { margin: 15px auto;
-        [cite_start]display: block; border: 5px solid var(--text-dark); border-radius: var(--border-radius-md); background: white; [cite: 272]
+        display: block; border: 5px solid var(--text-dark); border-radius: var(--border-radius-md); background: white;
         }
         label.qr-upload-label { cursor: pointer; display: block; margin: 20px 0; padding: 30px;
-        [cite_start]border: 2px dashed var(--border-color); border-radius: var(--border-radius-lg); transition: all 0.3s ease; [cite: 274]
+        border: 2px dashed var(--border-color); border-radius: var(--border-radius-lg); transition: all 0.3s ease;
         }
         label.qr-upload-label:hover { background-color: var(--input-bg); border-color: var(--primary-color);
-        [cite_start]} [cite: 276]
+        }
         input[type="file"] { display: none;
-        [cite_start]} [cite: 277]
+        }
         .transaction-history { margin-top: 30px; text-align: left;
-        [cite_start]} [cite: 278]
+        }
         .transaction-history-header { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 20px;
-        [cite_start]} [cite: 279]
+        }
         .transaction-history-header h3 { margin-bottom: 0; color: var(--text-dark); font-weight: 600; margin-left: auto;
-        [cite_start]} [cite: 280]
+        }
         #refresh-tx-button { background: none; border: none; padding: 5px; width: auto; height: auto;
-        cursor: pointer; color: var(--text-light); opacity: 0.6; margin-left: auto; [cite_start]} [cite: 281]
+        cursor: pointer; color: var(--text-light); opacity: 0.6; margin-left: auto; }
         #refresh-tx-button:hover { opacity: 1;
-        [cite_start]} [cite: 282]
+        }
         #refresh-tx-button .icon { display: block;
-        [cite_start]} [cite: 283]
+        }
         #refresh-tx-button .loader { display: none; width: 16px; height: 16px; border-width: 2px;
-        margin: 0; [cite_start]} [cite: 284]
+        margin: 0; }
         .transaction-list { list-style-type: none; padding: 0; max-height: 280px; overflow-y: auto;
-        [cite_start]} [cite: 285]
+        }
         .transaction-item { display: flex; align-items: center; gap: 15px; padding: 14px; border-radius: var(--border-radius-md);
-        [cite_start]margin-bottom: 10px; background: color-mix(in srgb, var(--input-bg) 50%, transparent); border: 1px solid transparent; transition: all 0.2s ease; [cite: 286]
+        margin-bottom: 10px; background: color-mix(in srgb, var(--input-bg) 50%, transparent); border: 1px solid transparent; transition: all 0.2s ease;
         }
         .transaction-item.animate-in { opacity: 0; animation: fadeInUpItem 0.5s ease forwards;
-        [cite_start]} [cite: 288]
+        }
         .transaction-item:hover { background: var(--input-bg); transform: scale(1.02); border-color: var(--border-color);
-        [cite_start]} [cite: 289]
+        }
         .transaction-icon { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; display: flex;
-        align-items: center; justify-content: center; [cite_start]} [cite: 290]
+        align-items: center; justify-content: center; }
         .transaction-icon.sent { background-color: color-mix(in srgb, var(--danger-color) 20%, transparent);
-        color: var(--danger-color); [cite_start]} [cite: 291]
+        color: var(--danger-color); }
         .transaction-icon.received { background-color: color-mix(in srgb, var(--success-color) 20%, transparent); color: var(--success-color);
-        [cite_start]} [cite: 292]
+        }
         .transaction-details { display: flex; flex-direction: column; flex-grow: 1;
-        [cite_start]} [cite: 293]
+        }
         .transaction-type { font-weight: 600; font-size: 16px;
-        [cite_start]} [cite: 294]
+        }
         .transaction-date { font-size: 12px; color: color-mix(in srgb, var(--text-light) 70%, transparent); margin-top: 4px;
-        [cite_start]} [cite: 295]
+        }
         .transaction-amount { font-weight: 700; font-size: 16px; margin-left: auto; text-align: right;
-        [cite_start]} [cite: 296]
+        }
         .transaction-amount.sent { color: var(--danger-color);
-        [cite_start]} [cite: 297]
+        }
         .transaction-amount.received { color: var(--success-color);
-        [cite_start]} [cite: 298]
+        }
         .no-transactions { text-align: center; color: var(--text-light); opacity: 0.7; padding: 20px; background: none;
-        [cite_start]} [cite: 299]
+        }
         .address-display-box { background: var(--input-bg); padding: 8px 8px 8px 15px; border-radius: var(--border-radius-md);
-        margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; [cite_start]} [cite: 300]
+        margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
         .address-text { font-family: monospace;
-        [cite_start]font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;} [cite: 301]
+        font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
         .copy-button { padding: 8px 12px;
-        [cite_start]font-size: 12px; width: auto; background: color-mix(in srgb, var(--border-color), transparent 20%); min-width: 80px; [cite: 302]
+        font-size: 12px; width: auto; background: color-mix(in srgb, var(--border-color), transparent 20%); min-width: 80px;
         }
         #balance-display { font-size: clamp(2.8rem, 12vw, 3.8rem); font-weight: 700;
-        margin: 10px 0 25px 0; background: linear-gradient(95deg, var(--primary-color), var(--accent-color)); -webkit-background-clip: text; background-clip: text; [cite_start]-webkit-text-fill-color: transparent; [cite: 304]
+        margin: 10px 0 25px 0; background: linear-gradient(95deg, var(--primary-color), var(--accent-color)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
         }
         .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0;
-        [cite_start]} [cite: 306]
+        }
         .action-buttons button { margin: 0 !important; padding: 20px; flex-direction: column; gap: 10px;
-        background: var(--input-bg); color: var(--text-light); [cite_start]} [cite: 307]
+        background: var(--input-bg); color: var(--text-light); }
         .action-buttons button:hover { background: color-mix(in srgb, var(--border-color), transparent 20%);
-        box-shadow: none; transform: translateY(-2px); [cite_start]} [cite: 308]
+        box-shadow: none; transform: translateY(-2px); }
         .modal-overlay { position: fixed; top: 0; left: 0;
-        [cite_start]width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; [cite: 309]
-        animation: fadeIn 0.3s ease; [cite_start]} [cite: 310]
+        width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000;
+        animation: fadeIn 0.3s ease; }
         .modal-content { width: 100%; max-width: 480px; padding: 2rem;
-        [cite_start]margin: 1rem;} [cite: 311]
+        margin: 1rem;}
         .theme-switcher-container { display: flex; justify-content: center; gap: 10px; margin-top: 25px;
-        padding-top: 20px; border-top: 1px solid var(--border-color); [cite_start]} [cite: 312]
+        padding-top: 20px; border-top: 1px solid var(--border-color); }
         .theme-button { width: 28px; height: 28px;
-        [cite_start]border-radius: 50%; cursor: pointer; border: 2px solid var(--border-color); transition: all 0.2s ease; padding: 0; [cite: 313]
+        border-radius: 50%; cursor: pointer; border: 2px solid var(--border-color); transition: all 0.2s ease; padding: 0;
         }
         .theme-button:hover, .theme-button.active { transform: scale(1.15); border-color: var(--text-dark);
-        [cite_start]} [cite: 315]
+        }
         #theme-starlight { background: linear-gradient(45deg, #050810, #2563eb, #4f46e5);
-        [cite_start]} [cite: 316]
+        }
         #theme-aurora { background: linear-gradient(45deg, #0a0f1f, #00f5d4, #9b5de5);
-        [cite_start]} [cite: 317]
+        }
         #theme-neon-noir { background: linear-gradient(45deg, #000000, #39ff14);
-        [cite_start]} [cite: 318]
+        }
         #theme-solana-breeze { background: linear-gradient(45deg, #f8f9fa, #8A2BE2, #00BFFF);
-        [cite_start]} [cite: 319]
+        }
         @media (min-width: 500px) { .card { padding: 3rem;
-        } #wallet-view .card { padding: 2.5rem 3rem; [cite_start]} } [cite: 320]
+        } #wallet-view .card { padding: 2.5rem 3rem; } }
     </style>
 </head>
 <body>
@@ -316,21 +316,21 @@
     <script src="html2canvas.min.js"></script>
     <script src="argon2.min.js"></script>
     
-    <script type="module" nonce="aura-wallet-script">
+    <script type="module">
         if (typeof globalThis.Buffer === 'undefined') {
             globalThis.Buffer = {
           
-               [cite_start]from: (input, encoding) => { [cite: 347]
+               from: (input, encoding) => {
                     if (encoding === 'base64') {
                         const binary = atob(input);
                         const len = binary.length;
             
-                         [cite_start]const bytes = new Uint8Array(len); [cite: 348]
+                         const bytes = new Uint8Array(len);
                         for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-                        [cite_start]return bytes; [cite: 349]
+                        return bytes;
                     }
                     return new TextEncoder().encode(input);
-                [cite_start]} [cite: 350]
+                }
             };
         }
 
@@ -339,7 +339,7 @@
         const EDGE_FUNCTION_URL = `https://yuozqhimrkyjopgidqje.supabase.co/functions/v1/api`;
 
         let supabaseClient;
-        [cite_start]let state = {  [cite: 352]
+        let state = { 
             wallet: null, 
             userStore: null, 
             tempUserStore: null,
@@ -348,7 +348,7 @@
             activeTransactionIntent: null,
             activePollingTimer: null, 
   
-             [cite_start]cameraStream: null,  [cite: 353]
+             cameraStream: null, 
             isScannerActive: false, 
             currentBalance: 0n, 
             transactionIndex: new Map(), 
@@ -356,206 +356,206 @@
             config: null,
             displayCurrency: 'USD',
       
-             [cite_start]fxRates: { 'USD': 1 } [cite: 354]
+             fxRates: { 'USD': 1 }
         };
-        [cite_start]const SvgIcons = { [cite: 355]
+        const SvgIcons = {
             txSend: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>',
             txReceive: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>',
             address: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" 
-            [cite_start]stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>' [cite: 356]
+            stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>'
         };
-        [cite_start]const auraIconHTML = '<img src="ico/ico%2032.ico" alt="Aura" class="aura-icon">'; [cite: 357]
+        const auraIconHTML = '<img src="ico/ico%2032.ico" alt="Aura" class="aura-icon">';
         
         function applyTheme(themeName) {
             document.body.dataset.theme = themeName;
-            [cite_start]localStorage.setItem('aura_theme', themeName); [cite: 358]
+            localStorage.setItem('aura_theme', themeName);
             document.querySelectorAll('.theme-button').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.theme === themeName);
             });
-        [cite_start]} [cite: 359]
+        }
         function loadTheme() {
             const savedTheme = localStorage.getItem('aura_theme') ||
-            [cite_start]'starlight'; [cite: 360]
+            'starlight';
             applyTheme(savedTheme);
         }
         const SecurityUtils = {
             getDOMPurifyConfig: () => ({ ALLOWED_TAGS: [], ALLOWED_ATTR: [], KEEP_CONTENT: true, RETURN_DOM: false, RETURN_DOM_FRAGMENT: false, SANITIZE_DOM: true, FORCE_BODY: false, ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i }),
             sanitizeText: (input) => { if (typeof input !== 'string') return '';
-            return DOMPurify.sanitize(input, SecurityUtils.getDOMPurifyConfig()); [cite_start]}, [cite: 361]
+            return DOMPurify.sanitize(input, SecurityUtils.getDOMPurifyConfig()); },
             sanitizeHTML: (input, allowedTags = ['b', 'i', 'em', 'strong', 'br', 'span']) => { if (typeof input !== 'string') return '';
-            [cite_start]const config = { ...SecurityUtils.getDOMPurifyConfig(), ALLOWED_TAGS: allowedTags, ALLOWED_ATTR: ['class', 'style', 'src', 'alt'], FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'], FORBID_TAGS: ['script', 'object', 'embed', 'applet', 'meta', 'link'] }; [cite: 362]
-            return DOMPurify.sanitize(input, config); [cite_start]}, [cite: 363]
+            const config = { ...SecurityUtils.getDOMPurifyConfig(), ALLOWED_TAGS: allowedTags, ALLOWED_ATTR: ['class', 'style', 'src', 'alt'], FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'], FORBID_TAGS: ['script', 'object', 'embed', 'applet', 'meta', 'link'] };
+            return DOMPurify.sanitize(input, config); },
             setTextContent: (element, content) => { if (!element) return;
-            element.textContent = SecurityUtils.sanitizeText(String(content)); [cite_start]}, [cite: 364]
+            element.textContent = SecurityUtils.sanitizeText(String(content)); },
             setHTMLContent: (element, content, allowedTags) => { if (!element) return;
-            element.innerHTML = SecurityUtils.sanitizeHTML(String(content), allowedTags); [cite_start]}, [cite: 365]
+            element.innerHTML = SecurityUtils.sanitizeHTML(String(content), allowedTags); },
             sanitizeAddress: (address) => { if (typeof address !== 'string') return '';
-            const cleaned = address.replace(/[^0-9a-fA-Fx]/g, ''); return SecurityUtils.sanitizeText(cleaned); [cite_start]}, [cite: 366]
+            const cleaned = address.replace(/[^0-9a-fA-Fx]/g, ''); return SecurityUtils.sanitizeText(cleaned); },
             sanitizeNumeric: (value) => { if (typeof value === 'number') return value;
-            [cite_start]if (typeof value !== 'string') return 0; const cleaned = value.replace(/[^0-9.-]/g, ''); const parsed = parseFloat(cleaned); return isNaN(parsed) ? [cite: 367]
-            0 : parsed; [cite_start]}, [cite: 368]
+            if (typeof value !== 'string') return 0; const cleaned = value.replace(/[^0-9.-]/g, ''); const parsed = parseFloat(cleaned); return isNaN(parsed) ?
+            0 : parsed; },
             sanitizeTransactionId: (txId) => { if (typeof txId !== 'string') return '';
-            const cleaned = txId.replace(/[^0-9a-fA-F]/g, ''); return SecurityUtils.sanitizeText(cleaned); [cite_start]} [cite: 369]
+            const cleaned = txId.replace(/[^0-9a-fA-F]/g, ''); return SecurityUtils.sanitizeText(cleaned); }
         };
-        [cite_start]const CryptoWallet = { [cite: 370]
+        const CryptoWallet = {
             async deriveKey(password, salt) {
                 const hashResult = await argon2.hash({ pass: password, salt: salt, time: 2, mem: 65536, hashLen: 32, parallelism: 4, type: argon2.ArgonType.Argon2id, raw: true });
-                [cite_start]return window.crypto.subtle.importKey("raw", hashResult.hash, { "name": "AES-GCM" }, true, ["encrypt", "decrypt"]); [cite: 371]
+                return window.crypto.subtle.importKey("raw", hashResult.hash, { "name": "AES-GCM" }, true, ["encrypt", "decrypt"]);
             },
             async encrypt(data, password) {
                 const salt = window.crypto.getRandomValues(new Uint8Array(16));
-                [cite_start]const iv = window.crypto.getRandomValues(new Uint8Array(12)); [cite: 373]
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
                 const key = await this.deriveKey(password, salt);
                 const enc = new TextEncoder();
-                [cite_start]const encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, enc.encode(data)); [cite: 374]
-                [cite_start]return { encrypted: this.ab2b64(encrypted), salt: this.ab2b64(salt), iv: this.ab2b64(iv) }; [cite: 375]
+                const encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, enc.encode(data));
+                return { encrypted: this.ab2b64(encrypted), salt: this.ab2b64(salt), iv: this.ab2b64(iv) };
             },
             async decrypt(encryptedData, password) {
                 const salt = this.b642ab(encryptedData.salt);
-                [cite_start]const iv = this.b642ab(encryptedData.iv); [cite: 376]
+                const iv = this.b642ab(encryptedData.iv);
                 const key = await this.deriveKey(password, salt);
                 const encrypted = this.b642ab(encryptedData.encrypted);
-                [cite_start]const decrypted = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, encrypted); [cite: 377]
+                const decrypted = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, encrypted);
                 const dec = new TextDecoder();
                 return dec.decode(decrypted);
-            [cite_start]}, [cite: 378]
+            },
             ab2b64(ab) { return btoa(String.fromCharCode.apply(null, new Uint8Array(ab)));
-            [cite_start]}, [cite: 379]
+            },
             b642ab(b64) {
                 const byteString = atob(b64);
-                [cite_start]const bytes = new Uint8Array(byteString.length); [cite: 380]
+                const bytes = new Uint8Array(byteString.length);
                 for (let i = 0; i < byteString.length; i++) { bytes[i] = byteString.charCodeAt(i);
-                [cite_start]} [cite: 381]
+                }
                 return bytes;
-            [cite_start]} [cite: 382]
+            }
         };
 
         const CoreLogic = (() => { const Constants = { VALIDATION_PREFIX: "SADAT_V2_PART", MAX_IMAGE_DIMENSION: 2000, NUM_QR_CODES: 9 }; const Utils = { preprocessImage: (dataUrl) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.filter = 'grayscale(1) contrast(2.5) brightness(1.1)'; ctx.drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = dataUrl; }), resizeImage: (file, maxDimension) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = e => { const img 
-        [cite_start]= new Image(); img.onload = () => { let { width, height } = img; if (width > height) { if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; } } else { if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; } } const canvas = document.createElement('canvas'); [cite: 383]
-        canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = e.target.result; [cite_start]}; [cite: 384]
-        reader.onerror = reject; reader.readAsDataURL(file); [cite_start]}), }; const Banknote = { getLayout: (imageWidth) => { const standardWidth = 790; [cite: 385]
-        [cite_start]const scale = imageWidth / standardWidth; return { qrSize: Math.round(250 * scale), xSpacing: Math.round(20 * scale), ySpacing: Math.round(20 * scale), }; [cite: 386]
-        [cite_start]}, decodeQrGrid: async (imageData, statusEl) => { const layout = Banknote.getLayout(imageData.width); const parts = {}; let count = 0; [cite: 387]
-        [cite_start]const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = imageData.width; canvas.height = imageData.height; ctx.putImageData(imageData, 0, 0); [cite: 388]
-        [cite_start]for (let i = 0; i < Constants.NUM_QR_CODES; i++) { setStatus(statusEl, `Scanning section ${i + 1}/${Constants.NUM_QR_CODES}...`, 'info'); [cite: 389]
-        [cite_start]await new Promise(r => setTimeout(r, 5)); const row = Math.floor(i / 3), col = i % 3; [cite: 390]
-        [cite_start]const regionX = col * (layout.qrSize + layout.xSpacing); const regionY = row * (layout.qrSize + layout.ySpacing); [cite: 391]
-        [cite_start]const data = ctx.getImageData(regionX, regionY, layout.qrSize, layout.qrSize); const code = jsQR(data.data, data.width, data.height); [cite: 392]
-        [cite_start]if (code && code.data.startsWith(Constants.VALIDATION_PREFIX)) { const match = code.data.substring(Constants.VALIDATION_PREFIX.length).match(/^(\d+)\/(\d+):(.*)$/s); if (match) { const partNum = parseInt(match[1], 10); [cite: 393]
-        if (!parts[partNum]) { parts[partNum] = match[3]; count++; [cite_start]} } } } if (count < Constants.NUM_QR_CODES) { throw new Error(`Scan failed. Found ${count}/${Constants.NUM_QR_CODES} valid sections.`); [cite: 394]
-        [cite_start]} let payload = ''; for (let i = 1; i <= Constants.NUM_QR_CODES; i++) { payload += parts[i]; [cite: 395]
-        } return payload; } }; return { Constants, Utils, Banknote }; [cite_start]})(); [cite: 396]
-        [cite_start]const CacheManager = { cache: new Map(), DEFAULT_CACHE_DURATION: 30000, set(key, data, duration = this.DEFAULT_CACHE_DURATION) { this.cache.set(key, { data, expiresAt: Date.now() + duration }); [cite: 397]
-        [cite_start]}, get(key) { const cached = this.cache.get(key); if (!cached) return null; if (Date.now() > cached.expiresAt) { this.cache.delete(key); return null; [cite: 398]
-        } return cached.data; }, invalidate(pattern) { for (const key of this.cache.keys()) { if (key.includes(pattern)) { this.cache.delete(key); [cite_start]} } } }; [cite: 399]
-        [cite_start]const SupabaseLedger = (() => { [cite: 400]
+        = new Image(); img.onload = () => { let { width, height } = img; if (width > height) { if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; } } else { if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; } } const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = e.target.result; };
+        reader.onerror = reject; reader.readAsDataURL(file); }), }; const Banknote = { getLayout: (imageWidth) => { const standardWidth = 790;
+        const scale = imageWidth / standardWidth; return { qrSize: Math.round(250 * scale), xSpacing: Math.round(20 * scale), ySpacing: Math.round(20 * scale), };
+        }, decodeQrGrid: async (imageData, statusEl) => { const layout = Banknote.getLayout(imageData.width); const parts = {}; let count = 0;
+        const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = imageData.width; canvas.height = imageData.height; ctx.putImageData(imageData, 0, 0);
+        for (let i = 0; i < Constants.NUM_QR_CODES; i++) { setStatus(statusEl, `Scanning section ${i + 1}/${Constants.NUM_QR_CODES}...`, 'info');
+        await new Promise(r => setTimeout(r, 5)); const row = Math.floor(i / 3), col = i % 3;
+        const regionX = col * (layout.qrSize + layout.xSpacing); const regionY = row * (layout.qrSize + layout.ySpacing);
+        const data = ctx.getImageData(regionX, regionY, layout.qrSize, layout.qrSize); const code = jsQR(data.data, data.width, data.height);
+        if (code && code.data.startsWith(Constants.VALIDATION_PREFIX)) { const match = code.data.substring(Constants.VALIDATION_PREFIX.length).match(/^(\d+)\/(\d+):(.*)$/s); if (match) { const partNum = parseInt(match[1], 10);
+        if (!parts[partNum]) { parts[partNum] = match[3]; count++; } } } } if (count < Constants.NUM_QR_CODES) { throw new Error(`Scan failed. Found ${count}/${Constants.NUM_QR_CODES} valid sections.`);
+        } let payload = ''; for (let i = 1; i <= Constants.NUM_QR_CODES; i++) { payload += parts[i];
+        } return payload; } }; return { Constants, Utils, Banknote }; })();
+        const CacheManager = { cache: new Map(), DEFAULT_CACHE_DURATION: 30000, set(key, data, duration = this.DEFAULT_CACHE_DURATION) { this.cache.set(key, { data, expiresAt: Date.now() + duration });
+        }, get(key) { const cached = this.cache.get(key); if (!cached) return null; if (Date.now() > cached.expiresAt) { this.cache.delete(key); return null;
+        } return cached.data; }, invalidate(pattern) { for (const key of this.cache.keys()) { if (key.includes(pattern)) { this.cache.delete(key); } } } };
+        const SupabaseLedger = (() => {
             const apiCall = async (action, payload) => {
                 const response = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
           
-                     [cite_start]body: JSON.stringify({ action, payload }) [cite: 401]
+                     body: JSON.stringify({ action, payload })
                 });
                 const result = await response.json();
                 if (!response.ok || result.error) {
                     throw new Error(result.error || `Server API error! Status: ${response.status}`);
   
-                 [cite_start]} [cite: 402]
+                 }
                 return result.data;
             };
             return { 
                 getPublicConfig: () => apiCall('getPublicConfig'),
                 getAppConfig: () => apiCall('getAppConfig'), 
     
-                 [cite_start]// UPDATED: Added preAuthNonce for replay protection [cite: 403]
+                 // UPDATED: Added preAuthNonce for replay protection
                 prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce) => 
                     apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce }),
                 // UPDATED: Added preAuthNonce for replay protection
     
-                 [cite_start]executeTransaction: (transactionIntentId, signature, preAuthNonce) => apiCall('executeTransaction', { transactionIntentId, signature, preAuthNonce }), [cite: 404]
+                 executeTransaction: (transactionIntentId, signature, preAuthNonce) => apiCall('executeTransaction', { transactionIntentId, signature, preAuthNonce }),
                 cancelTransactionIntent: (transactionIntentId) => apiCall('cancelTransactionIntent', { transactionIntentId }),
                 hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier });
-                return result.spent; [cite_start]} catch (error) { console.error('Failed to check identifier status:', error); [cite: 405]
-                [cite_start]alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; [cite: 406]
+                return result.spent; } catch (error) { console.error('Failed to check identifier status:', error);
+                alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true;
                 } }, 
                 findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }), 
                 findIncomingTxs: async (receiverAddress) => { const cacheKey = `incoming_${receiverAddress}`;
-                const cached = CacheManager.get(cacheKey); if (cached) return cached; const txs = await apiCall('findIncomingTxs', { receiverAddress }); [cite_start]CacheManager.set(cacheKey, txs, 20000); [cite: 408]
-                return txs; [cite_start]},  [cite: 409]
+                const cached = CacheManager.get(cacheKey); if (cached) return cached; const txs = await apiCall('findIncomingTxs', { receiverAddress }); CacheManager.set(cacheKey, txs, 20000);
+                return txs; }, 
                 findOutgoingTxs: async (senderAddress) => { const cacheKey = `outgoing_${senderAddress}`;
-                const cached = CacheManager.get(cacheKey); if (cached) return cached; const txs = await apiCall('findOutgoingTxs', { senderAddress }); [cite_start]CacheManager.set(cacheKey, txs, 20000); [cite: 410]
-                return txs; [cite_start]},  [cite: 411]
+                const cached = CacheManager.get(cacheKey); if (cached) return cached; const txs = await apiCall('findOutgoingTxs', { senderAddress }); CacheManager.set(cacheKey, txs, 20000);
+                return txs; }, 
                 getSpendDetails: (identifier) => apiCall('getSpendDetails', { identifier }), 
                 findTransactionById: (transactionId) => apiCall('findTransactionById', { transactionId }),
                 validateBanknote: (banknotePayload) => apiCall('validateBanknote', { banknotePayload }),
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress }),
       
-                 [cite_start]// ADDED: Server-side lockout functions [cite: 412]
+                 // ADDED: Server-side lockout functions
                 checkUnlockStatus: () => apiCall('checkUnlockStatus'),
                 recordFailedUnlock: (reason) => apiCall('recordFailedUnlock', { reason })
             };
-        [cite_start]})(); [cite: 413]
+        })();
         const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
-        [cite_start]const WalletLogic = { [cite: 414]
+        const WalletLogic = {
             async createWallet(password) {
                 const wallet = ethers.Wallet.createRandom();
-                [cite_start]const mnemonic = wallet.mnemonic.phrase; [cite: 415]
+                const mnemonic = wallet.mnemonic.phrase;
                 const privateKey = wallet.privateKey;
                 const encryptedPrivateKey = await CryptoWallet.encrypt(privateKey, password);
                 const genesisHash = ethers.id("GENESIS_BLOCK");
-                [cite_start]const userStore = { [cite: 416]
+                const userStore = {
                     publicKey: wallet.publicKey,
                     address: wallet.address,
                     encryptedPrivateKey: encryptedPrivateKey,
                     chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
    
-                 [cite_start]}; [cite: 417]
+                 };
                 return { mnemonic, userStore, wallet };
-            [cite_start]}, [cite: 418]
+            },
             async restoreWallet(mnemonic, password) {
                 try {
                     const wallet = ethers.Wallet.fromPhrase(mnemonic);
-                    [cite_start]const privateKey = wallet.privateKey; [cite: 419]
+                    const privateKey = wallet.privateKey;
                     const encryptedPrivateKey = await CryptoWallet.encrypt(privateKey, password);
                     const genesisHash = ethers.id("GENESIS_BLOCK");
-                    [cite_start]const userStore = { [cite: 420]
+                    const userStore = {
                         publicKey: wallet.publicKey,
                         address: wallet.address,
                         encryptedPrivateKey: encryptedPrivateKey,
                       
-                         [cite_start]chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }] [cite: 421]
+                         chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                     };
-                    [cite_start]state.userStore = userStore; [cite: 422]
+                    state.userStore = userStore;
                     state.wallet = wallet;
                     this.saveUserStore();
                     await this.synchronizeChainFromServer();
                     this.buildTransactionIndex();
                     return true;
-                [cite_start]} catch (e) { [cite: 423]
+                } catch (e) {
                     console.error("Restore failed:", e);
-                    [cite_start]return false; [cite: 424]
+                    return false;
                 }
             },
             async unlockWallet(password) {
                 const storedUserStore = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
-                [cite_start]if (!storedUserStore) throw new Error("No wallet found on this device."); [cite: 425]
+                if (!storedUserStore) throw new Error("No wallet found on this device.");
                 const userStore = JSON.parse(storedUserStore);
-                [cite_start]try { [cite: 426]
+                try {
                     const privateKey = await CryptoWallet.decrypt(userStore.encryptedPrivateKey, password);
-                    [cite_start]const wallet = new ethers.Wallet(privateKey); [cite: 427]
+                    const wallet = new ethers.Wallet(privateKey);
                     state.userStore = userStore;
                     state.wallet = wallet;
                     await this.synchronizeChainFromServer();
                     this.buildTransactionIndex();
                     return true;
-                [cite_start]} catch (error) { [cite: 428]
+                } catch (error) {
                     console.error("Unlock failed:", error);
-                    [cite_start]return false; [cite: 429]
+                    return false;
                 }
             },
             logout: () => {
                 stopRealtimeListener();
-                [cite_start]state.wallet = null; [cite: 430]
+                state.wallet = null;
                 state.userStore = null;
                 state.transactionIndex.clear();
                 localStorage.removeItem(AppConstants.WALLET_STORAGE_KEY);
@@ -563,87 +563,87 @@
             },
             saveUserStore: () => {
                 if (!state.userStore) return;
-                [cite_start]const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000); [cite: 431]
-                [cite_start]const filteredChain = state.userStore.chain.filter(tx => tx.type === 'creation' || tx.timestamp >= twentyFourHoursAgo); [cite: 432]
+                const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+                const filteredChain = state.userStore.chain.filter(tx => tx.type === 'creation' || tx.timestamp >= twentyFourHoursAgo);
                 const userStoreToSave = { ...state.userStore, chain: filteredChain };
-                [cite_start]localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(userStoreToSave)); [cite: 433]
+                localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(userStoreToSave));
             },
             buildTransactionIndex: () => {
                 state.transactionIndex.clear();
-                [cite_start]if (!state.userStore || !state.userStore.chain) return; [cite: 434]
+                if (!state.userStore || !state.userStore.chain) return;
                 state.userStore.chain.forEach(tx => {
                     const txKey = tx.linkedTxHash || tx.hash;
                     if (txKey) { state.transactionIndex.set(txKey, tx); }
                 });
-            [cite_start]}, [cite: 435]
+            },
             getLastTransaction: () => state.userStore.chain[state.userStore.chain.length - 1],
             addToChain: (txData) => {
                 const prevTx = WalletLogic.getLastTransaction();
-                const newTx = { ...txData, prevHash: prevTx.hash, timestamp: txData.timestamp || [cite_start]Date.now() }; [cite: 436]
+                const newTx = { ...txData, prevHash: prevTx.hash, timestamp: txData.timestamp || Date.now() };
                 const amountInt = BigInt(newTx.amount || '0');
-                [cite_start]const feeInt = BigInt(newTx.fee || '0'); [cite: 437]
+                const feeInt = BigInt(newTx.fee || '0');
                 newTx.hash = ethers.solidityPackedKeccak256(['string', 'uint256', 'uint256', 'string', 'string', 'string'], [newTx.type, amountInt, feeInt, newTx.from || '', newTx.to || '', newTx.prevHash]);
-                if (txData.id) { newTx.id = txData.id; [cite_start]} else { newTx.id = parseInt(newTx.hash.slice(-10), 16); [cite: 438]
+                if (txData.id) { newTx.id = txData.id; } else { newTx.id = parseInt(newTx.hash.slice(-10), 16);
                 }
-                [cite_start]state.userStore.chain.push(newTx); [cite: 439]
-                [cite_start]const txKey = newTx.linkedTxHash || newTx.hash; [cite: 440]
+                state.userStore.chain.push(newTx);
+                const txKey = newTx.linkedTxHash || newTx.hash;
                 state.transactionIndex.set(txKey, newTx);
                 WalletLogic.saveUserStore();
                 return newTx;
-            [cite_start]}, [cite: 441]
+            },
             precomputeTransactionHash: (txDetails) => {
                 const prevTx = WalletLogic.getLastTransaction();
-                [cite_start]const amountInt = BigInt(txDetails.amount || '0'); [cite: 442]
+                const amountInt = BigInt(txDetails.amount || '0');
                 const feeInt = BigInt(txDetails.fee || '0');
-                [cite_start]// Use a robust nonce for guaranteed uniqueness [cite: 443]
+                // Use a robust nonce for guaranteed uniqueness
                 const nonce = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
-                [cite_start]return ethers.solidityPackedKeccak256( [cite: 444]
+                return ethers.solidityPackedKeccak256(
                     ['string', 'uint256', 'uint256', 'string', 'string', 'string', 'string'], 
                     [txDetails.type, amountInt, feeInt, txDetails.from, txDetails.to, prevTx.hash, nonce]
                 );
-            [cite_start]}, [cite: 445]
+            },
             calculateBalanceFromTxs: (incomingTxs, outgoingTxs) => {
                 let incomingTotal = 0n;
-                [cite_start]incomingTxs.forEach(tx => { incomingTotal += BigInt(tx.amount || '0'); }); [cite: 446]
+                incomingTxs.forEach(tx => { incomingTotal += BigInt(tx.amount || '0'); });
                 let outgoingTotal = 0n;
-                [cite_start]outgoingTxs.forEach(tx => { if(tx.type !== 'fee') { outgoingTotal += BigInt(tx.amount || '0') + BigInt(tx.fee || '0'); } }); [cite: 447]
-                [cite_start]return incomingTotal - outgoingTotal; [cite: 448]
+                outgoingTxs.forEach(tx => { if(tx.type !== 'fee') { outgoingTotal += BigInt(tx.amount || '0') + BigInt(tx.fee || '0'); } });
+                return incomingTotal - outgoingTotal;
             },
             getServerAuthoritativeBalance: async () => {
                 if (!state.userStore) return 0n;
-                [cite_start]const [incomingTxs, outgoingTxs] = await Promise.all([SupabaseLedger.findIncomingTxs(state.wallet.address), SupabaseLedger.findOutgoingTxs(state.wallet.address)]); [cite: 449]
+                const [incomingTxs, outgoingTxs] = await Promise.all([SupabaseLedger.findIncomingTxs(state.wallet.address), SupabaseLedger.findOutgoingTxs(state.wallet.address)]);
                 const balance = WalletLogic.calculateBalanceFromTxs(incomingTxs, outgoingTxs);
                 state.currentBalance = balance;
                 return balance;
-            [cite_start]}, [cite: 450]
+            },
             createPaymentRequest: (amountIntString) => {
                 const receiveTx = WalletLogic.addToChain({ type: 'receive', amount: amountIntString, from: '', to: state.wallet.address, status: 'pending_request' });
-                [cite_start]return { type: 'AURA_PAYMENT_REQUEST', receiverAddress: state.wallet.address, amount: amountIntString, linkedTxHash: receiveTx.hash, expiresAt: Date.now() + state.config.PAYMENT_REQUEST_EXPIRY }; [cite: 451]
+                return { type: 'AURA_PAYMENT_REQUEST', receiverAddress: state.wallet.address, amount: amountIntString, linkedTxHash: receiveTx.hash, expiresAt: Date.now() + state.config.PAYMENT_REQUEST_EXPIRY };
             },
             executePreparedTransaction: async () => {
                 if (!state.activeTransactionIntent || !state.activeTransactionIntent.messageToSign) { throw new Error("No pending transaction to execute.");
-                [cite_start]} [cite: 453]
+                }
                 const { transactionIntentId, messageToSign, details, preAuthNonce } = state.activeTransactionIntent;
-                [cite_start]try { [cite: 454]
+                try {
                     const signature = await state.wallet.signMessage(messageToSign);
-                    [cite_start]const recoveredAddress = ethers.verifyMessage(messageToSign, signature); [cite: 455]
+                    const recoveredAddress = ethers.verifyMessage(messageToSign, signature);
                     if (recoveredAddress.toLowerCase() !== state.wallet.address.toLowerCase()) { throw new Error('Client-side signature verification failed. Aborting transaction.');
                     }
-                    [cite_start]// UPDATED: Pass preAuthNonce to execute [cite: 456]
+                    // UPDATED: Pass preAuthNonce to execute
                     const result = await SupabaseLedger.executeTransaction(transactionIntentId, signature, preAuthNonce);
-                    [cite_start]WalletLogic.addToChain({ type: 'send', amount: details.amount, fee: details.fee, from: state.wallet.address, to: details.receiverAddress, status: 'completed', comment: details.comment, linkedTxHash: result.txHash, id: details.id, timestamp: result.timestamp }); [cite: 457]
-                    [cite_start]CacheManager.invalidate(state.wallet.address); [cite: 458]
+                    WalletLogic.addToChain({ type: 'send', amount: details.amount, fee: details.fee, from: state.wallet.address, to: details.receiverAddress, status: 'completed', comment: details.comment, linkedTxHash: result.txHash, id: details.id, timestamp: result.timestamp });
+                    CacheManager.invalidate(state.wallet.address);
                     return result;
                 } catch (signingError) {
                     throw new Error(`Failed to sign or execute transaction: ${signingError.message}`);
-                [cite_start]} [cite: 459]
+                }
             },
             finalizePayment: async (confirmation) => {
                 const receiveTxIndex = state.userStore.chain.findIndex(tx => tx.hash === confirmation.linkedTxHash && tx.status === 'pending_request');
-                if (receiveTxIndex === -1) { if (await WalletLogic.processDiscoveredTransaction(confirmation)) { return true; [cite_start]} console.error("Finalize Error: Could not find pending transaction."); [cite: 460]
-                return false; [cite_start]} [cite: 461]
+                if (receiveTxIndex === -1) { if (await WalletLogic.processDiscoveredTransaction(confirmation)) { return true; } console.error("Finalize Error: Could not find pending transaction.");
+                return false; }
                 state.userStore.chain[receiveTxIndex].status = 'completed';
-                [cite_start]state.userStore.chain[receiveTxIndex].from = confirmation.senderAddress; [cite: 462]
+                state.userStore.chain[receiveTxIndex].from = confirmation.senderAddress;
                 WalletLogic.buildTransactionIndex();
                 WalletLogic.saveUserStore();
                 CacheManager.invalidate(state.wallet.address);
@@ -651,91 +651,91 @@
             },
             processDiscoveredTransaction: async (confirmation) => {
                 const txKey = confirmation.linkedTxHash;
-                if (!txKey || state.transactionIndex.has(txKey)) { return false; [cite_start]} [cite: 463]
+                if (!txKey || state.transactionIndex.has(txKey)) { return false; }
                 WalletLogic.addToChain({ id: confirmation.id, type: confirmation.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive', amount: confirmation.amount, from: confirmation.senderAddress, to: confirmation.receiverAddress, status: 'completed', linkedTxHash: confirmation.linkedTxHash, timestamp: confirmation.timestamp, comment: confirmation.comment });
-                [cite_start]return true;  [cite: 464]
+                return true; 
             },
             synchronizeChainFromServer: async () => {
                 if (!state.wallet) return;
-                [cite_start]console.log("Synchronizing full transaction history from server..."); [cite: 465]
+                console.log("Synchronizing full transaction history from server...");
                 try {
                     const [incoming, outgoing] = await Promise.all([ SupabaseLedger.findIncomingTxs(state.wallet.address), SupabaseLedger.findOutgoingTxs(state.wallet.address) ]);
-                    [cite_start]const allTxs = [...incoming, ...outgoing]; [cite: 466]
+                    const allTxs = [...incoming, ...outgoing];
                     const uniqueTxs = Array.from(new Map(allTxs.map(tx => [tx.linkedTxHash || tx.id, tx])).values());
-                    [cite_start]const userTxs = uniqueTxs.filter(tx => tx.type !== 'fee'); [cite: 467]
+                    const userTxs = uniqueTxs.filter(tx => tx.type !== 'fee');
                     userTxs.sort((a, b) => a.timestamp - b.timestamp);
                     const genesisBlock = state.userStore.chain[0];
-                    [cite_start]state.userStore.chain = [genesisBlock]; [cite: 468]
+                    state.userStore.chain = [genesisBlock];
                     state.transactionIndex.clear();
                     state.transactionIndex.set(genesisBlock.hash, genesisBlock);
                     for (const tx of userTxs) {
                         const txType = tx.senderAddress.toLowerCase() === state.wallet.address.toLowerCase() ?
-                        [cite_start]'send' : (tx.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive'); [cite: 469]
+                        'send' : (tx.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : 'receive');
                         WalletLogic.addToChain({ id: tx.id, type: txType, amount: tx.amount, fee: tx.fee || '0', from: tx.senderAddress, to: tx.receiverAddress, status: 'completed', linkedTxHash: tx.linkedTxHash, timestamp: tx.timestamp, comment: tx.comment });
                     }
-                    [cite_start]console.log(`Synchronization complete. Local chain has ${state.userStore.chain.length} transactions.`); [cite: 470]
-                    [cite_start]WalletLogic.saveUserStore(); [cite: 471]
+                    console.log(`Synchronization complete. Local chain has ${state.userStore.chain.length} transactions.`);
+                    WalletLogic.saveUserStore();
                 } catch(e) {
                     console.error("Failed to synchronize chain from server:", e);
-                [cite_start]} [cite: 472]
+                }
             }
         };
-        [cite_start]async function handleRealtimePayload(payload, direction) { [cite: 473]
+        async function handleRealtimePayload(payload, direction) {
             console.log(`New real-time ${direction} transaction received:`, payload);
-            [cite_start]const newTx = payload.new; [cite: 474]
+            const newTx = payload.new;
             let txType;
             if (direction === 'incoming') {
                 txType = newTx.sender_address === 'BANKNOTE_ISSUER' ?
-                [cite_start]'charge' : 'receive'; [cite: 475]
+                'charge' : 'receive';
             } else {
                 txType = newTx.confirmation_data?.type === 'fee' ?
-                [cite_start]'fee' : 'send'; [cite: 476]
+                'fee' : 'send';
             }
             const formattedTx = {
                 id: newTx.confirmation_data?.id,
                 type: txType,
                 amount: newTx.amount,
                 fee: newTx.confirmation_data?.fee ||
-                [cite_start]'0', [cite: 477]
+                '0',
                 from: newTx.sender_address,
                 to: newTx.receiver_address,
                 status: 'completed',
                 linkedTxHash: newTx.linked_tx_hash,
                 timestamp: new Date(newTx.created_at).getTime(),
               
-                 [cite_start]comment: newTx.confirmation_data?.comment [cite: 478]
+                 comment: newTx.confirmation_data?.comment
             };
-            [cite_start]if (!state.transactionIndex.has(formattedTx.linkedTxHash)) { [cite: 479]
+            if (!state.transactionIndex.has(formattedTx.linkedTxHash)) {
                 WalletLogic.addToChain(formattedTx);
-                [cite_start]await updateBalanceAndRender(); [cite: 480]
+                await updateBalanceAndRender();
                 const syncStatusEl = document.getElementById('sync-status');
                 if (syncStatusEl) {
                     const directionText = direction === 'incoming' ?
-                    [cite_start]'received' : 'sent'; [cite: 481]
+                    'received' : 'sent';
                     setStatus(syncStatusEl, `⚡ Transaction ${directionText} in real-time!`, 'success');
                     setTimeout(() => setStatus(syncStatusEl, ''), 4000);
-                [cite_start]} [cite: 482]
+                }
             }
         }
 
         function startRealtimeListener() {
             if (state.realtimeChannel || !state.wallet || !supabaseClient) return;
-            [cite_start]const channel = supabaseClient.channel(`wallet-updates:${state.wallet.address}`); [cite: 483]
+            const channel = supabaseClient.channel(`wallet-updates:${state.wallet.address}`);
             
             channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `receiver_address=eq.${state.wallet.address}` }, (payload) => handleRealtimePayload(payload, 'incoming'));
-            [cite_start]channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `sender_address=eq.${state.wallet.address}` }, (payload) => handleRealtimePayload(payload, 'outgoing')); [cite: 484]
-            [cite_start]channel.subscribe((status, err) => { [cite: 485]
+            channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `sender_address=eq.${state.wallet.address}` }, (payload) => handleRealtimePayload(payload, 'outgoing'));
+            channel.subscribe((status, err) => {
                 console.log('Subscription status:', status);
                 const syncStatusEl = document.getElementById('sync-status');
                 if(syncStatusEl) {
                     if (status === 'SUBSCRIBED') setStatus(syncStatusEl, '🟢 Real-time sync active', 'success');
               
-                   [cite_start]if (status === 'CHANNEL_ERROR') setStatus(syncStatusEl, 'Real-time sync failed.', 'error'); [cite: 486]
+                   if (status === 'CHANNEL_ERROR') setStatus(syncStatusEl, 'Real-time sync failed.', 'error');
                     if (status === 'CLOSED') setStatus(syncStatusEl, '🔴 Real-time sync disconnected', 'error');
                     if (status === 'TIMED_OUT') setStatus(syncStatusEl, '⏰ Real-time sync timeout', 'error');
                 }
             
-            [cite_start]}); [cite: 487]
+            });
             
             state.realtimeChannel = channel;
         }
@@ -743,7 +743,7 @@
         function stopRealtimeListener() {
             if (state.realtimeChannel) {
                 supabaseClient.removeChannel(state.realtimeChannel);
-                [cite_start]state.realtimeChannel = null; [cite: 488]
+                state.realtimeChannel = null;
                 console.log('Unsubscribed from real-time updates.');
             }
         }
@@ -754,128 +754,128 @@
                 async fetchRates() {
                     try {
      
-                                     [cite_start]const cachedRates = CacheManager.get('fxRates'); [cite: 489]
+                                     const cachedRates = CacheManager.get('fxRates');
                         if (cachedRates) { state.fxRates = cachedRates; console.log("Loaded FX rates from cache."); return; }
                         const response = await fetch(API_URL);
               
-                       if (!response.ok) { throw new Error(`Failed to fetch FX rates. Status: ${response.status}`); [cite_start]} [cite: 490]
+                       if (!response.ok) { throw new Error(`Failed to fetch FX rates. Status: ${response.status}`); }
                         const data = await response.json();
                         state.fxRates = { ...data.rates, USD: 1 };
                     
-                         [cite_start]CacheManager.set('fxRates', state.fxRates, 3600000); [cite: 491]
+                         CacheManager.set('fxRates', state.fxRates, 3600000);
                         console.log("Fetched and cached new FX rates:", state.fxRates);
                     } catch (error) {
                         console.error("Could not fetch FX rates:", error);
             
-                         [cite_start]const settingsStatusEl = document.getElementById('settings-status'); [cite: 492]
-                        [cite_start]if (settingsStatusEl) { setStatus(settingsStatusEl, 'Could not update exchange rates.', 'error'); [cite: 493]
-                        [cite_start]} [cite: 494]
+                         const settingsStatusEl = document.getElementById('settings-status');
+                        if (settingsStatusEl) { setStatus(settingsStatusEl, 'Could not update exchange rates.', 'error');
+                        }
                     }
                 }
             };
-        [cite_start]})(); [cite: 495]
+        })();
 
         function setLoader(loaderId, isLoading) { document.getElementById(loaderId).classList.toggle('hidden', !isLoading); }
         function setStatus(element, message, type = '') { if (!element) return;
-        SecurityUtils.setTextContent(element, message); element.className = 'status-box'; if (type) element.classList.add(type); [cite_start]} [cite: 496]
+        SecurityUtils.setTextContent(element, message); element.className = 'status-box'; if (type) element.classList.add(type); }
         function setStatusHTML(element, message, type = '', allowedTags = ['img', 'b', 'strong', 'i', 'em', 'br', 'span']) { if (!element) return;
-        SecurityUtils.setHTMLContent(element, message, allowedTags); element.className = 'status-box'; if (type) element.classList.add(type); [cite_start]} [cite: 497]
+        SecurityUtils.setHTMLContent(element, message, allowedTags); element.className = 'status-box'; if (type) element.classList.add(type); }
         function resetViewInputs(viewId) { const view = document.getElementById(viewId);
-        [cite_start]if (!view) return; view.querySelectorAll('input, textarea').forEach(input => { if (input.type !== 'file') input.value = ''; }); const statusBox = view.querySelector('.status-box'); [cite: 498]
-        if (statusBox) SecurityUtils.setTextContent(statusBox, ''); [cite_start]} [cite: 499]
+        if (!view) return; view.querySelectorAll('input, textarea').forEach(input => { if (input.type !== 'file') input.value = ''; }); const statusBox = view.querySelector('.status-box');
+        if (statusBox) SecurityUtils.setTextContent(statusBox, ''); }
         
         function animateBalance(element, start, end, duration, prefix = '') {
             let startTimestamp = null;
-            [cite_start]const step = (timestamp) => { [cite: 500]
+            const step = (timestamp) => {
                 if (!startTimestamp) startTimestamp = timestamp;
-                [cite_start]const progress = Math.min((timestamp - startTimestamp) / duration, 1); [cite: 501]
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
                 const easedProgress = progress * (2 - progress);
-                [cite_start]const currentValue = start + (end - start) * easedProgress; [cite: 502]
+                const currentValue = start + (end - start) * easedProgress;
                 element.innerHTML = `${prefix}${currentValue.toFixed(2)}`;
                 if (progress < 1) { window.requestAnimationFrame(step);
-                [cite_start]} [cite: 503]
+                }
             };
             window.requestAnimationFrame(step);
-        [cite_start]} [cite: 504]
+        }
         
         function formatAuraValue(amountBigInt) { const auraAmountDecimal = parseFloat(ethers.formatUnits(amountBigInt, state.config.PRECISION));
-        return auraAmountDecimal.toFixed(2); [cite_start]} [cite: 505]
+        return auraAmountDecimal.toFixed(2); }
         function formatDisplayCurrency(amountBigInt, targetCurrency) {
             if (!targetCurrency || targetCurrency === 'NONE' || !state.fxRates[targetCurrency]) { return '';
-            [cite_start]} [cite: 506]
+            }
             const auraAmountDecimal = parseFloat(ethers.formatUnits(amountBigInt, state.config.PRECISION));
-            [cite_start]const usdValue = auraAmountDecimal * AppConstants.AURA_USD_RATE; [cite: 507]
+            const usdValue = auraAmountDecimal * AppConstants.AURA_USD_RATE;
             const targetRate = state.fxRates[targetCurrency];
             const targetValue = usdValue * targetRate;
-            [cite_start]const formatter = new Intl.NumberFormat(navigator.language || 'en-US', { style: 'currency', currency: targetCurrency, minimumFractionDigits: 2, maximumFractionDigits: 2 }); [cite: 508]
-            try { return `≈ ${formatter.format(targetValue)}`; [cite_start]} catch (e) { return `≈ ${targetCurrency} ${targetValue.toFixed(2)}`; [cite: 509]
-            [cite_start]} [cite: 510]
+            const formatter = new Intl.NumberFormat(navigator.language || 'en-US', { style: 'currency', currency: targetCurrency, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            try { return `≈ ${formatter.format(targetValue)}`; } catch (e) { return `≈ ${targetCurrency} ${targetValue.toFixed(2)}`;
+            }
         }
         
         async function updateBalanceAndRender() {
             try {
                 const balance = await WalletLogic.getServerAuthoritativeBalance();
-                [cite_start]const balanceEl = document.getElementById('balance-display'); [cite: 511]
+                const balanceEl = document.getElementById('balance-display');
                 const secondaryBalanceEl = document.getElementById('secondary-balance-display');
                 const endBalanceAura = parseFloat(formatAuraValue(balance));
                 const numberMatch = balanceEl.textContent.match(/[\d\.]+/);
-                [cite_start]const startBalanceText = numberMatch ? numberMatch[0] : '0'; [cite: 512]
+                const startBalanceText = numberMatch ? numberMatch[0] : '0';
                 const startBalanceAura = parseFloat(startBalanceText);
-                [cite_start]if (Math.abs(startBalanceAura - endBalanceAura) > 0.01) { [cite: 513]
+                if (Math.abs(startBalanceAura - endBalanceAura) > 0.01) {
                     animateBalance(balanceEl, startBalanceAura, endBalanceAura, 1000, auraIconHTML);
-                [cite_start]} else { [cite: 514]
+                } else {
                     balanceEl.innerHTML = `${auraIconHTML} ${endBalanceAura.toFixed(2)}`;
-                [cite_start]} [cite: 515]
+                }
                 const secondaryText = formatDisplayCurrency(balance, state.displayCurrency);
-                [cite_start]if (secondaryText) { [cite: 516]
+                if (secondaryText) {
                     secondaryBalanceEl.style.display = 'block';
-                    [cite_start]SecurityUtils.setTextContent(secondaryBalanceEl, secondaryText); [cite: 517]
+                    SecurityUtils.setTextContent(secondaryBalanceEl, secondaryText);
                 } else {
                     secondaryBalanceEl.style.display = 'none';
-                    [cite_start]SecurityUtils.setTextContent(secondaryBalanceEl, ''); [cite: 518]
+                    SecurityUtils.setTextContent(secondaryBalanceEl, '');
                 }
                 renderTransactionHistory();
-            [cite_start]} catch (error) { [cite: 519]
+            } catch (error) {
                 console.error("Could not update balance:", error);
-                [cite_start]SecurityUtils.setTextContent(document.getElementById('balance-display'), 'Error'); [cite: 520]
+                SecurityUtils.setTextContent(document.getElementById('balance-display'), 'Error');
             }
         }
 
         function generateQrCode(data, containerId) { const container = document.getElementById(containerId);
-        [cite_start]container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10); [cite: 521]
-        [cite_start]const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); } [cite: 522]
+        container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10);
+        const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); }
         function abbreviateAddress(address) { if (!address) return ''; const sanitized = SecurityUtils.sanitizeAddress(address); return `${sanitized.substring(0, 6)}...${sanitized.substring(sanitized.length - 4)}`; }
         function stopScanner() { if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); state.cameraStream = null; state.isScannerActive = false; } }
         async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; 
-        [cite_start]const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status'); setStatus(sendStatusEl, ''); [cite: 523]
-        loadingMessage.style.display = 'flex'; [cite_start]SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); [cite: 524]
-        video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); [cite_start]} catch (err) { console.error("Camera Error:", err); [cite: 525]
-        [cite_start]SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false; [cite: 526]
-        [cite_start]} function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth; [cite: 527]
-        [cite_start]canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height); [cite: 528]
-        [cite_start]const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info'); [cite: 529]
-        [cite_start]let isPaymentRequest = false; try { const request = JSON.parse(code.data); [cite: 530]
-        [cite_start]if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true; [cite: 531]
-        [cite_start]Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); const preAuthTimestamp = Date.now(); const preAuthNonce = crypto.randomUUID(); const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`; const preAuthSignature = await state.wallet.signMessage(preAuthMessage); const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' , request.linkedTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce); state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit }, preAuthNonce }; [cite: 532]
-        [cite_start]const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(request.amount); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit); [cite: 533]
-        [cite_start]const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`; [cite: 534]
-        SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); [cite_start]SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); await showView('send-confirm-view'); [cite: 535]
+        const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status'); setStatus(sendStatusEl, '');
+        loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err);
+        SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false;
+        } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth;
+        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info');
+        let isPaymentRequest = false; try { const request = JSON.parse(code.data);
+        if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true;
+        Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); const preAuthTimestamp = Date.now(); const preAuthNonce = crypto.randomUUID(); const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`; const preAuthSignature = await state.wallet.signMessage(preAuthMessage); const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' , request.linkedTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce); state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit }, preAuthNonce };
+        const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(request.amount); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit);
+        const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`;
+        SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); await showView('send-confirm-view');
         }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); });
-        [cite_start]} } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data; [cite: 537]
-        [cite_start]setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus(); [cite: 538]
-        [cite_start]} else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000); [cite: 539]
-        } } return; } } requestAnimationFrame(tick); [cite_start]} } [cite: 540]
+        } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data;
+        setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus();
+        } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000);
+        } } return; } } requestAnimationFrame(tick); } }
         async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner();
-        if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; [cite_start]} document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active'); [cite: 541]
-        if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); startRealtimeListener(); [cite_start]} if (id === 'send-view') { startScanner(); [cite: 542]
-        [cite_start]} if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code'); [cite: 543]
-        [cite_start]} } [cite: 544]
+        if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active');
+        if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); startRealtimeListener(); } if (id === 'send-view') { startScanner();
+        } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code');
+        } }
         
         function renderTransactionHistory() {
             const listUl = document.getElementById('transaction-list-ul');
-            [cite_start]listUl.innerHTML = ''; if (!state.userStore || !state.userStore.chain) return; [cite: 545]
+            listUl.innerHTML = ''; if (!state.userStore || !state.userStore.chain) return;
             const transactions = state.userStore.chain.filter(tx => tx.type !== 'creation' && tx.status !== 'pending_request').slice(-20).reverse();
-            if (transactions.length === 0) { const item = document.createElement('li'); item.className = 'no-transactions'; [cite_start]SecurityUtils.setTextContent(item, 'No transactions found.'); listUl.appendChild(item); return; [cite: 546]
+            if (transactions.length === 0) { const item = document.createElement('li'); item.className = 'no-transactions'; SecurityUtils.setTextContent(item, 'No transactions found.'); listUl.appendChild(item); return;
             }
             transactions.forEach((tx, index) => {
                 const isSent = tx.type === 'send' || tx.type === 'fee';
@@ -884,79 +884,82 @@
                     : (tx.comment || (tx.type === 'charge' ? 'Charge' : 'Received'));
                 const typeClass = isSent ? 'sent' : 'received';
           
-                 [cite_start]const amountFormatted = formatAuraValue(tx.amount || '0'); [cite: 548]
+                 const amountFormatted = formatAuraValue(tx.amount || '0');
                 const date = new Date(tx.timestamp).toLocaleString('en-US');
                 const item = document.createElement('li'); item.className = 'transaction-item animate-in'; item.style.cursor = 'pointer'; item.style.animationDelay = `${index * 0.07}s`;
                 const iconDiv = document.createElement('div'); iconDiv.className = `transaction-icon ${typeClass}`; iconDiv.innerHTML = isSent ? SvgIcons.txSend : SvgIcons.txReceive;
         
-                 [cite_start]const detailsDiv = document.createElement('div'); detailsDiv.className = 'transaction-details'; [cite: 549]
+                 const detailsDiv = document.createElement('div'); detailsDiv.className = 'transaction-details';
                 const typeSpan = document.createElement('span'); typeSpan.className = 'transaction-type';
-                [cite_start]SecurityUtils.setTextContent(typeSpan, typeText); [cite: 550]
+                SecurityUtils.setTextContent(typeSpan, typeText);
                 const dateSpan = document.createElement('span'); dateSpan.className = 'transaction-date'; SecurityUtils.setTextContent(dateSpan, date);
                 detailsDiv.appendChild(typeSpan); detailsDiv.appendChild(dateSpan);
                 const amountSpan = document.createElement('span');
-                amountSpan.className = `transaction-amount ${typeClass}`; [cite_start]SecurityUtils.setHTMLContent(amountSpan, `${isSent ? '−' : '+'} ${auraIconHTML} ${amountFormatted}`, ['img']); [cite: 551]
+                amountSpan.className = `transaction-amount ${typeClass}`; SecurityUtils.setHTMLContent(amountSpan, `${isSent ? '−' : '+'} ${auraIconHTML} ${amountFormatted}`, ['img']);
                 item.appendChild(iconDiv); item.appendChild(detailsDiv); item.appendChild(amountSpan);
                 item.addEventListener('click', () => showTransactionDetails(tx));
-                [cite_start]listUl.appendChild(item); [cite: 552]
+                listUl.appendChild(item);
             });
         }
         
         function showTransactionDetails(tx) {
             const modal = document.getElementById('transaction-detail-modal');
-            [cite_start]// The 'tx' object already contains all necessary data. [cite: 553]
+            // The 'tx' object already contains all necessary data.
             // This corrected version simply displays the data instead of re-fetching it.
-            [cite_start]const displayData = tx; [cite: 554]
+            const displayData = tx;
 
             const fromAddress = displayData.from || displayData.senderAddress || 'N/A';
             const toAddress = displayData.to || displayData.receiverAddress || 'N/A';
-            [cite_start]const amountText = `${auraIconHTML} ${formatAuraValue(displayData.amount || '0')}`; [cite: 555]
+            const amountText = `${auraIconHTML} ${formatAuraValue(displayData.amount || '0')}`;
             const feeText = `${auraIconHTML} ${formatAuraValue(displayData.fee || '0')}`;
 
             SecurityUtils.setTextContent(document.getElementById('detail-id'), displayData.id || 'N/A');
-            [cite_start]SecurityUtils.setTextContent(document.getElementById('detail-status'), displayData.status || 'N/A'); [cite: 556]
+            SecurityUtils.setTextContent(document.getElementById('detail-status'), displayData.status || 'N/A');
             SecurityUtils.setTextContent(document.getElementById('detail-type'), displayData.type || 'N/A');
             SecurityUtils.setTextContent(document.getElementById('detail-datetime'), new Date(displayData.timestamp).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'medium' }));
             SecurityUtils.setHTMLContent(document.getElementById('detail-amount'), amountText, ['img']);
-            [cite_start]SecurityUtils.setHTMLContent(document.getElementById('detail-fee'), feeText, ['img']); [cite: 557]
+            SecurityUtils.setHTMLContent(document.getElementById('detail-fee'), feeText, ['img']);
             SecurityUtils.setTextContent(document.getElementById('detail-from'), fromAddress);
             SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress);
             SecurityUtils.setTextContent(document.getElementById('detail-comment'), displayData.comment || 'N/A');
             SecurityUtils.setTextContent(document.getElementById('detail-linked-hash'), SecurityUtils.sanitizeTransactionId(displayData.linkedTxHash || 'N/A'));
             SecurityUtils.setTextContent(document.getElementById('detail-local-hash'), SecurityUtils.sanitizeTransactionId(displayData.hash || 'N/A'));
-            [cite_start]modal.style.display = 'flex'; [cite: 558]
+            modal.style.display = 'flex';
             document.getElementById('close-modal-button').onclick = () => { modal.style.display = 'none'; };
-        [cite_start]} [cite: 559]
+        }
 
         function saveCurrencySettings() { const settings = { display: state.displayCurrency }; localStorage.setItem(AppConstants.CURRENCY_STORAGE_KEY, JSON.stringify(settings));
-        [cite_start]} [cite: 560]
+        }
         function loadCurrencySettings() {
             const savedSettings = localStorage.getItem(AppConstants.CURRENCY_STORAGE_KEY);
-            if (savedSettings) { try { const settings = JSON.parse(savedSettings); state.displayCurrency = settings.display || [cite_start]'USD'; [cite: 561]
-            [cite_start]} catch (e) { console.error("Could not parse currency settings, using defaults."); [cite: 562]
-            [cite_start]} } [cite: 563]
+            if (savedSettings) { try { const settings = JSON.parse(savedSettings); state.displayCurrency = settings.display || 'USD';
+            } catch (e) { console.error("Could not parse currency settings, using defaults.");
+            } }
         }
         
         async function initializeApp() {
             try {
                 const publicConfig = await SupabaseLedger.getPublicConfig();
-                [cite_start]const appConfig = await SupabaseLedger.getAppConfig(); [cite: 564]
+                const appConfig = await SupabaseLedger.getAppConfig();
                 state.config = { ...AppConstants, ...appConfig };
                 supabaseClient = supabase.createClient(publicConfig.supabaseUrl, publicConfig.supabaseAnonKey);
                 loadTheme();
                 loadCurrencySettings();
                 await FXRateProvider.fetchRates();
-                [cite_start]document.getElementById('manual-address-icon').innerHTML = SvgIcons.address; [cite: 565]
+                document.getElementById('manual-address-icon').innerHTML = SvgIcons.address;
                 setupEventListeners();
                 
                 const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
-                if (storedWallet) { showView('unlock-view'); } else { showView('onboarding-view');
-                [cite_start]} [cite: 566]
+                if (storedWallet) {
+                    showView('unlock-view');
+                } else {
+                    showView('onboarding-view');
+                }
             } catch (e) {
                 console.error("Initialization Error:", e);
-                [cite_start]document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not contact the server to start the application. [cite: 567]
-                [cite_start]Please check your network connection and refresh the page.</p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`; [cite: 568]
-            [cite_start]} [cite: 569]
+                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not contact the server to start the application.
+                Please check your network connection and refresh the page.</p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
+            }
         }
         
         function setupEventListeners() {
@@ -965,152 +968,152 @@
                 const button = document.getElementById('unlock-wallet-button');
                 const statusEl = document.getElementById('unlock-status');
   
-                               [cite_start]const pass = document.getElementById('unlock-password-input').value; [cite: 570]
+                               const pass = document.getElementById('unlock-password-input').value;
 
                 setStatus(statusEl, '');
                 if (!pass) {
                     setStatus(statusEl, 'Password is required.', 'error');
                     return;
     
-                 [cite_start]} [cite: 571]
+                 }
                 
                 button.disabled = true;
                 setLoader('unlock-loader', true);
                 
                 try {
     
-                     [cite_start]// 1. Check server for existing lockouts [cite: 572]
+                     // 1. Check server for existing lockouts
                     const { failedAttempts } = await SupabaseLedger.checkUnlockStatus();
                     if (failedAttempts >= AppConstants.MAX_LOGIN_ATTEMPTS) {
                         setStatus(statusEl, `Too many failed 
-                        [cite_start]attempts. Please try again in 15 minutes.`, 'error'); [cite: 573]
+                        attempts. Please try again in 15 minutes.`, 'error');
                         throw new Error("Lockout active");
-                    [cite_start]} [cite: 574]
+                    }
                     
                     // 2. Attempt local decryption
                     const success = await WalletLogic.unlockWallet(pass);
-                    [cite_start]if (success) { [cite: 575]
+                    if (success) {
                         await showView('wallet-view');
-                        [cite_start]resetViewInputs('unlock-view'); [cite: 576]
+                        resetViewInputs('unlock-view');
                     } else {
                         // 3. If failed, record failure on server and inform user.
-                        [cite_start]await SupabaseLedger.recordFailedUnlock('invalid_password'); [cite: 577]
+                        await SupabaseLedger.recordFailedUnlock('invalid_password');
                         const remaining = AppConstants.MAX_LOGIN_ATTEMPTS - (failedAttempts + 1);
-                        [cite_start]setStatus(statusEl, `Incorrect password. ${remaining > 0 ? `${remaining} attempts remaining.` : 'Account locked.'}`, 'error'); [cite: 578]
-                    [cite_start]} [cite: 579]
+                        setStatus(statusEl, `Incorrect password. ${remaining > 0 ? `${remaining} attempts remaining.` : 'Account locked.'}`, 'error');
+                    }
                 } catch (err) {
                     if (err.message !== "Lockout active") {
                        setStatus(statusEl, `An error occurred: ${err.message}`, 'error');
-                    [cite_start]} [cite: 580]
+                    }
                 } finally {
                     button.disabled = false;
-                    [cite_start]setLoader('unlock-loader', false); [cite: 581]
+                    setLoader('unlock-loader', false);
                 }
             });
-            [cite_start]document.getElementById('forget-wallet-button').addEventListener('click', () => { if (confirm('Are you sure you want to forget this wallet? You will need your 12-word recovery phrase to access it again.')) { WalletLogic.logout(); } }); [cite: 582]
-            [cite_start]document.getElementById('go-to-create-wallet').addEventListener('click', () => showView('create-wallet-view')); [cite: 583]
+            document.getElementById('forget-wallet-button').addEventListener('click', () => { if (confirm('Are you sure you want to forget this wallet? You will need your 12-word recovery phrase to access it again.')) { WalletLogic.logout(); } });
+            document.getElementById('go-to-create-wallet').addEventListener('click', () => showView('create-wallet-view'));
             document.getElementById('go-to-restore-wallet').addEventListener('click', () => showView('restore-wallet-view'));
             document.getElementById('back-from-create').addEventListener('click', () => { resetViewInputs('create-wallet-view'); showView('onboarding-view'); });
-            [cite_start]document.getElementById('back-from-restore').addEventListener('click', () => { resetViewInputs('restore-wallet-view'); showView('onboarding-view'); }); [cite: 584]
+            document.getElementById('back-from-restore').addEventListener('click', () => { resetViewInputs('restore-wallet-view'); showView('onboarding-view'); });
             document.getElementById('back-from-charge').addEventListener('click', () => showView('wallet-view'));
             document.getElementById('back-from-banknote-confirm').addEventListener('click', () => showView('charge-view'));
             document.getElementById('back-from-receive').addEventListener('click', () => showView('wallet-view'));
-            [cite_start]document.getElementById('back-from-send-confirm').addEventListener('click', () => { [cite: 585]
+            document.getElementById('back-from-send-confirm').addEventListener('click', () => {
                 if (state.activeTransactionIntent && state.activeTransactionIntent.transactionIntentId) {
                     SupabaseLedger.cancelTransactionIntent(state.activeTransactionIntent.transactionIntentId)
                         .catch(err => console.error("Failed to cancel intent on server:", err));
                     state.activeTransactionIntent = null;
    
-                 [cite_start]} [cite: 586]
+                 }
                 showView('send-options-view');
             });
-            [cite_start]document.getElementById('back-from-qr-display').addEventListener('click', () => { showView('wallet-view'); }); [cite: 587]
+            document.getElementById('back-from-qr-display').addEventListener('click', () => { showView('wallet-view'); });
             document.getElementById('show-send-view-button').addEventListener('click', () => { resetViewInputs('send-manual-view'); resetViewInputs('send-view'); showView('send-options-view'); });
             document.getElementById('go-to-send-manual').addEventListener('click', () => showView('send-manual-view'));
-            [cite_start]document.getElementById('go-to-send-scan').addEventListener('click', () => showView('send-view')); [cite: 588]
+            document.getElementById('go-to-send-scan').addEventListener('click', () => showView('send-view'));
             document.getElementById('back-from-send-options').addEventListener('click', () => showView('wallet-view'));
             document.getElementById('back-from-send').addEventListener('click', () => showView('send-options-view'));
             document.getElementById('back-from-send-manual').addEventListener('click', () => showView('send-options-view'));
-            [cite_start]document.getElementById('settings-button').addEventListener('click', () => { document.getElementById('display-currency-select').value = state.displayCurrency; setStatus(document.getElementById('settings-status'), ''); showView('settings-view'); }); [cite: 589]
+            document.getElementById('settings-button').addEventListener('click', () => { document.getElementById('display-currency-select').value = state.displayCurrency; setStatus(document.getElementById('settings-status'), ''); showView('settings-view'); });
             document.getElementById('back-from-settings').addEventListener('click', () => showView('wallet-view'));
-            [cite_start]document.getElementById('display-currency-select').addEventListener('change', (e) => { const newDisplay = e.target.value; const statusEl = document.getElementById('settings-status'); state.displayCurrency = newDisplay; saveCurrencySettings(); updateBalanceAndRender(); setStatus(statusEl, 'Settings saved.', 'success'); }); [cite: 590]
-            [cite_start]let generatedMnemonic = ''; [cite: 591]
+            document.getElementById('display-currency-select').addEventListener('change', (e) => { const newDisplay = e.target.value; const statusEl = document.getElementById('settings-status'); state.displayCurrency = newDisplay; saveCurrencySettings(); updateBalanceAndRender(); setStatus(statusEl, 'Settings saved.', 'success'); });
+            let generatedMnemonic = '';
             document.getElementById('create-wallet-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(); const confirmPass = document.getElementById('confirm-password-input').value.trim(); setStatus(statusEl, ''); if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); const { mnemonic, userStore, wallet } = await WalletLogic.createWallet(pass); generatedMnemonic = mnemonic; state.tempUserStore = userStore; state.tempWallet = wallet; SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic); showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); });
-            [cite_start]document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => { const words = generatedMnemonic.split(' '); const idx1 = Math.floor(Math.random() * 6); const idx2 = Math.floor(Math.random() * 6) + 6; const verifyBtn = document.getElementById('verify-seed-button'); verifyBtn.dataset.word1 = words[idx1]; verifyBtn.dataset.word2 = words[idx2]; document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`; document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`; resetViewInputs('seed-confirm-view'); showView('seed-confirm-view'); }); [cite: 592]
-            [cite_start]document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { state.userStore = state.tempUserStore; state.wallet = state.tempWallet; WalletLogic.saveUserStore(); state.tempUserStore = null; state.tempWallet = null; generatedMnemonic = ''; resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error'); [cite: 593]
-            [cite_start]} }); [cite: 594]
+            document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => { const words = generatedMnemonic.split(' '); const idx1 = Math.floor(Math.random() * 6); const idx2 = Math.floor(Math.random() * 6) + 6; const verifyBtn = document.getElementById('verify-seed-button'); verifyBtn.dataset.word1 = words[idx1]; verifyBtn.dataset.word2 = words[idx2]; document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`; document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`; resetViewInputs('seed-confirm-view'); showView('seed-confirm-view'); });
+            document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { state.userStore = state.tempUserStore; state.wallet = state.tempWallet; WalletLogic.saveUserStore(); state.tempUserStore = null; state.tempWallet = null; generatedMnemonic = ''; resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error');
+            } });
             document.getElementById('restore-wallet-button').addEventListener('click', async () => { const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); setStatus(statusEl, ''); if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; } if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } button.disabled = true; setLoader('restore-loader', true); const success = await WalletLogic.restoreWallet(mnemonic, pass); if (success) { await showView('wallet-view'); } else { setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); } button.disabled = false; setLoader('restore-loader', false); resetViewInputs('restore-wallet-view'); });
-            [cite_start]document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); }); [cite: 595]
+            document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); });
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
-            [cite_start]document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); }); [cite: 596]
+            document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
-            [cite_start]// UPDATED: send-manual-button logic with nonce [cite: 597]
+            // UPDATED: send-manual-button logic with nonce
             document.getElementById('send-manual-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-manual-status'); const recipientAddress = document.getElementById('send-address-input').value.trim(); const amountDecimalString = document.getElementById('send-amount-input').value; const comment = document.getElementById('send-comment-input').value.trim(); setStatus(statusEl, ''); if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; } if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; } if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; } let amountInt; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error();
-            amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; [cite_start]} button.disabled = true; [cite: 598]
-            [cite_start]setStatus(statusEl, 'Preparing transaction with server...', 'info'); [cite: 599]
+            amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true;
+            setStatus(statusEl, 'Preparing transaction with server...', 'info');
                 try { 
                     const senderTxHash = WalletLogic.precomputeTransactionHash({ type: 'send', amount: amountInt.toString(), fee: '0', from: state.wallet.address, to: recipientAddress });
-                    [cite_start]const preAuthTimestamp = Date.now(); [cite: 600]
+                    const preAuthTimestamp = Date.now();
                     const preAuthNonce = crypto.randomUUID();
                     const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`;
                     const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
-                    [cite_start]const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction( state.wallet.address, recipientAddress, amountInt.toString(), comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce); [cite: 601]
-                    [cite_start]state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit }, preAuthNonce }; [cite: 602]
-                    [cite_start]const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(amountInt); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit); [cite: 603]
-                    [cite_start]const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`; [cite: 604]
-                    SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress); [cite_start]SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : ''); await showView('send-confirm-view'); [cite: 605]
-                } catch (err) { setStatus(statusEl, err.message, 'error'); [cite_start]} finally { button.disabled = false; [cite: 606]
+                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction( state.wallet.address, recipientAddress, amountInt.toString(), comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce);
+                    state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit }, preAuthNonce };
+                    const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(amountInt); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit);
+                    const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`;
+                    SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : ''); await showView('send-confirm-view');
+                } catch (err) { setStatus(statusEl, err.message, 'error'); } finally { button.disabled = false;
                 } 
             });
-            [cite_start]document.getElementById('refresh-tx-button').addEventListener('click', async () => { [cite: 608]
+            document.getElementById('refresh-tx-button').addEventListener('click', async () => {
                 const button = document.getElementById('refresh-tx-button');
                 const icon = button.querySelector('.icon');
                 const loader = button.querySelector('.loader');
                 const syncStatusEl = document.getElementById('sync-status');
                 button.disabled = true;
   
-                               [cite_start]icon.style.display = 'none'; [cite: 609]
+                               icon.style.display = 'none';
                 loader.style.display = 'block';
                 setStatus(syncStatusEl, 'Updating history...', 'info');
                 try {
                     await WalletLogic.synchronizeChainFromServer();
          
-                     [cite_start]await updateBalanceAndRender(); [cite: 610]
+                     await updateBalanceAndRender();
                     setStatus(syncStatusEl, 'History updated successfully.', 'success');
                 } catch (error) {
                     console.error("Manual refresh failed:", error);
                     setStatus(syncStatusEl, 'Update 
-                    [cite_start]failed.', 'error'); [cite: 611]
+                    failed.', 'error');
                 } finally {
                     const originalMessage = syncStatusEl.textContent;
-                    [cite_start]setTimeout(() => { [cite: 612]
+                    setTimeout(() => {
                         button.disabled = false;
                         icon.style.display = 'block';
                         loader.style.display = 'none';
                     
-                         [cite_start]if (syncStatusEl.textContent === originalMessage) { [cite: 613]
+                         if (syncStatusEl.textContent === originalMessage) {
                            setStatus(syncStatusEl, '');
                         }
                     }, 2500);
-                [cite_start]} [cite: 614]
+                }
             });
-            [cite_start]document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } const localTransaction = state.userStore.chain.find(tx => tx.id && tx.id.toString() === searchId); if (localTransaction) { showTransactionDetails(localTransaction); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { showTransactionDetails(serverTransaction); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } }); [cite: 615]
-            [cite_start]document.getElementById('create-request-qr-button').addEventListener('click', () => { const amountDecimalString = document.getElementById('request-amount-input').value; const statusEl = document.getElementById('receive-status'); let amountIntString; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error(); amountIntString = ethers.parseUnits(amountDecimalString, state.config.PRECISION).toString(); } catch (e) { setStatus(statusEl, 'Please enter a valid amount.', 'error'); return; } const request = WalletLogic.createPaymentRequest(amountIntString); SecurityUtils.setTextContent(document.getElementById('qr-display-title'), 'Payment Request'); SecurityUtils.setHTMLContent(document.getElementById('qr-display-instruction'), `Show this QR to the sender to pay ${auraIconHTML} ${parseFloat(amountDecimalString).toFixed(2)}.`, ['img']); document.getElementById('qr-display-box').style.display = 'block'; generateQrCode(JSON.stringify(request), 'qr-display-box'); [cite: 616]
-            [cite_start]document.getElementById('waiting-on-payment').style.display = 'block'; const statusMsg = document.getElementById('final-status-message'), timerEl = document.getElementById('payment-timer'); setStatus(statusMsg, 'Waiting for sender to pay...', 'info'); [cite: 617]
-            [cite_start]document.querySelector('#waiting-on-payment .loader').style.display = 'block'; showView('qr-display-view'); let timeLeft = state.config.PAYMENT_REQUEST_EXPIRY; const updateTimer = () => { timeLeft -= 1000; [cite: 618]
-            const minutes = Math.floor(timeLeft / 60000), seconds = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0'); [cite_start]SecurityUtils.setTextContent(timerEl, `Expires in: ${minutes}:${seconds}`); [cite: 619]
-            if (timeLeft <= 0) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; setStatus(statusMsg, 'Payment request expired.', 'error'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; [cite_start]} }; [cite: 620]
-            [cite_start]updateTimer(); state.activePollingTimer = setInterval(async () => { updateTimer(); if (timeLeft <= 0) return; try { const confirmation = await SupabaseLedger.findConfirmation(request.linkedTxHash); if (confirmation) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; timerEl.style.display = 'none'; setStatus(statusMsg, 'Payment detected! Finalizing...', 'info'); confirmation.linkedTxHash = request.linkedTxHash; if (await WalletLogic.finalizePayment(confirmation)) { const amountAura = formatAuraValue(confirmation.amount); setStatusHTML(statusMsg, `Success! ${auraIconHTML} ${amountAura} received.`, 'success'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; setTimeout(async () => { await showView('wallet-view'); }, 2000); } else { setStatus(statusMsg, 'Payment confirmed but failed to update wallet. Please restart.', 'error'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } } } catch (err) { console.error("Polling error:", err); [cite: 621]
-            setStatus(statusMsg, 'Network error while checking for payment.', 'error'); clearInterval(state.activePollingTimer); state.activePollingTimer = null; } }, state.config.POLLING_INTERVAL); [cite_start]}); [cite: 622]
-            [cite_start]document.getElementById('confirm-payment-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-confirm-status'); button.disabled = true; setStatus(statusEl, 'Awaiting signature and sending...', 'info'); try { const result = await WalletLogic.executePreparedTransaction(); if (result.success) { const amountAura = formatAuraValue(state.activeTransactionIntent.details.amount); setStatusHTML(statusEl, `Payment of ${auraIconHTML} ${amountAura} sent successfully!`, 'success'); await updateBalanceAndRender(); await new Promise(resolve => setTimeout(resolve, 1500)); state.activeTransactionIntent = null; await showView('wallet-view'); } } catch (err) { setStatus(statusEl, `Payment Failed: ${err.message}`, 'error'); } finally { button.disabled = false; } }); [cite: 623]
-            [cite_start]document.getElementById('show-charge-view-button').addEventListener('click', () => { resetViewInputs('charge-view'); showView('charge-view'); }); [cite: 624]
+            document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } const localTransaction = state.userStore.chain.find(tx => tx.id && tx.id.toString() === searchId); if (localTransaction) { showTransactionDetails(localTransaction); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { showTransactionDetails(serverTransaction); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
+            document.getElementById('create-request-qr-button').addEventListener('click', () => { const amountDecimalString = document.getElementById('request-amount-input').value; const statusEl = document.getElementById('receive-status'); let amountIntString; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error(); amountIntString = ethers.parseUnits(amountDecimalString, state.config.PRECISION).toString(); } catch (e) { setStatus(statusEl, 'Please enter a valid amount.', 'error'); return; } const request = WalletLogic.createPaymentRequest(amountIntString); SecurityUtils.setTextContent(document.getElementById('qr-display-title'), 'Payment Request'); SecurityUtils.setHTMLContent(document.getElementById('qr-display-instruction'), `Show this QR to the sender to pay ${auraIconHTML} ${parseFloat(amountDecimalString).toFixed(2)}.`, ['img']); document.getElementById('qr-display-box').style.display = 'block'; generateQrCode(JSON.stringify(request), 'qr-display-box');
+            document.getElementById('waiting-on-payment').style.display = 'block'; const statusMsg = document.getElementById('final-status-message'), timerEl = document.getElementById('payment-timer'); setStatus(statusMsg, 'Waiting for sender to pay...', 'info');
+            document.querySelector('#waiting-on-payment .loader').style.display = 'block'; showView('qr-display-view'); let timeLeft = state.config.PAYMENT_REQUEST_EXPIRY; const updateTimer = () => { timeLeft -= 1000;
+            const minutes = Math.floor(timeLeft / 60000), seconds = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0'); SecurityUtils.setTextContent(timerEl, `Expires in: ${minutes}:${seconds}`);
+            if (timeLeft <= 0) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; setStatus(statusMsg, 'Payment request expired.', 'error'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } };
+            updateTimer(); state.activePollingTimer = setInterval(async () => { updateTimer(); if (timeLeft <= 0) return; try { const confirmation = await SupabaseLedger.findConfirmation(request.linkedTxHash); if (confirmation) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; timerEl.style.display = 'none'; setStatus(statusMsg, 'Payment detected! Finalizing...', 'info'); confirmation.linkedTxHash = request.linkedTxHash; if (await WalletLogic.finalizePayment(confirmation)) { const amountAura = formatAuraValue(confirmation.amount); setStatusHTML(statusMsg, `Success! ${auraIconHTML} ${amountAura} received.`, 'success'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; setTimeout(async () => { await showView('wallet-view'); }, 2000); } else { setStatus(statusMsg, 'Payment confirmed but failed to update wallet. Please restart.', 'error'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } } } catch (err) { console.error("Polling error:", err);
+            setStatus(statusMsg, 'Network error while checking for payment.', 'error'); clearInterval(state.activePollingTimer); state.activePollingTimer = null; } }, state.config.POLLING_INTERVAL); });
+            document.getElementById('confirm-payment-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-confirm-status'); button.disabled = true; setStatus(statusEl, 'Awaiting signature and sending...', 'info'); try { const result = await WalletLogic.executePreparedTransaction(); if (result.success) { const amountAura = formatAuraValue(state.activeTransactionIntent.details.amount); setStatusHTML(statusEl, `Payment of ${auraIconHTML} ${amountAura} sent successfully!`, 'success'); await updateBalanceAndRender(); await new Promise(resolve => setTimeout(resolve, 1500)); state.activeTransactionIntent = null; await showView('wallet-view'); } } catch (err) { setStatus(statusEl, `Payment Failed: ${err.message}`, 'error'); } finally { button.disabled = false; } });
+            document.getElementById('show-charge-view-button').addEventListener('click', () => { resetViewInputs('charge-view'); showView('charge-view'); });
             document.getElementById('banknote-image-input').addEventListener('change', async (event) => { const file = event.target.files[0]; const statusEl = document.getElementById('validation-status'); if (!file) return; const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']; if (!allowedTypes.includes(file.type)) { setStatus(statusEl, 'Invalid file type. Please upload a JPEG, PNG, or WebP file.', 'error'); event.target.value = ''; return; } setStatus(statusEl, 'Preparing image...', 'info'); try { const resizedDataUrl = await CoreLogic.Utils.resizeImage(file, CoreLogic.Constants.MAX_IMAGE_DIMENSION); const processedDataUrl = await CoreLogic.Utils.preprocessImage(resizedDataUrl); const imageData = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const ctx = c.getContext('2d'); 
-            ctx.drawImage(img, 0, 0); resolve(ctx.getImageData(0, 0, img.width, img.height)); }; img.onerror = reject; img.src = processedDataUrl; [cite_start]}); [cite: 625]
-            [cite_start]const banknotePayload = await CoreLogic.Banknote.decodeQrGrid(imageData, statusEl); setStatus(statusEl, 'Banknote scanned. Validating with server...', 'info'); const validationResult = await SupabaseLedger.validateBanknote(banknotePayload); [cite: 626]
-            if (validationResult.success) { state.tempBanknotePayload = banknotePayload; const amountAura = formatAuraValue(validationResult.amount); SecurityUtils.setHTMLContent(document.getElementById('confirm-banknote-amount-display'), `${auraIconHTML} ${amountAura}`, ['img']); [cite_start]SecurityUtils.setTextContent(document.getElementById('confirm-banknote-serial-display'), validationResult.serial); resetViewInputs('charge-view'); showView('banknote-confirm-view'); [cite: 627]
-            [cite_start]} else { throw new Error("Validation failed for an unknown reason."); [cite: 628]
-            } } catch (err) { setStatus(statusEl, `Validation Failed: ${SecurityUtils.sanitizeText(err.message)}`, 'error'); } finally { event.target.value = ''; [cite_start]} }); [cite: 629]
-            [cite_start]document.getElementById('confirm-banknote-button').addEventListener('click', async (event) => { [cite: 630]
+            ctx.drawImage(img, 0, 0); resolve(ctx.getImageData(0, 0, img.width, img.height)); }; img.onerror = reject; img.src = processedDataUrl; });
+            const banknotePayload = await CoreLogic.Banknote.decodeQrGrid(imageData, statusEl); setStatus(statusEl, 'Banknote scanned. Validating with server...', 'info'); const validationResult = await SupabaseLedger.validateBanknote(banknotePayload);
+            if (validationResult.success) { state.tempBanknotePayload = banknotePayload; const amountAura = formatAuraValue(validationResult.amount); SecurityUtils.setHTMLContent(document.getElementById('confirm-banknote-amount-display'), `${auraIconHTML} ${amountAura}`, ['img']); SecurityUtils.setTextContent(document.getElementById('confirm-banknote-serial-display'), validationResult.serial); resetViewInputs('charge-view'); showView('banknote-confirm-view');
+            } else { throw new Error("Validation failed for an unknown reason.");
+            } } catch (err) { setStatus(statusEl, `Validation Failed: ${SecurityUtils.sanitizeText(err.message)}`, 'error'); } finally { event.target.value = ''; } });
+            document.getElementById('confirm-banknote-button').addEventListener('click', async (event) => {
                 const button = event.target;
                 const statusEl = document.getElementById('banknote-confirm-status');
                 if (!state.tempBanknotePayload) {
@@ -1142,9 +1145,9 @@
                     button.disabled = false;
                 }
             });
-            [cite_start]document.querySelectorAll('.theme-button').forEach(button => { button.addEventListener('click', (e) => { applyTheme(e.target.dataset.theme); }); }); [cite: 631]
+            document.querySelectorAll('.theme-button').forEach(button => { button.addEventListener('click', (e) => { applyTheme(e.target.dataset.theme); }); });
         }
         document.addEventListener('DOMContentLoaded', initializeApp);
-    [cite_start]</script> [cite: 632]
+    </script>
 </body>
 </html>
