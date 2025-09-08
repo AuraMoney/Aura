@@ -206,10 +206,8 @@
 
         import { ethers } from "./ethers.min.js";
         
-        // --- UPDATED: No hardcoded Supabase keys ---
         const EDGE_FUNCTION_URL = `https://yuozqhimrkyjopgidqje.supabase.co/functions/v1/api`;
 
-        // This client is for REAL-TIME subscriptions ONLY. It will be initialized in initializeApp().
         let supabaseClient;
 
         let state = { 
@@ -228,7 +226,7 @@
             currentBalance: 0n, 
             transactionIndex: new Map(), 
             realtimeChannel: null,
-            config: null, // This will be fetched from the server
+            config: null,
             displayCurrency: 'USD',
             fxRates: { 'USD': 1 }
         };
@@ -309,7 +307,7 @@
                 return result.data;
             };
             return { 
-                getPublicConfig: () => apiCall('getPublicConfig'), // <-- NEW
+                getPublicConfig: () => apiCall('getPublicConfig'),
                 getAppConfig: () => apiCall('getAppConfig'), 
                 prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature) => 
                     apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature }),
@@ -422,9 +420,10 @@
                 const prevTx = WalletLogic.getLastTransaction();
                 const amountInt = BigInt(txDetails.amount || '0');
                 const feeInt = BigInt(txDetails.fee || '0');
-                const nonce = Date.now();
+                // --- FIX IMPLEMENTED: More robust nonce for guaranteed uniqueness ---
+                const nonce = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
                 return ethers.solidityPackedKeccak256(
-                    ['string', 'uint256', 'uint256', 'string', 'string', 'string', 'uint256'], 
+                    ['string', 'uint256', 'uint256', 'string', 'string', 'string', 'string'], 
                     [txDetails.type, amountInt, feeInt, txDetails.from, txDetails.to, prevTx.hash, nonce]
                 );
             },
@@ -535,7 +534,6 @@
             }
         }
 
-        // --- UPDATED: Real-time listener now checks if supabaseClient exists ---
         function startRealtimeListener() {
             if (state.realtimeChannel || !state.wallet || !supabaseClient) return;
             
@@ -688,19 +686,15 @@
             const savedSettings = localStorage.getItem(AppConstants.CURRENCY_STORAGE_KEY);
             if (savedSettings) { try { const settings = JSON.parse(savedSettings); state.displayCurrency = settings.display || 'USD'; } catch (e) { console.error("Could not parse currency settings, using defaults."); } }
         }
-
-        // --- UPDATED: Main app initialization ---
+        
         async function initializeApp() {
             try {
-                // 1. Fetch ALL configuration from the Edge Function
                 const publicConfig = await SupabaseLedger.getPublicConfig();
                 const appConfig = await SupabaseLedger.getAppConfig();
                 state.config = { ...AppConstants, ...appConfig };
 
-                // 2. Create the Supabase client for REAL-TIME ONLY
                 supabaseClient = supabase.createClient(publicConfig.supabaseUrl, publicConfig.supabaseAnonKey);
 
-                // 3. Continue with the rest of the initialization
                 loadTheme();
                 loadCurrencySettings();
                 await FXRateProvider.fetchRates();
@@ -776,7 +770,36 @@
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
             document.getElementById('send-manual-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-manual-status'); const recipientAddress = document.getElementById('send-address-input').value.trim(); const amountDecimalString = document.getElementById('send-amount-input').value; const comment = document.getElementById('send-comment-input').value.trim(); setStatus(statusEl, ''); if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; } if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; } if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; } let amountInt; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error(); amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true; setStatus(statusEl, 'Preparing transaction with server...', 'info'); try { const senderTxHash = WalletLogic.precomputeTransactionHash({ type: 'send', amount: amountInt.toString(), fee: '0', from: state.wallet.address, to: recipientAddress }); const preAuthTimestamp = Date.now(); const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`; const preAuthSignature = await state.wallet.signMessage(preAuthMessage); const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction( state.wallet.address, recipientAddress, amountInt.toString(), comment, senderTxHash, preAuthTimestamp, preAuthSignature); state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit } }; const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(amountInt); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit); const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`; SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : ''); await showView('send-confirm-view'); } catch (err) { setStatus(statusEl, err.message, 'error'); } finally { button.disabled = false; } });
-            document.getElementById('refresh-tx-button').addEventListener('click', async () => { const button = document.getElementById('refresh-tx-button'); const icon = button.querySelector('.icon'); const loader = button.querySelector('.loader'); const syncStatusEl = document.getElementById('sync-status'); button.disabled = true; icon.style.display = 'none'; loader.style.display = 'block'; setStatus(syncStatusEl, 'Updating history...', 'info'); try { await WalletLogic.synchronizeChainFromServer(); await updateBalanceAndRender(); setStatus(syncStatusEl, 'History updated successfully.', 'success'); } catch (error) { console.error("Manual refresh failed:", error); setStatus(syncStatusEl, 'Update failed.', 'error'); } finally { setTimeout(() => { button.disabled = false; icon.style.display = 'block'; loader.style.display = 'none'; if(syncStatusEl.textContent.includes('success') || syncStatusEl.textContent.includes('failed')){ setStatus(syncStatusEl, ''); } }, 1500); } });
+            document.getElementById('refresh-tx-button').addEventListener('click', async () => {
+                const button = document.getElementById('refresh-tx-button');
+                const icon = button.querySelector('.icon');
+                const loader = button.querySelector('.loader');
+                const syncStatusEl = document.getElementById('sync-status');
+                button.disabled = true;
+                icon.style.display = 'none';
+                loader.style.display = 'block';
+                setStatus(syncStatusEl, 'Updating history...', 'info');
+                try {
+                    await WalletLogic.synchronizeChainFromServer();
+                    await updateBalanceAndRender();
+                    setStatus(syncStatusEl, 'History updated successfully.', 'success');
+                } catch (error) {
+                    console.error("Manual refresh failed:", error);
+                    setStatus(syncStatusEl, 'Update failed.', 'error');
+                } finally {
+                    // --- FIX IMPLEMENTED: Smarter status clearing ---
+                    const originalMessage = syncStatusEl.textContent;
+                    setTimeout(() => {
+                        button.disabled = false;
+                        icon.style.display = 'block';
+                        loader.style.display = 'none';
+                        // Only clear the message if it's the one we set and it hasn't been updated by another process.
+                        if (syncStatusEl.textContent === originalMessage) {
+                           setStatus(syncStatusEl, '');
+                        }
+                    }, 2500); // Increased timeout slightly for better visibility
+                }
+            });
             document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } const localTransaction = state.userStore.chain.find(tx => tx.id && tx.id.toString() === searchId); if (localTransaction) { showTransactionDetails(localTransaction); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { const displayableTx = { id: serverTransaction.id, status: 'completed', type: serverTransaction.senderAddress === 'BANKNOTE_ISSUER' ? 'charge' : (serverTransaction.senderAddress === state.wallet.address ? 'send' : 'receive'), timestamp: serverTransaction.timestamp, amount: serverTransaction.amount, fee: serverTransaction.fee || '0', from: serverTransaction.senderAddress, to: serverTransaction.receiverAddress, hash: serverTransaction.hash, linkedTxHash: serverTransaction.linkedTxHash, comment: serverTransaction.comment }; showTransactionDetails(displayableTx); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
             document.getElementById('create-request-qr-button').addEventListener('click', () => { const amountDecimalString = document.getElementById('request-amount-input').value; const statusEl = document.getElementById('receive-status'); let amountIntString; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error(); amountIntString = ethers.parseUnits(amountDecimalString, state.config.PRECISION).toString(); } catch (e) { setStatus(statusEl, 'Please enter a valid amount.', 'error'); return; } const request = WalletLogic.createPaymentRequest(amountIntString); SecurityUtils.setTextContent(document.getElementById('qr-display-title'), 'Payment Request'); SecurityUtils.setHTMLContent(document.getElementById('qr-display-instruction'), `Show this QR to the sender to pay ${auraIconHTML} ${parseFloat(amountDecimalString).toFixed(2)}.`, ['img']); document.getElementById('qr-display-box').style.display = 'block'; generateQrCode(JSON.stringify(request), 'qr-display-box'); document.getElementById('waiting-on-payment').style.display = 'block'; const statusMsg = document.getElementById('final-status-message'), timerEl = document.getElementById('payment-timer'); setStatus(statusMsg, 'Waiting for sender to pay...', 'info'); document.querySelector('#waiting-on-payment .loader').style.display = 'block'; showView('qr-display-view'); let timeLeft = state.config.PAYMENT_REQUEST_EXPIRY; const updateTimer = () => { timeLeft -= 1000; const minutes = Math.floor(timeLeft / 60000), seconds = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0'); SecurityUtils.setTextContent(timerEl, `Expires in: ${minutes}:${seconds}`); if (timeLeft <= 0) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; setStatus(statusMsg, 'Payment request expired.', 'error'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } }; updateTimer(); state.activePollingTimer = setInterval(async () => { updateTimer(); if (timeLeft <= 0) return; try { const confirmation = await SupabaseLedger.findConfirmation(request.linkedTxHash); if (confirmation) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; timerEl.style.display = 'none'; setStatus(statusMsg, 'Payment detected! Finalizing...', 'info'); confirmation.linkedTxHash = request.linkedTxHash; if (await WalletLogic.finalizePayment(confirmation)) { const amountAura = formatAuraValue(confirmation.amount); setStatusHTML(statusMsg, `Success! ${auraIconHTML} ${amountAura} received.`, 'success'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; setTimeout(async () => { await showView('wallet-view'); }, 2000); } else { setStatus(statusMsg, 'Payment confirmed but failed to update wallet. Please restart.', 'error'); document.querySelector('#waiting-on-payment .loader').style.display = 'none'; } } } catch (err) { console.error("Polling error:", err); setStatus(statusMsg, 'Network error while checking for payment.', 'error'); clearInterval(state.activePollingTimer); state.activePollingTimer = null; } }, state.config.POLLING_INTERVAL); });
             document.getElementById('confirm-payment-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-confirm-status'); button.disabled = true; setStatus(statusEl, 'Awaiting signature and sending...', 'info'); try { const result = await WalletLogic.executePreparedTransaction(); if (result.success) { const amountAura = formatAuraValue(state.activeTransactionIntent.details.amount); setStatusHTML(statusEl, `Payment of ${auraIconHTML} ${amountAura} sent successfully!`, 'success'); await updateBalanceAndRender(); await new Promise(resolve => setTimeout(resolve, 1500)); state.activeTransactionIntent = null; await showView('wallet-view'); } } catch (err) { setStatus(statusEl, `Payment Failed: ${err.message}`, 'error'); } finally { button.disabled = false; } });
