@@ -229,7 +229,6 @@
             currentBalance: 0n, 
             transactionIndex: new Map(), 
             realtimeChannel: null,
-            backgroundRefreshTimer: null, // --- NEW: State for background refresh timer ---
             config: null,
             displayCurrency: 'USD',
             fxRates: { 'USD': 1 }
@@ -315,6 +314,7 @@
                 prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature) => 
                     apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature }),
                 executeTransaction: (transactionIntentId, signature) => apiCall('executeTransaction', { transactionIntentId, signature }),
+                // ADDED: Function to call the new server action
                 cancelTransactionIntent: (transactionIntentId) => apiCall('cancelTransactionIntent', { transactionIntentId }),
                 hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status on Supabase:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } }, 
                 findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }), 
@@ -326,7 +326,7 @@
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress })
             };
         })();
-        const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency', BACKGROUND_REFRESH_INTERVAL: 45000 }; // --- NEW: Constant for refresh interval ---
+        const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, PRECISION: 8, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
         const WalletLogic = {
             async createWallet(password) {
                 const wallet = ethers.Wallet.createRandom();
@@ -384,7 +384,6 @@
             },
             logout: () => {
                 stopRealtimeListener();
-                stopBackgroundRefresh(); // --- MODIFIED: Stop background refresh on logout ---
                 state.wallet = null;
                 state.userStore = null;
                 state.transactionIndex.clear();
@@ -504,14 +503,27 @@
             }
         };
 
-        // --- Real-time update functions ---
-        async function handleRealtimePayload(payload) {
-            console.log('New real-time transaction received:', payload);
+        // --- UPDATED REAL-TIME FUNCTIONS ---
+        // Updated payload handler to process both incoming and outgoing transactions
+        async function handleRealtimePayload(payload, direction) {
+            console.log(`New real-time ${direction} transaction received:`, payload);
+            
             const newTx = payload.new;
+            
+            // Determine transaction type based on direction and sender
+            let txType;
+            if (direction === 'incoming') {
+                txType = newTx.sender_address === 'BANKNOTE_ISSUER' ? 'charge' : 'receive';
+            } else {
+                // For outgoing, check if it's a fee transaction
+                txType = newTx.confirmation_data?.type === 'fee' ? 'fee' : 'send';
+            }
+            
             const formattedTx = {
                 id: newTx.confirmation_data?.id,
-                type: newTx.sender_address === 'BANKNOTE_ISSUER' ? 'charge' : 'receive',
+                type: txType,
                 amount: newTx.amount,
+                fee: newTx.confirmation_data?.fee || '0',
                 from: newTx.sender_address,
                 to: newTx.receiver_address,
                 status: 'completed',
@@ -519,33 +531,78 @@
                 timestamp: new Date(newTx.created_at).getTime(),
                 comment: newTx.confirmation_data?.comment
             };
+            
+            // Only add if we don't already have this transaction
             if (!state.transactionIndex.has(formattedTx.linkedTxHash)) {
                 WalletLogic.addToChain(formattedTx);
+                
+                // Force balance update and UI refresh
                 await updateBalanceAndRender();
+                
                 const syncStatusEl = document.getElementById('sync-status');
                 if (syncStatusEl) {
-                    setStatus(syncStatusEl, '⚡ New transaction received!', 'success');
+                    const directionText = direction === 'incoming' ? 'received' : 'sent';
+                    setStatus(syncStatusEl, `⚡ Transaction ${directionText} in real-time!`, 'success');
                     setTimeout(() => setStatus(syncStatusEl, ''), 4000);
                 }
             }
         }
+
+        // Fixed real-time subscription that catches both incoming and outgoing transactions
         function startRealtimeListener() {
             if (state.realtimeChannel || !state.wallet) return;
+            
             const channel = supabaseClient.channel(`wallet-updates:${state.wallet.address}`);
+            
+            // Listen for incoming transactions (where this wallet is the receiver)
             channel.on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `receiver_address=eq.${state.wallet.address}` },
-                handleRealtimePayload
-            ).subscribe((status, err) => {
-                if (status === 'SUBSCRIBED') { console.log('Successfully subscribed to real-time wallet updates!'); }
+                { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'confirmations', 
+                    filter: `receiver_address=eq.${state.wallet.address}` 
+                },
+                (payload) => handleRealtimePayload(payload, 'incoming')
+            );
+            
+            // Listen for outgoing transactions (where this wallet is the sender)
+            channel.on(
+                'postgres_changes',
+                { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'confirmations', 
+                    filter: `sender_address=eq.${state.wallet.address}` 
+                },
+                (payload) => handleRealtimePayload(payload, 'outgoing')
+            );
+            
+            channel.subscribe((status, err) => {
+                console.log('Subscription status:', status);
+                const syncStatusEl = document.getElementById('sync-status');
+                
+                if (status === 'SUBSCRIBED') { 
+                    console.log('Successfully subscribed to real-time wallet updates!');
+                    if(syncStatusEl) setStatus(syncStatusEl, '🟢 Real-time sync active', 'success');
+                }
                 if (status === 'CHANNEL_ERROR') {
-                    console.error(`Real-time connection error: ${err.message}. Ensure RLS is enabled.`);
-                    const syncStatusEl = document.getElementById('sync-status');
+                    console.error(`Real-time connection error:`, err);
                     if(syncStatusEl) setStatus(syncStatusEl, 'Real-time sync failed.', 'error');
                 }
+                if (status === 'CLOSED') {
+                    console.log('Real-time connection closed');
+                    if(syncStatusEl) setStatus(syncStatusEl, '🔴 Real-time sync disconnected', 'error');
+                }
+                if (status === 'TIMED_OUT') {
+                    console.log('Real-time connection timed out');
+                    if(syncStatusEl) setStatus(syncStatusEl, '⏰ Real-time sync timeout', 'error');
+                }
             });
+            
             state.realtimeChannel = channel;
         }
+
         function stopRealtimeListener() {
             if (state.realtimeChannel) {
                 supabaseClient.removeChannel(state.realtimeChannel);
@@ -553,74 +610,7 @@
                 console.log('Unsubscribed from real-time updates.');
             }
         }
-        
-        // --- NEW: Background Refresh Logic ---
-        /**
-         * Performs a background refresh of the balance and transactions.
-         * This acts as a fallback to the real-time listener to ensure data consistency.
-         */
-        async function backgroundRefresh() {
-            if (!state.wallet) {
-                stopBackgroundRefresh();
-                return;
-            }
-            console.log("Performing background data refresh...");
-            const syncStatusEl = document.getElementById('sync-status');
-            setStatus(syncStatusEl, 'Syncing...', 'info');
-            try {
-                await updateBalanceAndRender();
-                // Briefly show success, then clear
-                setStatus(syncStatusEl, 'Sync complete.', 'success');
-                setTimeout(() => {
-                    // Only clear if the message is still 'Sync complete'
-                    if (syncStatusEl.textContent === 'Sync complete.') {
-                        setStatus(syncStatusEl, '');
-                    }
-                }, 2000);
-            } catch (error) {
-                console.error("Background refresh failed:", error);
-                setStatus(syncStatusEl, 'Background sync failed.', 'error');
-            }
-        }
-
-        /**
-         * Starts the periodic background refresh timer.
-         */
-        function startBackgroundRefresh() {
-            if (state.backgroundRefreshTimer) return; // Already running
-            console.log(`Starting background refresh every ${AppConstants.BACKGROUND_REFRESH_INTERVAL / 1000}s.`);
-            state.backgroundRefreshTimer = setInterval(backgroundRefresh, AppConstants.BACKGROUND_REFRESH_INTERVAL);
-        }
-
-        /**
-         * Stops the periodic background refresh timer.
-         */
-        function stopBackgroundRefresh() {
-            if (state.backgroundRefreshTimer) {
-                clearInterval(state.backgroundRefreshTimer);
-                state.backgroundRefreshTimer = null;
-                console.log("Stopped background refresh.");
-            }
-        }
-        
-        /**
-         * Handles browser tab visibility changes to pause/resume the background refresh.
-         */
-        function handleVisibilityChange() {
-            // Check if user is logged in
-            if (!state.wallet) return;
-
-            if (document.hidden) {
-                // Tab is not visible, pause the refresh
-                stopBackgroundRefresh();
-            } else {
-                // Tab is visible again, perform an immediate refresh and restart the timer
-                console.log("Tab became visible. Triggering immediate refresh.");
-                backgroundRefresh();
-                startBackgroundRefresh();
-            }
-        }
-        // --- END: New background refresh logic ---
+        // --- END: Real-time update functions ---
         
         const FXRateProvider = (() => {
             const API_URL = 'https://open.er-api.com/v6/latest/USD';
@@ -706,30 +696,7 @@
         function abbreviateAddress(address) { if (!address) return ''; const sanitized = SecurityUtils.sanitizeAddress(address); return `${sanitized.substring(0, 6)}...${sanitized.substring(sanitized.length - 4)}`; }
         function stopScanner() { if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); state.cameraStream = null; state.isScannerActive = false; } }
         async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status'); setStatus(sendStatusEl, ''); loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err); SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false; } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth; canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info'); let isPaymentRequest = false; try { const request = JSON.parse(code.data); if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true; Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); const preAuthTimestamp = Date.now(); const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}`; const preAuthSignature = await state.wallet.signMessage(preAuthMessage); const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' , request.linkedTxHash, preAuthTimestamp, preAuthSignature); state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit } }; const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(request.amount); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit); const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`; SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); await showView('send-confirm-view'); }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); }); } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data; setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus(); } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000); } } return; } } requestAnimationFrame(tick); } }
-        async function showView(id) { 
-            // --- MODIFIED: Stop background refresh when leaving the main wallet view ---
-            stopBackgroundRefresh(); 
-            
-            if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner(); 
-            if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } 
-            
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); 
-            const viewElement = document.getElementById(id); 
-            if(viewElement) viewElement.classList.add('active'); 
-            
-            if (id === 'wallet-view') { 
-                if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); 
-                await updateBalanceAndRender(); 
-                startRealtimeListener(); 
-                startBackgroundRefresh(); // --- MODIFIED: Start background refresh when entering wallet view ---
-            } 
-            if (id === 'send-view') { 
-                startScanner(); 
-            } 
-            if (id === 'receive-view') { 
-                SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code'); 
-            } 
-        }
+        async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner(); if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active'); if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); startRealtimeListener(); } if (id === 'send-view') { startScanner(); } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code'); } }
         
         function renderTransactionHistory() {
             const listUl = document.getElementById('transaction-list-ul'); listUl.innerHTML = ''; if (!state.userStore || !state.userStore.chain) return;
@@ -797,9 +764,6 @@
         }
         
         function setupEventListeners() {
-            // --- NEW: Add event listener for tab visibility ---
-            document.addEventListener('visibilitychange', handleVisibilityChange);
-
             document.getElementById('unlock-wallet-button').addEventListener('click', async () => {
                 const button = document.getElementById('unlock-wallet-button'); const statusEl = document.getElementById('unlock-status'); const pass = document.getElementById('unlock-password-input').value;
                 if (state.isLockedOut) { const timeLeft = Math.ceil((state.lockoutUntil - Date.now()) / 60000); if (timeLeft > 0) { setStatus(statusEl, `Account is locked. Please try again in ${timeLeft} minutes.`, 'error'); return; } else { state.isLockedOut = false; state.failedLoginAttempts = 0; } }
@@ -817,6 +781,7 @@
             document.getElementById('back-from-charge').addEventListener('click', () => showView('wallet-view'));
             document.getElementById('back-from-banknote-confirm').addEventListener('click', () => showView('charge-view'));
             document.getElementById('back-from-receive').addEventListener('click', () => showView('wallet-view'));
+            // --- MODIFIED: Event listener for cancel button ---
             document.getElementById('back-from-send-confirm').addEventListener('click', () => {
                 if (state.activeTransactionIntent && state.activeTransactionIntent.transactionIntentId) {
                     SupabaseLedger.cancelTransactionIntent(state.activeTransactionIntent.transactionIntentId)
