@@ -672,14 +672,29 @@
             });
         }
         
-        async function showTransactionDetails(tx) {
+        function showTransactionDetails(tx) {
             const modal = document.getElementById('transaction-detail-modal');
-            const serverTx = await SupabaseLedger.findTransactionById(tx.id);
-            const displayData = serverTx || tx;
-            const fromAddress = displayData.from || displayData.senderAddress || 'N/A'; const toAddress = displayData.to || displayData.receiverAddress || 'N/A'; const amountText = `${auraIconHTML} ${formatAuraValue(displayData.amount || '0')}`; const feeText = `${auraIconHTML} ${formatAuraValue(displayData.fee || '0')}`;
-            SecurityUtils.setTextContent(document.getElementById('detail-id'), displayData.id || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-status'), displayData.status || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-type'), displayData.type || 'N/A');
-            SecurityUtils.setTextContent(document.getElementById('detail-datetime'), new Date(displayData.timestamp).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'medium' })); SecurityUtils.setHTMLContent(document.getElementById('detail-amount'), amountText, ['img']); SecurityUtils.setHTMLContent(document.getElementById('detail-fee'), feeText, ['img']); SecurityUtils.setTextContent(document.getElementById('detail-from'), fromAddress); SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress);
-            SecurityUtils.setTextContent(document.getElementById('detail-comment'), displayData.comment || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-linked-hash'), SecurityUtils.sanitizeTransactionId(displayData.linkedTxHash || 'N/A')); SecurityUtils.setTextContent(document.getElementById('detail-local-hash'), SecurityUtils.sanitizeTransactionId(displayData.hash || 'N/A'));
+            // The 'tx' object already contains all necessary data.
+            // This corrected version simply displays the data instead of re-fetching it.
+            const displayData = tx;
+
+            const fromAddress = displayData.from || displayData.senderAddress || 'N/A';
+            const toAddress = displayData.to || displayData.receiverAddress || 'N/A';
+            const amountText = `${auraIconHTML} ${formatAuraValue(displayData.amount || '0')}`;
+            const feeText = `${auraIconHTML} ${formatAuraValue(displayData.fee || '0')}`;
+
+            SecurityUtils.setTextContent(document.getElementById('detail-id'), displayData.id || 'N/A');
+            SecurityUtils.setTextContent(document.getElementById('detail-status'), displayData.status || 'N/A');
+            SecurityUtils.setTextContent(document.getElementById('detail-type'), displayData.type || 'N/A');
+            SecurityUtils.setTextContent(document.getElementById('detail-datetime'), new Date(displayData.timestamp).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'medium' }));
+            SecurityUtils.setHTMLContent(document.getElementById('detail-amount'), amountText, ['img']);
+            SecurityUtils.setHTMLContent(document.getElementById('detail-fee'), feeText, ['img']);
+            SecurityUtils.setTextContent(document.getElementById('detail-from'), fromAddress);
+            SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress);
+            SecurityUtils.setTextContent(document.getElementById('detail-comment'), displayData.comment || 'N/A');
+            SecurityUtils.setTextContent(document.getElementById('detail-linked-hash'), SecurityUtils.sanitizeTransactionId(displayData.linkedTxHash || 'N/A'));
+            SecurityUtils.setTextContent(document.getElementById('detail-local-hash'), SecurityUtils.sanitizeTransactionId(displayData.hash || 'N/A'));
+
             modal.style.display = 'flex';
             document.getElementById('close-modal-button').onclick = () => { modal.style.display = 'none'; };
         }
