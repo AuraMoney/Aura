@@ -203,7 +203,6 @@
             };
         }
 
-        // CORRECTED IMPORTS
         import pqcSignFalcon1024 from "./pqc-sign-falcon-1024.min.js";
         import { ethers } from "./ethers.min.js";
         import { shake256 } from 'https://cdn.skypack.dev/js-sha3';
@@ -212,13 +211,13 @@
 
         let supabaseClient;
         let state = {
-            wallet: null, // Ethers wallet object
-            pqWallet: null, // Holds { publicKey: Uint8Array, privateKey: Uint8Array }
-            falconApi: null, // Holds the initialized Falcon WASM API
+            wallet: null,
+            pqWallet: null,
+            falconApi: null,
             userStore: null,
             tempUserStore: null,
             tempWallet: null,
-            tempPqWallet: null, // For use during wallet creation/restore flow
+            tempPqWallet: null,
             tempBanknotePayload: null,
             activeTransactionIntent: null,
             activePollingTimer: null,
@@ -238,7 +237,6 @@
         };
         const auraIconHTML = '<img src="ico/ico%2032.ico" alt="Aura" class="aura-icon">';
 
-        // Hashing function to match server logic (SHAKE256)
         function hashMessageForSigning(message) {
             const hashHex = shake256(message, 1536);
             return new Uint8Array((hashHex || '').match(/.{1,2}/g || []).map((byte) => parseInt(byte, 16)));
@@ -303,7 +301,11 @@
             const apiCall = async (action, payload) => {
                 const response = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Origin': location.origin, 'X-Client-UA': navigator.userAgent },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': location.origin,
+                        'X-Client-UA': navigator.userAgent
+                    },
                     body: JSON.stringify({ action, payload })
                 });
                 const result = await response.json();
@@ -317,14 +319,12 @@
                 getAppConfig: () => apiCall('getAppConfig'),
                 prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce) =>
                     apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce }),
-                // FIX: Added preAuthNonce to the executeTransaction call for replay protection on the server.
                 executeTransaction: (transactionIntentId, pqcSignatureBase64, preAuthNonce) => apiCall('executeTransaction', { transactionIntentId, pqcSignatureBase64, preAuthNonce }),
                 cancelTransactionIntent: (transactionIntentId) => apiCall('cancelTransactionIntent', { transactionIntentId }),
                 hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } },
                 findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }),
                 findIncomingTxs: async (receiverAddress) => { const cacheKey = `incoming_${receiverAddress}`; const cached = CacheManager.get(cacheKey); if (cached) return cached; const txs = await apiCall('findIncomingTxs', { receiverAddress }); CacheManager.set(cacheKey, txs, 20000); return txs; },
                 findOutgoingTxs: async (senderAddress) => { const cacheKey = `outgoing_${senderAddress}`; const cached = CacheManager.get(cacheKey); if (cached) return cached; const txs = await apiCall('findOutgoingTxs', { senderAddress }); CacheManager.set(cacheKey, txs, 20000); return txs; },
-                getSpendDetails: (identifier) => apiCall('getSpendDetails', { identifier }),
                 findTransactionById: (transactionId) => apiCall('findTransactionById', { transactionId }),
                 validateBanknote: (banknotePayload) => apiCall('validateBanknote', { banknotePayload }),
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress }),
@@ -357,9 +357,6 @@
                     chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                 };
 
-                // Automatically register the PQ public key with the server.
-                // This uses an ECDSA signature as a one-time proof of ownership for the address.
-                // This is a secure and standard practice for binding new keys to an existing identity.
                 try {
                     const nonce = crypto.randomUUID();
                     const proofMessage = `AURA_REGISTER_PQ_KEY:${userStore.address.toLowerCase()}:${nonce}`;
@@ -374,16 +371,12 @@
                 return { mnemonic, userStore, wallet, pqWallet: pqKeyPair };
             },
             
-            // FIX: Implemented a complete restoreWallet function for PQ keys.
             async restoreWallet(mnemonic, password) {
                 try {
-                    // 1. Restore the Ethers wallet to get the address and signing capability.
                     const wallet = ethers.Wallet.fromPhrase(mnemonic);
                     const privateKey = wallet.privateKey;
                     const encryptedPrivateKey = await CryptoWallet.encrypt(privateKey, password);
 
-                    // 2. Generate a NEW Falcon (PQ) key pair. PQ keys cannot be derived from a BIP39 mnemonic.
-                    // This is expected behavior when adding PQ auth to an existing mnemonic-based system.
                     const pqKeyPair = await state.falconApi.keypair();
                     const pqPrivateKeyString = CryptoWallet.ab2b64(pqKeyPair.privateKey);
                     const encryptedPqPrivateKey = await CryptoWallet.encrypt(pqPrivateKeyString, password);
@@ -398,8 +391,6 @@
                         chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                     };
 
-                    // 3. Register the NEW public PQ key with the server.
-                    // The restored Ethers wallet signs a message to prove it owns the address.
                     const nonce = crypto.randomUUID();
                     const proofMessage = `AURA_REGISTER_PQ_KEY:${userStore.address.toLowerCase()}:${nonce}`;
                     const proofSignature = await wallet.signMessage(proofMessage);
@@ -424,7 +415,6 @@
                 if (!storedUserStore) throw new Error("No wallet found on this device.");
                 const userStore = JSON.parse(storedUserStore);
                 try {
-                    // Decrypt both the Ethers and the PQ private keys.
                     const privateKey = await CryptoWallet.decrypt(userStore.encryptedPrivateKey, password);
                     const wallet = new ethers.Wallet(privateKey);
                     
@@ -453,7 +443,7 @@
             logout: () => {
                 stopRealtimeListener();
                 state.wallet = null;
-                state.pqWallet = null; // Clear PQ wallet on logout
+                state.pqWallet = null;
                 state.userStore = null;
                 state.transactionIndex.clear();
                 localStorage.removeItem(AppConstants.WALLET_STORAGE_KEY);
@@ -516,22 +506,15 @@
                 const receiveTx = WalletLogic.addToChain({ type: 'receive', amount: amountIntString, from: '', to: state.wallet.address, status: 'pending_request' });
                 return { type: 'AURA_PAYMENT_REQUEST', receiverAddress: state.wallet.address, amount: amountIntString, linkedTxHash: receiveTx.hash, expiresAt: Date.now() + state.config.PAYMENT_REQUEST_EXPIRY };
             },
-
-            // FIX: This function now correctly implements the full PQ signing flow.
             executePreparedTransaction: async () => {
                 if (!state.activeTransactionIntent || !state.activeTransactionIntent.messageToSign) { throw new Error("No pending transaction to execute."); }
                 if (!state.pqWallet || !state.pqWallet.privateKey) { throw new Error("Post-quantum wallet is not unlocked."); }
 
                 const { transactionIntentId, messageToSign, details, preAuthNonce } = state.activeTransactionIntent;
                 try {
-                    // 1. Hash the message from the server using SHAKE256.
                     const messageBytes = hashMessageForSigning(messageToSign);
-
-                    // 2. Create the Falcon PQ signature using the decrypted private key.
                     const { signature: pqSignatureBytes } = await state.falconApi.sign(messageBytes, state.pqWallet.privateKey);
                     const pqcSignatureBase64 = CryptoWallet.ab2b64(pqSignatureBytes);
-
-                    // 3. Send the PQ signature and the nonce to the server for execution.
                     const result = await SupabaseLedger.executeTransaction(transactionIntentId, pqcSignatureBase64, preAuthNonce);
                     
                     WalletLogic.addToChain({ type: 'send', amount: details.amount, fee: details.fee, from: state.wallet.address, to: details.receiverAddress, status: 'completed', comment: details.comment, linkedTxHash: result.txHash, id: details.id, timestamp: result.timestamp });
@@ -582,8 +565,6 @@
             }
         };
         
-        // ... (The rest of the UI and utility functions remain unchanged as they were correct) ...
-
         async function handleRealtimePayload(payload, direction) {
             console.log(`New real-time ${direction} transaction received:`, payload);
             const newTx = payload.new;
@@ -813,13 +794,13 @@
             } catch (e) {
                 console.error("CRITICAL: Could not initialize the crypto module.", e);
                 document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Crypto Error</h2><p>Could not load the required cryptographic module. The application cannot run securely. Please ensure all files are present and try again.</p></div>`;
-                throw e; // Stop further execution
+                throw e;
             }
         }
 
         async function initializeApp() {
             try {
-                await initializeCrypto(); // Load WASM first
+                await initializeCrypto();
                 const publicConfig = await SupabaseLedger.getPublicConfig();
                 const appConfig = await SupabaseLedger.getAppConfig();
                 state.config = { ...AppConstants, ...appConfig };
@@ -834,7 +815,7 @@
                 if (storedWallet) { showView('unlock-view'); } else { showView('onboarding-view'); }
             } catch (e) {
                 console.error("Initialization Error:", e);
-                if (!document.body.innerHTML.includes("Crypto Error")) { // Avoid overwriting crypto error
+                if (!document.body.innerHTML.includes("Crypto Error")) {
                     document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not contact the server to start the application. Please check your network connection and refresh the page.</p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
                 }
             }
