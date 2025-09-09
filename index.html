@@ -148,123 +148,121 @@
             </div>
         </div>
     </main>
+    
+    <script type="module">
+        import FalconWallet from './falcon1024-wallet.js';
 
-    <script src="falcon1024-wallet.js"></script>
+        // Element references
+        const btnCreate = document.getElementById('btnCreate');
+        const btnDerive = document.getElementById('btnDerive');
+        const btnSign = document.getElementById('btnSign');
+        const btnVerify = document.getElementById('btnVerify');
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Element references
-            const btnCreate = document.getElementById('btnCreate');
-            const btnDerive = document.getElementById('btnDerive');
-            const btnSign = document.getElementById('btnSign');
-            const btnVerify = document.getElementById('btnVerify');
+        const mnemonicInput = document.getElementById('mnemonicInput');
+        const outputMnemonic = document.getElementById('outputMnemonic');
+        const outputAddress = document.getElementById('outputAddress');
+        const outputPublicKey = document.getElementById('outputPublicKey');
+        const outputPrivateKey = document.getElementById('outputPrivateKey');
 
-            const mnemonicInput = document.getElementById('mnemonicInput');
-            const outputMnemonic = document.getElementById('outputMnemonic');
-            const outputAddress = document.getElementById('outputAddress');
-            const outputPublicKey = document.getElementById('outputPublicKey');
-            const outputPrivateKey = document.getElementById('outputPrivateKey');
+        const signMessageInput = document.getElementById('signMessage');
+        const signPrivateKeyInput = document.getElementById('signPrivateKey');
+        const outputSignature = document.getElementById('outputSignature');
 
-            const signMessageInput = document.getElementById('signMessage');
-            const signPrivateKeyInput = document.getElementById('signPrivateKey');
-            const outputSignature = document.getElementById('outputSignature');
+        const verifyMessageInput = document.getElementById('verifyMessage');
+        const verifyPublicKeyInput = document.getElementById('verifyPublicKey');
+        const verifySignatureInput = document.getElementById('verifySignature');
+        const outputVerification = document.getElementById('outputVerification');
+        
+        // Utility to handle button loading state
+        const setLoading = (button, isLoading) => {
+            button.disabled = isLoading;
+            button.textContent = isLoading ? 'Working...' : button.dataset.originalText;
+        };
+        
+        [btnCreate, btnDerive, btnSign, btnVerify].forEach(btn => {
+            if (btn) btn.dataset.originalText = btn.textContent;
+        });
 
-            const verifyMessageInput = document.getElementById('verifyMessage');
-            const verifyPublicKeyInput = document.getElementById('verifyPublicKey');
-            const verifySignatureInput = document.getElementById('verifySignature');
-            const outputVerification = document.getElementById('outputVerification');
+        // Function to update wallet display fields
+        const updateWalletDisplay = (wallet) => {
+            outputMnemonic.textContent = wallet.mnemonic;
+            outputAddress.textContent = wallet.address;
+            outputPublicKey.textContent = wallet.publicKeyHex;
+            outputPrivateKey.textContent = wallet.privateKeyHex;
             
-            // Utility to handle button loading state
-            const setLoading = (button, isLoading) => {
-                button.disabled = isLoading;
-                button.textContent = isLoading ? 'Working...' : button.dataset.originalText;
-            };
-            
-            [btnCreate, btnDerive, btnSign, btnVerify].forEach(btn => {
-                btn.dataset.originalText = btn.textContent;
-            });
+            // Pre-fill fields in other sections for convenience
+            signPrivateKeyInput.value = wallet.privateKeyHex;
+            verifyPublicKeyInput.value = wallet.publicKeyHex;
+        };
 
-            // Function to update wallet display fields
-            const updateWalletDisplay = (wallet) => {
-                outputMnemonic.textContent = wallet.mnemonic;
-                outputAddress.textContent = wallet.address;
-                outputPublicKey.textContent = wallet.publicKeyHex;
-                outputPrivateKey.textContent = wallet.privateKeyHex;
-                
-                // Pre-fill fields in other sections for convenience
-                signPrivateKeyInput.value = wallet.privateKeyHex;
-                verifyPublicKeyInput.value = wallet.publicKeyHex;
-            };
+        // Event Listeners
+        btnCreate.addEventListener('click', async () => {
+            setLoading(btnCreate, true);
+            try {
+                const wallet = await FalconWallet.createRandom();
+                updateWalletDisplay(wallet);
+            } catch (e) {
+                alert('Error creating wallet: ' + e.message);
+            } finally {
+                setLoading(btnCreate, false);
+            }
+        });
 
-            // Event Listeners
-            btnCreate.addEventListener('click', async () => {
-                setLoading(btnCreate, true);
-                try {
-                    const wallet = await FalconWallet.createRandom();
-                    updateWalletDisplay(wallet);
-                } catch (e) {
-                    alert('Error creating wallet: ' + e.message);
-                } finally {
-                    setLoading(btnCreate, false);
-                }
-            });
+        btnDerive.addEventListener('click', async () => {
+            const phrase = mnemonicInput.value.trim();
+            if (!phrase) {
+                alert('Please enter a mnemonic phrase to restore.');
+                return;
+            }
+            setLoading(btnDerive, true);
+            try {
+                const wallet = await FalconWallet.fromPhrase(phrase);
+                updateWalletDisplay(wallet);
+            } catch (e) {
+                alert('Error deriving from phrase: ' + e.message);
+            } finally {
+                setLoading(btnDerive, false);
+            }
+        });
 
-            btnDerive.addEventListener('click', async () => {
-                const phrase = mnemonicInput.value.trim();
-                if (!phrase) {
-                    alert('Please enter a mnemonic phrase to restore.');
-                    return;
-                }
-                setLoading(btnDerive, true);
-                try {
-                    const wallet = await FalconWallet.fromPhrase(phrase);
-                    updateWalletDisplay(wallet);
-                } catch (e) {
-                    alert('Error deriving from phrase: ' + e.message);
-                } finally {
-                    setLoading(btnDerive, false);
-                }
-            });
+        btnSign.addEventListener('click', async () => {
+            const message = signMessageInput.value;
+            const privateKey = signPrivateKeyInput.value.trim();
+            if (!message || !privateKey) {
+                alert('Please provide a message and a private key to sign.');
+                return;
+            }
+            setLoading(btnSign, true);
+            try {
+                const signature = await FalconWallet.sign(message, privateKey);
+                outputSignature.textContent = signature;
+            } catch (e) {
+                alert('Error signing message: ' + e.message);
+            } finally {
+                setLoading(btnSign, false);
+            }
+        });
 
-            btnSign.addEventListener('click', async () => {
-                const message = signMessageInput.value;
-                const privateKey = signPrivateKeyInput.value.trim();
-                if (!message || !privateKey) {
-                    alert('Please provide a message and a private key to sign.');
-                    return;
-                }
-                setLoading(btnSign, true);
-                try {
-                    const signature = await FalconWallet.sign(message, privateKey);
-                    outputSignature.textContent = signature;
-                } catch (e) {
-                    alert('Error signing message: ' + e.message);
-                } finally {
-                    setLoading(btnSign, false);
-                }
-            });
-
-            btnVerify.addEventListener('click', async () => {
-                const message = verifyMessageInput.value;
-                const publicKey = verifyPublicKeyInput.value.trim();
-                const signature = verifySignatureInput.value.trim();
-                if (!message || !publicKey || !signature) {
-                    alert('Please provide the message, public key, and signature to verify.');
-                    return;
-                }
-                setLoading(btnVerify, true);
-                try {
-                    const isValid = await FalconWallet.verify(message, signature, publicKey);
-                    outputVerification.textContent = isValid ? 'Valid ✅' : 'Invalid ❌';
-                    outputVerification.className = `result ${isValid ? 'success' : 'error'}`;
-                } catch (e) {
-                    alert('Error verifying signature: ' + e.message);
-                    outputVerification.textContent = 'Verification Error';
-                    outputVerification.className = 'result error';
-                } finally {
-                    setLoading(btnVerify, false);
-                }
-            });
+        btnVerify.addEventListener('click', async () => {
+            const message = verifyMessageInput.value;
+            const publicKey = verifyPublicKeyInput.value.trim();
+            const signature = verifySignatureInput.value.trim();
+            if (!message || !publicKey || !signature) {
+                alert('Please provide the message, public key, and signature to verify.');
+                return;
+            }
+            setLoading(btnVerify, true);
+            try {
+                const isValid = await FalconWallet.verify(message, signature, publicKey);
+                outputVerification.textContent = isValid ? 'Valid ✅' : 'Invalid ❌';
+                outputVerification.className = `result ${isValid ? 'success' : 'error'}`;
+            } catch (e) {
+                alert('Error verifying signature: ' + e.message);
+                outputVerification.textContent = 'Verification Error';
+                outputVerification.className = 'result error';
+            } finally {
+                setLoading(btnVerify, false);
+            }
         });
     </script>
 </body>
