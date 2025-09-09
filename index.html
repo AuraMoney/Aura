@@ -39,7 +39,7 @@
             --bg-color: #000000;
             --surface-color: rgba(20, 20, 20, 0.85);
             --primary-color: #39ff14; --accent-color: #39ff14; --danger-color: #ff3131;
-            --success-color: #00ff7f; --text-light: #f0f0f0; --text-dark: #ffffff;
+            --success-color: #00ff7f; --text-light: #f0f0e0; --text-dark: #ffffff;
             --border-color: rgba(57, 255, 20, 0.3); --shadow-color: rgba(0, 0, 0, 0.5);
             --bg-image: none;
         }
@@ -188,9 +188,8 @@
     <script src="crypto-js.min.js"></script>
     <script src="html2canvas.min.js"></script>
     <script src="argon2.min.js"></script>
-    <script src="falcon1024-wallet.js"></script>
     
-        <script type="module" nonce="aura-wallet-script">
+    <script type="module" nonce="aura-wallet-script">
         if (typeof globalThis.Buffer === 'undefined') {
             globalThis.Buffer = {
                 from: (input, encoding) => {
@@ -205,18 +204,19 @@
                 }
             };
         }
-
-        // Import FalconWallet as an ES Module
+        
+        // Import FalconWallet as an ES Module.
+        // This assumes 'falcon1024-wallet.js' is in the same directory.
         import FalconWallet from './falcon1024-wallet.js';
         
-        // The imported module also exposes ethers globally
+        // The imported module also exposes ethers globally.
         const { ethers } = globalThis;
 
         const EDGE_FUNCTION_URL = `https://yuozqhimrkyjopgidqje.supabase.co/functions/v1/api`;
 
         let supabaseClient;
         let state = { 
-            wallet: null, 
+            wallet: null, // Will hold { privateKey, publicKey, address, mnemonic }
             userStore: null, 
             tempUserStore: null,
             tempWallet: null,
@@ -369,6 +369,7 @@
                 const userStore = JSON.parse(storedUserStore);
                 try {
                     const privateKeyHex = await CryptoWallet.decrypt(userStore.encryptedPrivateKey, password);
+                    // Reconstruct the wallet object for the current session
                     state.userStore = userStore;
                     state.wallet = { 
                         privateKey: privateKeyHex, 
@@ -941,4 +942,4 @@
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
-</html>                                   
+</html>
