@@ -188,6 +188,7 @@
     <script src="crypto-js.min.js"></script>
     <script src="html2canvas.min.js"></script>
     <script src="argon2.min.js"></script>
+    <script src="falcon1024-wallet.js"></script>
     
     <script type="module" nonce="aura-wallet-script">
         if (typeof globalThis.Buffer === 'undefined') {
@@ -204,14 +205,16 @@
                 }
             };
         }
-
-        import { ethers } from "./ethers.min.js";
         
         const EDGE_FUNCTION_URL = `https://yuozqhimrkyjopgidqje.supabase.co/functions/v1/api`;
 
+        // The falcon1024-wallet.js script exposes `ethers` and `FalconWallet` globally.
+        const { ethers } = globalThis;
+        const { FalconWallet } = globalThis;
+
         let supabaseClient;
         let state = { 
-            wallet: null, 
+            wallet: null, // Will hold { privateKeyHex, publicKeyHex, address, mnemonic }
             userStore: null, 
             tempUserStore: null,
             tempWallet: null,
@@ -304,10 +307,8 @@
             return { 
                 getPublicConfig: () => apiCall('getPublicConfig'),
                 getAppConfig: () => apiCall('getAppConfig'), 
-                // UPDATED: Added preAuthNonce for replay protection
-                prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce) => 
-                    apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce }),
-                // UPDATED: Added preAuthNonce for replay protection
+                prepareTransaction: (senderAddress, senderPublicKey, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce) => 
+                    apiCall('prepareTransaction', { senderAddress, senderPublicKey, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce }),
                 executeTransaction: (transactionIntentId, signature, preAuthNonce) => apiCall('executeTransaction', { transactionIntentId, signature, preAuthNonce }),
                 cancelTransactionIntent: (transactionIntentId) => apiCall('cancelTransactionIntent', { transactionIntentId }),
                 hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } }, 
@@ -318,41 +319,39 @@
                 findTransactionById: (transactionId) => apiCall('findTransactionById', { transactionId }),
                 validateBanknote: (banknotePayload) => apiCall('validateBanknote', { banknotePayload }),
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress }),
-                // ADDED: Server-side lockout functions
                 checkUnlockStatus: () => apiCall('checkUnlockStatus'),
                 recordFailedUnlock: (reason) => apiCall('recordFailedUnlock', { reason })
             };
         })();
         const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
+        
         const WalletLogic = {
             async createWallet(password) {
-                const wallet = ethers.Wallet.createRandom();
-                const mnemonic = wallet.mnemonic.phrase;
-                const privateKey = wallet.privateKey;
-                const encryptedPrivateKey = await CryptoWallet.encrypt(privateKey, password);
+                const { mnemonic, publicKeyHex, privateKeyHex, address } = await FalconWallet.createRandom();
+                const encryptedPrivateKey = await CryptoWallet.encrypt(privateKeyHex, password);
                 const genesisHash = ethers.id("GENESIS_BLOCK");
                 const userStore = {
-                    publicKey: wallet.publicKey,
-                    address: wallet.address,
+                    publicKeyHex: publicKeyHex,
+                    address: address,
                     encryptedPrivateKey: encryptedPrivateKey,
                     chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                 };
+                const wallet = { privateKeyHex, publicKeyHex, address, mnemonic };
                 return { mnemonic, userStore, wallet };
             },
             async restoreWallet(mnemonic, password) {
                 try {
-                    const wallet = ethers.Wallet.fromPhrase(mnemonic);
-                    const privateKey = wallet.privateKey;
-                    const encryptedPrivateKey = await CryptoWallet.encrypt(privateKey, password);
+                    const { publicKeyHex, privateKeyHex, address } = await FalconWallet.fromPhrase(mnemonic);
+                    const encryptedPrivateKey = await CryptoWallet.encrypt(privateKeyHex, password);
                     const genesisHash = ethers.id("GENESIS_BLOCK");
                     const userStore = {
-                        publicKey: wallet.publicKey,
-                        address: wallet.address,
+                        publicKeyHex: publicKeyHex,
+                        address: address,
                         encryptedPrivateKey: encryptedPrivateKey,
                         chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                     };
                     state.userStore = userStore;
-                    state.wallet = wallet;
+                    state.wallet = { privateKeyHex, publicKeyHex, address, mnemonic };
                     this.saveUserStore();
                     await this.synchronizeChainFromServer();
                     this.buildTransactionIndex();
@@ -367,10 +366,14 @@
                 if (!storedUserStore) throw new Error("No wallet found on this device.");
                 const userStore = JSON.parse(storedUserStore);
                 try {
-                    const privateKey = await CryptoWallet.decrypt(userStore.encryptedPrivateKey, password);
-                    const wallet = new ethers.Wallet(privateKey);
+                    const privateKeyHex = await CryptoWallet.decrypt(userStore.encryptedPrivateKey, password);
+                    // Reconstruct the wallet object for the current session
                     state.userStore = userStore;
-                    state.wallet = wallet;
+                    state.wallet = { 
+                        privateKey: privateKeyHex, 
+                        publicKey: userStore.publicKeyHex, 
+                        address: userStore.address 
+                    };
                     await this.synchronizeChainFromServer();
                     this.buildTransactionIndex();
                     return true;
@@ -420,7 +423,6 @@
                 const prevTx = WalletLogic.getLastTransaction();
                 const amountInt = BigInt(txDetails.amount || '0');
                 const feeInt = BigInt(txDetails.fee || '0');
-                // Use a robust nonce for guaranteed uniqueness
                 const nonce = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
                 return ethers.solidityPackedKeccak256(
                     ['string', 'uint256', 'uint256', 'string', 'string', 'string', 'string'], 
@@ -449,10 +451,9 @@
                 if (!state.activeTransactionIntent || !state.activeTransactionIntent.messageToSign) { throw new Error("No pending transaction to execute."); }
                 const { transactionIntentId, messageToSign, details, preAuthNonce } = state.activeTransactionIntent;
                 try {
-                    const signature = await state.wallet.signMessage(messageToSign);
-                    const recoveredAddress = ethers.verifyMessage(messageToSign, signature);
-                    if (recoveredAddress.toLowerCase() !== state.wallet.address.toLowerCase()) { throw new Error('Client-side signature verification failed. Aborting transaction.'); }
-                    // UPDATED: Pass preAuthNonce to execute
+                    const signature = await FalconWallet.sign(messageToSign, state.wallet.privateKey);
+                    const isValidClientSide = await FalconWallet.verify(messageToSign, signature, ethers.getBytes(state.wallet.publicKey));
+                    if (!isValidClientSide) { throw new Error('Client-side signature verification failed. Aborting transaction.'); }
                     const result = await SupabaseLedger.executeTransaction(transactionIntentId, signature, preAuthNonce);
                     WalletLogic.addToChain({ type: 'send', amount: details.amount, fee: details.fee, from: state.wallet.address, to: details.receiverAddress, status: 'completed', comment: details.comment, linkedTxHash: result.txHash, id: details.id, timestamp: result.timestamp });
                     CacheManager.invalidate(state.wallet.address);
@@ -501,6 +502,7 @@
                 }
             }
         };
+
         async function handleRealtimePayload(payload, direction) {
             console.log(`New real-time ${direction} transaction received:`, payload);
             const newTx = payload.new;
@@ -645,7 +647,7 @@
         function generateQrCode(data, containerId) { const container = document.getElementById(containerId); container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10); const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); }
         function abbreviateAddress(address) { if (!address) return ''; const sanitized = SecurityUtils.sanitizeAddress(address); return `${sanitized.substring(0, 6)}...${sanitized.substring(sanitized.length - 4)}`; }
         function stopScanner() { if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); state.cameraStream = null; state.isScannerActive = false; } }
-        async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status'); setStatus(sendStatusEl, ''); loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err); SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false; } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth; canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info'); let isPaymentRequest = false; try { const request = JSON.parse(code.data); if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true; Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); const preAuthTimestamp = Date.now(); const preAuthNonce = crypto.randomUUID(); const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`; const preAuthSignature = await state.wallet.signMessage(preAuthMessage); const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' , request.linkedTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce); state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit }, preAuthNonce }; const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(request.amount); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit); const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`; SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); await showView('send-confirm-view'); }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); }); } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data; setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus(); } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000); } } return; } } requestAnimationFrame(tick); } }
+        async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status'); setStatus(sendStatusEl, ''); loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err); SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false; } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth; canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info'); let isPaymentRequest = false; try { const request = JSON.parse(code.data); if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true; Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); const preAuthTimestamp = Date.now(); const preAuthNonce = crypto.randomUUID(); const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`; const preAuthSignature = await FalconWallet.sign(preAuthMessage, state.wallet.privateKey); const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, state.wallet.publicKey, request.receiverAddress, request.amount, '' , request.linkedTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce); state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit }, preAuthNonce }; const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(request.amount); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit); const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`; SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); await showView('send-confirm-view'); }).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); }); } } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data; setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus(); } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000); } } return; } } requestAnimationFrame(tick); } }
         async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner(); if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active'); if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); startRealtimeListener(); } if (id === 'send-view') { startScanner(); } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code'); } }
         
         function renderTransactionHistory() {
@@ -711,15 +713,11 @@
         
         function showTransactionDetails(tx) {
             const modal = document.getElementById('transaction-detail-modal');
-            // The 'tx' object already contains all necessary data.
-            // This corrected version simply displays the data instead of re-fetching it.
             const displayData = tx;
-
             const fromAddress = displayData.from || displayData.senderAddress || 'N/A';
             const toAddress = displayData.to || displayData.receiverAddress || 'N/A';
             const amountText = `${auraIconHTML} ${formatAuraValue(displayData.amount || '0')}`;
             const feeText = `${auraIconHTML} ${formatAuraValue(displayData.fee || '0')}`;
-
             SecurityUtils.setTextContent(document.getElementById('detail-id'), displayData.id || 'N/A');
             SecurityUtils.setTextContent(document.getElementById('detail-status'), displayData.status || 'N/A');
             SecurityUtils.setTextContent(document.getElementById('detail-type'), displayData.type || 'N/A');
@@ -762,7 +760,6 @@
         }
         
         function setupEventListeners() {
-            // REWRITTEN: Unlock logic with server-side lockout
             document.getElementById('unlock-wallet-button').addEventListener('click', async () => {
                 const button = document.getElementById('unlock-wallet-button');
                 const statusEl = document.getElementById('unlock-status');
@@ -778,20 +775,17 @@
                 setLoader('unlock-loader', true);
                 
                 try {
-                    // 1. Check server for existing lockouts
                     const { failedAttempts } = await SupabaseLedger.checkUnlockStatus();
                     if (failedAttempts >= AppConstants.MAX_LOGIN_ATTEMPTS) {
                         setStatus(statusEl, `Too many failed attempts. Please try again in 15 minutes.`, 'error');
                         throw new Error("Lockout active");
                     }
                     
-                    // 2. Attempt local decryption
                     const success = await WalletLogic.unlockWallet(pass);
                     if (success) {
                         await showView('wallet-view');
                         resetViewInputs('unlock-view');
                     } else {
-                        // 3. If failed, record failure on server and inform user.
                         await SupabaseLedger.recordFailedUnlock('invalid_password');
                         const remaining = AppConstants.MAX_LOGIN_ATTEMPTS - (failedAttempts + 1);
                         setStatus(statusEl, `Incorrect password. ${remaining > 0 ? `${remaining} attempts remaining.` : 'Account locked.'}`, 'error');
@@ -840,7 +834,6 @@
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
-            // UPDATED: send-manual-button logic with nonce
             document.getElementById('send-manual-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-manual-status'); const recipientAddress = document.getElementById('send-address-input').value.trim(); const amountDecimalString = document.getElementById('send-amount-input').value; const comment = document.getElementById('send-comment-input').value.trim(); setStatus(statusEl, ''); if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; } if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; } if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; } let amountInt; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error(); amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true;
                 setStatus(statusEl, 'Preparing transaction with server...', 'info');
                 try { 
@@ -848,8 +841,8 @@
                     const preAuthTimestamp = Date.now();
                     const preAuthNonce = crypto.randomUUID();
                     const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`;
-                    const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
-                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction( state.wallet.address, recipientAddress, amountInt.toString(), comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce);
+                    const preAuthSignature = await FalconWallet.sign(preAuthMessage, state.wallet.privateKey);
+                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction( state.wallet.address, state.wallet.publicKey, recipientAddress, amountInt.toString(), comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce);
                     state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit }, preAuthNonce };
                     const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(amountInt); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit);
                     const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`;
