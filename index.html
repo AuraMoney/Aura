@@ -206,7 +206,7 @@
 
         import pqcSignFalcon1024 from "./pqc-sign-falcon-1024.min.js";
         import { ethers } from "./ethers.min.js";
-        import { shake256 } from 'https://cdn.skypack.dev/js-sha3';
+        // import { shake256 } from 'https://esm.sh/js-sha3@0.9.3';
 
         const EDGE_FUNCTION_URL = `https://yuozqhimrkyjopgidqje.supabase.co/functions/v1/api`;
 
@@ -794,7 +794,7 @@
                 console.log("Crypto Module loaded successfully.");
             } catch (e) {
                 console.error("CRITICAL: Could not initialize the crypto module.", e);
-                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Crypto Error</h2><p>Could not load the required cryptographic module. The application cannot run securely. Please ensure all files are present and try again.</p></div>`;
+                // document.body.innerHTML = `<div style="margin: 20px; padding: 20px; border-radius: 12px; background-color: rgba(255, 0, 0, 0.1); border: 1px solid #e11d48; color: #f8fafc; font-family: sans-serif;"><h2>Crypto Error</h2><p>Could not load the required cryptographic module. The application cannot run securely. Please ensure all files are present and try again.</p></div>`;
                 throw e;
             }
         }
@@ -816,8 +816,8 @@
                 if (storedWallet) { showView('unlock-view'); } else { showView('onboarding-view'); }
             } catch (e) {
                 console.error("Initialization Error:", e);
-                if (!document.body.innerHTML.includes("Crypto Error")) {
-                    document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not contact the server to start the application. Please check your network connection and refresh the page.</p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
+                 // if (!document.body.innerHTML.includes("Crypto Error")) {
+                     document.body.innerHTML = `<div style="margin: 20px; padding: 20px; border-radius: 12px; background-color: rgba(255, 0, 0, 0.1); border: 1px solid #e11d48; color: #f8fafc; font-family: sans-serif;"><h2>Critical Error</h2><p>Could not start the application. Please check your network connection and refresh the page.</p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
                 }
             }
         }
