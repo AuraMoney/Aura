@@ -148,10 +148,13 @@
             </div>
         </div>
     </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     
     <script type="module">
         import FalconWallet from './falcon1024-wallet.js';
 
+        // (The UI interaction logic remains the same as before)
         // Element references
         const btnCreate = document.getElementById('btnCreate');
         const btnDerive = document.getElementById('btnDerive');
@@ -199,9 +202,13 @@
         btnCreate.addEventListener('click', async () => {
             setLoading(btnCreate, true);
             try {
+                // The crypto operations are intensive and can momentarily freeze the UI.
+                // A small timeout allows the browser to update the button to "Working..." first.
+                await new Promise(resolve => setTimeout(resolve, 10));
                 const wallet = await FalconWallet.createRandom();
                 updateWalletDisplay(wallet);
             } catch (e) {
+                console.error(e);
                 alert('Error creating wallet: ' + e.message);
             } finally {
                 setLoading(btnCreate, false);
@@ -216,9 +223,11 @@
             }
             setLoading(btnDerive, true);
             try {
+                await new Promise(resolve => setTimeout(resolve, 10));
                 const wallet = await FalconWallet.fromPhrase(phrase);
                 updateWalletDisplay(wallet);
             } catch (e) {
+                console.error(e);
                 alert('Error deriving from phrase: ' + e.message);
             } finally {
                 setLoading(btnDerive, false);
@@ -234,9 +243,11 @@
             }
             setLoading(btnSign, true);
             try {
+                await new Promise(resolve => setTimeout(resolve, 10));
                 const signature = await FalconWallet.sign(message, privateKey);
                 outputSignature.textContent = signature;
             } catch (e) {
+                console.error(e);
                 alert('Error signing message: ' + e.message);
             } finally {
                 setLoading(btnSign, false);
@@ -253,10 +264,12 @@
             }
             setLoading(btnVerify, true);
             try {
+                await new Promise(resolve => setTimeout(resolve, 10));
                 const isValid = await FalconWallet.verify(message, signature, publicKey);
                 outputVerification.textContent = isValid ? 'Valid ✅' : 'Invalid ❌';
                 outputVerification.className = `result ${isValid ? 'success' : 'error'}`;
             } catch (e) {
+                console.error(e);
                 alert('Error verifying signature: ' + e.message);
                 outputVerification.textContent = 'Verification Error';
                 outputVerification.className = 'result error';
