@@ -190,7 +190,7 @@
     <script src="argon2.min.js"></script>
     <script src="falcon1024-wallet.js"></script>
     
-    <script type="module" nonce="aura-wallet-script">
+        <script type="module" nonce="aura-wallet-script">
         if (typeof globalThis.Buffer === 'undefined') {
             globalThis.Buffer = {
                 from: (input, encoding) => {
@@ -205,16 +205,18 @@
                 }
             };
         }
-        
-        const EDGE_FUNCTION_URL = `https://yuozqhimrkyjopgidqje.supabase.co/functions/v1/api`;
 
-        // The falcon1024-wallet.js script exposes `ethers` and `FalconWallet` globally.
+        // Import FalconWallet as an ES Module
+        import FalconWallet from './falcon1024-wallet.js';
+        
+        // The imported module also exposes ethers globally
         const { ethers } = globalThis;
-        const { FalconWallet } = globalThis;
+
+        const EDGE_FUNCTION_URL = `https://yuozqhimrkyjopgidqje.supabase.co/functions/v1/api`;
 
         let supabaseClient;
         let state = { 
-            wallet: null, // Will hold { privateKeyHex, publicKeyHex, address, mnemonic }
+            wallet: null, 
             userStore: null, 
             tempUserStore: null,
             tempWallet: null,
@@ -336,7 +338,7 @@
                     encryptedPrivateKey: encryptedPrivateKey,
                     chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                 };
-                const wallet = { privateKeyHex, publicKeyHex, address, mnemonic };
+                const wallet = { privateKey: privateKeyHex, publicKey: publicKeyHex, address, mnemonic };
                 return { mnemonic, userStore, wallet };
             },
             async restoreWallet(mnemonic, password) {
@@ -351,7 +353,7 @@
                         chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                     };
                     state.userStore = userStore;
-                    state.wallet = { privateKeyHex, publicKeyHex, address, mnemonic };
+                    state.wallet = { privateKey: privateKeyHex, publicKey: publicKeyHex, address, mnemonic };
                     this.saveUserStore();
                     await this.synchronizeChainFromServer();
                     this.buildTransactionIndex();
@@ -367,7 +369,6 @@
                 const userStore = JSON.parse(storedUserStore);
                 try {
                     const privateKeyHex = await CryptoWallet.decrypt(userStore.encryptedPrivateKey, password);
-                    // Reconstruct the wallet object for the current session
                     state.userStore = userStore;
                     state.wallet = { 
                         privateKey: privateKeyHex, 
@@ -453,7 +454,9 @@
                 try {
                     const signature = await FalconWallet.sign(messageToSign, state.wallet.privateKey);
                     const isValidClientSide = await FalconWallet.verify(messageToSign, signature, ethers.getBytes(state.wallet.publicKey));
-                    if (!isValidClientSide) { throw new Error('Client-side signature verification failed. Aborting transaction.'); }
+                    if (!isValidClientSide) {
+                        throw new Error('Client-side signature verification failed. Aborting transaction.');
+                    }
                     const result = await SupabaseLedger.executeTransaction(transactionIntentId, signature, preAuthNonce);
                     WalletLogic.addToChain({ type: 'send', amount: details.amount, fee: details.fee, from: state.wallet.address, to: details.receiverAddress, status: 'completed', comment: details.comment, linkedTxHash: result.txHash, id: details.id, timestamp: result.timestamp });
                     CacheManager.invalidate(state.wallet.address);
@@ -826,7 +829,27 @@
             document.getElementById('back-from-settings').addEventListener('click', () => showView('wallet-view'));
             document.getElementById('display-currency-select').addEventListener('change', (e) => { const newDisplay = e.target.value; const statusEl = document.getElementById('settings-status'); state.displayCurrency = newDisplay; saveCurrencySettings(); updateBalanceAndRender(); setStatus(statusEl, 'Settings saved.', 'success'); });
             let generatedMnemonic = '';
-            document.getElementById('create-wallet-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(); const confirmPass = document.getElementById('confirm-password-input').value.trim(); setStatus(statusEl, ''); if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); const { mnemonic, userStore, wallet } = await WalletLogic.createWallet(pass); generatedMnemonic = mnemonic; state.tempUserStore = userStore; state.tempWallet = wallet; SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic); showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); });
+            document.getElementById('create-wallet-button').addEventListener('click', async (event) => {
+                const button = event.target;
+                const statusEl = document.getElementById('create-status');
+                const pass = document.getElementById('create-password-input').value.trim();
+                const confirmPass = document.getElementById('confirm-password-input').value.trim();
+                setStatus(statusEl, '');
+                if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; }
+                if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; }
+                button.disabled = true;
+                setLoader('create-loader', true);
+                setStatus(statusEl, 'Generating quantum-resistant keys... This may take a moment.', 'info');
+                await new Promise(resolve => setTimeout(resolve, 50)); // Allow UI to update
+                const { mnemonic, userStore, wallet } = await WalletLogic.createWallet(pass);
+                generatedMnemonic = mnemonic;
+                state.tempUserStore = userStore;
+                state.tempWallet = wallet;
+                SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic);
+                showView('seed-phrase-view');
+                button.disabled = false;
+                setLoader('create-loader', false);
+            });
             document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => { const words = generatedMnemonic.split(' '); const idx1 = Math.floor(Math.random() * 6); const idx2 = Math.floor(Math.random() * 6) + 6; const verifyBtn = document.getElementById('verify-seed-button'); verifyBtn.dataset.word1 = words[idx1]; verifyBtn.dataset.word2 = words[idx2]; document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`; document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`; resetViewInputs('seed-confirm-view'); showView('seed-confirm-view'); });
             document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { state.userStore = state.tempUserStore; state.wallet = state.tempWallet; WalletLogic.saveUserStore(); state.tempUserStore = null; state.tempWallet = null; generatedMnemonic = ''; resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error'); } });
             document.getElementById('restore-wallet-button').addEventListener('click', async () => { const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); setStatus(statusEl, ''); if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; } if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } button.disabled = true; setLoader('restore-loader', true); const success = await WalletLogic.restoreWallet(mnemonic, pass); if (success) { await showView('wallet-view'); } else { setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); } button.disabled = false; setLoader('restore-loader', false); resetViewInputs('restore-wallet-view'); });
@@ -918,4 +941,4 @@
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
-</html>
+</html>                                   
