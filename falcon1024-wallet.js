@@ -168,5 +168,3 @@ const FalconWallet = (function() {
 
 // Expose globally
 globalThis.FalconWallet = FalconWallet;
-
-export default FalconWallet;
