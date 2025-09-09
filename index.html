@@ -39,7 +39,7 @@
             --bg-color: #000000;
             --surface-color: rgba(20, 20, 20, 0.85);
             --primary-color: #39ff14; --accent-color: #39ff14; --danger-color: #ff3131;
-            --success-color: #00ff7f; --text-light: #f0f0e0; --text-dark: #ffffff;
+            --success-color: #00ff7f; --text-light: #f0f0f0; --text-dark: #ffffff;
             --border-color: rgba(57, 255, 20, 0.3); --shadow-color: rgba(0, 0, 0, 0.5);
             --bg-image: none;
         }
@@ -209,8 +209,8 @@
         // This assumes 'falcon1024-wallet.js' is in the same directory.
         import FalconWallet from './falcon1024-wallet.js';
         
-        // The imported module also exposes ethers globally.
-        const { ethers } = globalThis;
+        // The imported module also exposes ethers globally. We will assign it later to be safe.
+        let ethers;
 
         const EDGE_FUNCTION_URL = `https://yuozqhimrkyjopgidqje.supabase.co/functions/v1/api`;
 
@@ -745,6 +745,12 @@
         
         async function initializeApp() {
             try {
+                // Assign ethers from the global scope now that the module has loaded.
+                if (!globalThis.ethers) {
+                    throw new Error("Ethers.js library failed to load from the wallet module.");
+                }
+                ethers = globalThis.ethers;
+
                 const publicConfig = await SupabaseLedger.getPublicConfig();
                 const appConfig = await SupabaseLedger.getAppConfig();
                 state.config = { ...AppConstants, ...appConfig };
