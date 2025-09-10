@@ -171,7 +171,7 @@
     <div id="wallet-view" class="view"><div class="card"><button id="settings-button" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button><h2>Dashboard</h2><div class="address-display-box"><span id="address-display" class="address-text"></span><button id="copy-address-button" class="copy-button"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy</button></div><p style="margin-bottom:0; font-size: 14px; opacity: 0.7;">Total Balance</p><h1 id="balance-display"><img src="ico/ico%2032.ico" alt="Aura" class="aura-icon"> 0.00</h1><p id="secondary-balance-display" style="font-size: 1rem; opacity: 0.7; margin-top: -20px; min-height: 1.2rem;"></p><div id="sync-status" class="status-box" style="font-size: 14px;" aria-live="polite"></div><div class="action-buttons"><button id="show-send-view-button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send</button><button id="show-receive-view-button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M5 15l7 7 7-7"/></svg> Receive</button></div><button id="show-charge-view-button" style="background: rgba(255,255,255,0.1); color: var(--text-light);"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Charge with Banknote</button><div class="transaction-history"><div class="transaction-history-header"><h3>Recent Transactions</h3><button id="refresh-tx-button" title="Refresh History"><svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg><div class="loader"></div></button></div><div class="search-container" style="margin-bottom: 10px; display: flex;"><input type="text" id="search-tx-id-input" placeholder="Search by Transaction ID" style="margin-bottom: 0; border-radius: 8px 0 0 8px;"><button id="search-tx-id-button" style="width: auto; padding: 10px; border-radius: 0 8px 8px 0; background: rgba(255,255,255,0.1); color: var(--text-light);">Search</button></div><ul id="transaction-list-ul" class="transaction-list"></ul></div><button id="logout-button" class="logout-button">Logout</button><div class="theme-switcher-container"><button class="theme-button" id="theme-starlight" data-theme="starlight" title="Starlight Theme"></button><button class="theme-button" id="theme-aurora" data-theme="aurora" title="Aurora Theme"></button><button class="theme-button" id="theme-neon-noir" data-theme="neon-noir" title="Neon Noir Theme"></button><button class="theme-button" id="theme-solana-breeze" data-theme="solana-breeze" title="Solana Breeze Theme"></button></div></div></div>
     <div id="charge-view" class="view"><div class="card"><h2>Charge Wallet</h2><p>Upload a digital banknote image to validate it and add the funds to your balance.</p><label for="banknote-image-input" class="qr-upload-label" id="banknote-upload-label">Upload Banknote Image</label><input type="file" id="banknote-image-input" accept="image/jpeg,image/png,image/webp"><div id="validation-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-charge">Back</button></div></div>
     <div id="banknote-confirm-view" class="view"><div class="card"><h2>Confirm Banknote Charge</h2><p>This banknote is valid. Do you want to add the funds to your balance?</p><h2 id="confirm-banknote-amount-display" style="color: var(--success-color);"></h2><p style="font-size: 12px; word-wrap: break-word; margin: 10px 0;">Serial: <span id="confirm-banknote-serial-display"></span></p><button id="confirm-banknote-button">Confirm & Add Funds</button><div id="banknote-confirm-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-banknote-confirm">Cancel</button></div></div>
-    <div id="receive-view" class="view"><div class="card"><h2>Receive Funds</h2><p>Share your address to receive funds.</p><div id="static-qr-code"></div><p style="font-size: 12px; word-wrap: break-word; background: var(--input-bg); padding: 12px; border-radius: var(--border-radius-md);" id="full-receive-address"></p><div id="receive-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-receive">Back</button></div></div>
+    <div id="receive-view" class="view"><div class="card"><h2>Receive Funds</h2><p>Share your address to receive funds.</p><div id="static-qr-code"></div><p style="font-size: 12px; word-wrap: break-word; background: var(--input-bg); padding: 12px; border-radius: var(--border-radius-md);" id="full-receive-address"></p><button class="back-button" id="back-from-receive">Back</button></div></div>
     <div id="send-options-view" class="view"><div class="card"><h2>Send Funds</h2><p>How would you like to send?</p><div class="action-buttons" style="grid-template-columns: 1fr; margin-bottom: 10px; margin-top: 10px; gap: 10px;"><button id="go-to-send-manual" style="padding: 16px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> Enter Address Manually</button><button id="go-to-send-scan" style="padding: 16px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg> Scan QR Code</button></div><button class="back-button" id="back-from-send-options">Back to Wallet</button></div></div>
     <div id="send-view" class="view"><div class="card"><h2>Scan QR Code</h2><p>Scan a recipient's payment request QR code.</p><div id="video-container" style="position: relative; width: 100%; max-width: 300px; margin: 15px auto; border-radius: var(--border-radius-md); overflow: hidden; border: 2px solid var(--border-color); background: #000;"><video id="qr-video" playsinline style="width: 100%; height: auto; display: block;"></video><div id="loading-message" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center;">Requesting camera access...</div></div><canvas id="qr-canvas" style="display: none;"></canvas><div id="send-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-send">Back</button></div></div>
     <div id="send-manual-view" class="view"><div class="card"><h2>Send Manually</h2><p>Enter recipient address and amount.</p><div class="input-wrapper"><div class="icon" id="manual-address-icon" aria-hidden="true"></div><input type="text" id="send-address-input" placeholder="Recipient's Aura Address"></div><div class="input-wrapper"><div class="icon" aria-hidden="true"><img src="ico/ico%2032.ico" alt="Aura" style="width:20px; height:20px;"></div><input type="number" id="send-amount-input" placeholder="Amount to send"></div><input type="text" id="send-comment-input" placeholder="Short comment (optional)" maxlength="50" style="margin-bottom: 5px;"><p id="comment-char-count" style="text-align: right; font-size: 12px; opacity: 0.7; margin-top: 0; margin-bottom: 10px;">0 / 50</p><button id="send-manual-button">Continue</button><div id="send-manual-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-send-manual">Back</button></div></div>
@@ -192,11 +192,13 @@
     <script type="module" nonce="aura-wallet-script">
         if (typeof globalThis.Buffer === 'undefined') {
             globalThis.Buffer = {
-                from: (input, encoding) => {
+          
+               from: (input, encoding) => {
                     if (encoding === 'base64') {
                         const binary = atob(input);
                         const len = binary.length;
-                        const bytes = new Uint8Array(len);
+            
+                         const bytes = new Uint8Array(len);
                         for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
                         return bytes;
                     }
@@ -218,6 +220,7 @@
             tempBanknotePayload: null,
             activeTransactionIntent: null,
             activePollingTimer: null, 
+  
             cameraStream: null, 
             isScannerActive: false, 
             currentBalance: 0n, 
@@ -225,6 +228,7 @@
             realtimeChannel: null,
             config: null,
             displayCurrency: 'USD',
+      
             fxRates: { 'USD': 1 }
         };
         const SvgIcons = {
@@ -308,24 +312,30 @@ if (!parts[partNum]) { parts[partNum] = match[3]; count++; } } } } if (count < C
                 const response = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Origin': location.origin, 'X-Client-UA': navigator.userAgent },
+      
+                   headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action, payload })
                 });
                 const result = await response.json();
                 if (!response.ok || result.error) {
-                    throw new Error(result.error || `Server API error! Status: ${response.status}`);
+  
+                   throw new Error(result.error || `Server API error! Status: ${response.status}`);
                 }
                 return result.data;
             };
             return { 
-                getPublicConfig: () => apiCall('getPublicConfig'),
+               
+                 getPublicConfig: () => apiCall('getPublicConfig'),
                 getAppConfig: () => apiCall('getAppConfig'), 
                 // UPDATED: Added preAuthNonce for replay protection
                 prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce) => 
-                    apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce }),
+                    apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, 
+preAuthSignature, preAuthNonce }),
                 // UPDATED: Added preAuthNonce for replay protection
                 executeTransaction: (transactionIntentId, signature, preAuthNonce) => apiCall('executeTransaction', { transactionIntentId, signature, preAuthNonce }),
                 cancelTransactionIntent: (transactionIntentId) => apiCall('cancelTransactionIntent', { transactionIntentId }),
-                hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status:', error);
+                hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', 
+{ identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status:', error);
 alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true;
 } }, 
                 findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }), 
@@ -339,7 +349,8 @@ return txs; },
                 findTransactionById: (transactionId) => apiCall('findTransactionById', { transactionId }),
                 validateBanknote: (banknotePayload) => apiCall('validateBanknote', { banknotePayload }),
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress }),
-                // ADDED: Server-side lockout functions
+      
+                   // ADDED: Server-side lockout functions
                 checkUnlockStatus: () => apiCall('checkUnlockStatus'),
                 recordFailedUnlock: (reason) => apiCall('recordFailedUnlock', { reason })
             };
@@ -357,7 +368,8 @@ return txs; },
                     address: wallet.address,
                     encryptedPrivateKey: encryptedPrivateKey,
                     chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
-                };
+   
+                 };
                 return { mnemonic, userStore, wallet };
             },
             async restoreWallet(mnemonic, password) {
@@ -370,7 +382,8 @@ return txs; },
                         publicKey: wallet.publicKey,
                         address: wallet.address,
                         encryptedPrivateKey: encryptedPrivateKey,
-                        chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
+                      
+                       chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                     };
                     state.userStore = userStore;
                     state.wallet = wallet;
@@ -430,7 +443,8 @@ return txs; },
                 const amountInt = BigInt(newTx.amount || '0');
                 const feeInt = BigInt(newTx.fee || '0');
                 newTx.hash = ethers.solidityPackedKeccak256(['string', 'uint256', 'uint256', 'string', 'string', 'string'], [newTx.type, amountInt, feeInt, newTx.from || '', newTx.to || '', newTx.prevHash]);
-                if (txData.id) { newTx.id = txData.id; } else { newTx.id = parseInt(newTx.hash.slice(-10), 16); }
+                if (txData.id) { newTx.id = txData.id; } else { newTx.id = parseInt(newTx.hash.slice(-10), 16);
+                }
                 state.userStore.chain.push(newTx);
                 const txKey = newTx.linkedTxHash || newTx.hash;
                 state.transactionIndex.set(txKey, newTx);
@@ -463,12 +477,14 @@ return txs; },
                 return balance;
             },
             executePreparedTransaction: async () => {
-                if (!state.activeTransactionIntent || !state.activeTransactionIntent.messageToSign) { throw new Error("No pending transaction to execute."); }
+                if (!state.activeTransactionIntent || !state.activeTransactionIntent.messageToSign) { throw new Error("No pending transaction to execute.");
+                }
                 const { transactionIntentId, messageToSign, details, preAuthNonce } = state.activeTransactionIntent;
                 try {
                     const signature = await state.wallet.signMessage(messageToSign);
                     const recoveredAddress = ethers.verifyMessage(messageToSign, signature);
-                    if (recoveredAddress.toLowerCase() !== state.wallet.address.toLowerCase()) { throw new Error('Client-side signature verification failed. Aborting transaction.'); }
+                    if (recoveredAddress.toLowerCase() !== state.wallet.address.toLowerCase()) { throw new Error('Client-side signature verification failed. Aborting transaction.');
+                    }
                     // UPDATED: Pass preAuthNonce to execute
                     const result = await SupabaseLedger.executeTransaction(transactionIntentId, signature, preAuthNonce);
                     WalletLogic.addToChain({ type: 'send', amount: details.amount, fee: details.fee, from: state.wallet.address, to: details.receiverAddress, status: 'completed', comment: details.comment, linkedTxHash: result.txHash, id: details.id, timestamp: result.timestamp });
@@ -527,7 +543,8 @@ return txs; },
                 status: 'completed',
                 linkedTxHash: newTx.linked_tx_hash,
                 timestamp: new Date(newTx.created_at).getTime(),
-                comment: newTx.confirmation_data?.comment
+              
+                 comment: newTx.confirmation_data?.comment
             };
             if (!state.transactionIndex.has(formattedTx.linkedTxHash)) {
                 WalletLogic.addToChain(formattedTx);
@@ -552,10 +569,12 @@ return txs; },
                 const syncStatusEl = document.getElementById('sync-status');
                 if(syncStatusEl) {
                     if (status === 'SUBSCRIBED') setStatus(syncStatusEl, '🟢 Real-time sync active', 'success');
-                    if (status === 'CHANNEL_ERROR') setStatus(syncStatusEl, 'Real-time sync failed.', 'error');
+              
+                   if (status === 'CHANNEL_ERROR') setStatus(syncStatusEl, 'Real-time sync failed.', 'error');
                     if (status === 'CLOSED') setStatus(syncStatusEl, '🔴 Real-time sync disconnected', 'error');
                     if (status === 'TIMED_OUT') setStatus(syncStatusEl, '⏰ Real-time sync timeout', 'error');
                 }
+            
             });
             
             state.realtimeChannel = channel;
@@ -574,27 +593,36 @@ return txs; },
             return {
                 async fetchRates() {
                     try {
-                        const cachedRates = CacheManager.get('fxRates');
+     
+                                       const cachedRates = CacheManager.get('fxRates');
                         if (cachedRates) { state.fxRates = cachedRates; console.log("Loaded FX rates from cache."); return; }
                         const response = await fetch(API_URL);
-                        if (!response.ok) { throw new Error(`Failed to fetch FX rates. Status: ${response.status}`); }
+              
+                       if (!response.ok) { throw new Error(`Failed to fetch FX rates. Status: ${response.status}`); }
                         const data = await response.json();
                         state.fxRates = { ...data.rates, USD: 1 };
-                        CacheManager.set('fxRates', state.fxRates, 3600000);
+                    
+                         CacheManager.set('fxRates', state.fxRates, 3600000);
                         console.log("Fetched and cached new FX rates:", state.fxRates);
                     } catch (error) {
                         console.error("Could not fetch FX rates:", error);
-                        const settingsStatusEl = document.getElementById('settings-status');
-                        if (settingsStatusEl) { setStatus(settingsStatusEl, 'Could not update exchange rates.', 'error'); }
+            
+                         const settingsStatusEl = document.getElementById('settings-status');
+                        if (settingsStatusEl) { setStatus(settingsStatusEl, 'Could not update exchange rates.', 'error');
+                        }
                     }
                 }
             };
         })();
 
         function setLoader(loaderId, isLoading) { document.getElementById(loaderId).classList.toggle('hidden', !isLoading); }
-        function setStatus(element, message, type = '') { if (!element) return; SecurityUtils.setTextContent(element, message); element.className = 'status-box'; if (type) element.classList.add(type); }
-        function setStatusHTML(element, message, type = '', allowedTags = ['img', 'b', 'strong', 'i', 'em', 'br', 'span']) { if (!element) return; SecurityUtils.setHTMLContent(element, message, allowedTags); element.className = 'status-box'; if (type) element.classList.add(type); }
-        function resetViewInputs(viewId) { const view = document.getElementById(viewId); if (!view) return; view.querySelectorAll('input, textarea').forEach(input => { if (input.type !== 'file') input.value = ''; }); const statusBox = view.querySelector('.status-box'); if (statusBox) SecurityUtils.setTextContent(statusBox, ''); }
+        function setStatus(element, message, type = '') { if (!element) return;
+        SecurityUtils.setTextContent(element, message); element.className = 'status-box'; if (type) element.classList.add(type); }
+        function setStatusHTML(element, message, type = '', allowedTags = ['img', 'b', 'strong', 'i', 'em', 'br', 'span']) { if (!element) return;
+        SecurityUtils.setHTMLContent(element, message, allowedTags); element.className = 'status-box'; if (type) element.classList.add(type); }
+        function resetViewInputs(viewId) { const view = document.getElementById(viewId);
+        if (!view) return; view.querySelectorAll('input, textarea').forEach(input => { if (input.type !== 'file') input.value = ''; }); const statusBox = view.querySelector('.status-box');
+        if (statusBox) SecurityUtils.setTextContent(statusBox, ''); }
         
         function animateBalance(element, start, end, duration, prefix = '') {
             let startTimestamp = null;
@@ -604,20 +632,24 @@ return txs; },
                 const easedProgress = progress * (2 - progress);
                 const currentValue = start + (end - start) * easedProgress;
                 element.innerHTML = `${prefix}${currentValue.toFixed(2)}`;
-                if (progress < 1) { window.requestAnimationFrame(step); }
+                if (progress < 1) { window.requestAnimationFrame(step);
+                }
             };
             window.requestAnimationFrame(step);
         }
         
-        function formatAuraValue(amountBigInt) { const auraAmountDecimal = parseFloat(ethers.formatUnits(amountBigInt, state.config.PRECISION)); return auraAmountDecimal.toFixed(2); }
+        function formatAuraValue(amountBigInt) { const auraAmountDecimal = parseFloat(ethers.formatUnits(amountBigInt, state.config.PRECISION));
+        return auraAmountDecimal.toFixed(2); }
         function formatDisplayCurrency(amountBigInt, targetCurrency) {
-            if (!targetCurrency || targetCurrency === 'NONE' || !state.fxRates[targetCurrency]) { return ''; }
+            if (!targetCurrency || targetCurrency === 'NONE' || !state.fxRates[targetCurrency]) { return '';
+            }
             const auraAmountDecimal = parseFloat(ethers.formatUnits(amountBigInt, state.config.PRECISION));
             const usdValue = auraAmountDecimal * AppConstants.AURA_USD_RATE;
             const targetRate = state.fxRates[targetCurrency];
             const targetValue = usdValue * targetRate;
             const formatter = new Intl.NumberFormat(navigator.language || 'en-US', { style: 'currency', currency: targetCurrency, minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            try { return `≈ ${formatter.format(targetValue)}`; } catch (e) { return `≈ ${targetCurrency} ${targetValue.toFixed(2)}`; }
+            try { return `≈ ${formatter.format(targetValue)}`; } catch (e) { return `≈ ${targetCurrency} ${targetValue.toFixed(2)}`;
+            }
         }
         
         async function updateBalanceAndRender() {
@@ -649,32 +681,39 @@ return txs; },
             }
         }
 
-        function generateQrCode(data, containerId) { const container = document.getElementById(containerId); container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10); const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); }
+        function generateQrCode(data, containerId) { const container = document.getElementById(containerId);
+        container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10);
+        const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); }
         function abbreviateAddress(address) { if (!address) return ''; const sanitized = SecurityUtils.sanitizeAddress(address); return `${sanitized.substring(0, 6)}...${sanitized.substring(sanitized.length - 4)}`; }
         function stopScanner() { if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); state.cameraStream = null; state.isScannerActive = false; } }
-        async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status'); setStatus(sendStatusEl, '');
-loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err);
-SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false;
-} function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth;
-canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info');
-let isPaymentRequest = false; try { const request = JSON.parse(code.data);
-if (request.type === 'AURA_PAYMENT_REQUEST' && request.amount && request.receiverAddress) { isPaymentRequest = true;
-Promise.resolve().then(async () => { if (Date.now() > request.expiresAt) throw new Error("This payment request has expired."); if (await SupabaseLedger.hasBeenSpent(request.linkedTxHash)) throw new Error("This payment request has already been paid."); setStatus(sendStatusEl, 'Preparing transaction with server...', 'info'); const preAuthTimestamp = Date.now(); const preAuthNonce = crypto.randomUUID(); const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`; const preAuthSignature = await state.wallet.signMessage(preAuthMessage); const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, request.receiverAddress, request.amount, '' , request.linkedTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce); state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: request.receiverAddress, amount: request.amount, comment: '', fee, totalDebit, txHash: senderTxHash }, preAuthNonce };
-const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(request.amount); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit);
-const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`;
-SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), request.receiverAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), ''); await showView('send-confirm-view');
-}).catch(err => { setStatus(sendStatusEl, err.message, 'error'); setTimeout(() => startScanner(), 2000); });
-} } catch (e) {} if (!isPaymentRequest) { if (ethers.isAddress(code.data)) { document.getElementById('send-address-input').value = code.data;
-setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus();
-} else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address or payment request.', 'error'); setTimeout(() => startScanner(), 2000);
-} } return; } } requestAnimationFrame(tick); } }
+        async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; 
+        const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status'); setStatus(sendStatusEl, '');
+        loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err);
+        SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false;
+        } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth;
+        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+            if (code) {
+                stopScanner();
+                setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info');
+                if (ethers.isAddress(code.data)) {
+                    document.getElementById('send-address-input').value = code.data;
+                    setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success');
+                    showView('send-manual-view');
+                    document.getElementById('send-amount-input').focus();
+                } else {
+                    setStatus(sendStatusEl, 'Invalid QR Code. Not a valid address.', 'error');
+                    setTimeout(() => startScanner(), 2000);
+                }
+                return;
+            }
+        } requestAnimationFrame(tick); } }
         async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner();
-if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active');
-if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); startRealtimeListener(); } if (id === 'send-view') { startScanner();
-} if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code');
-} }
+        if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active');
+        if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); await updateBalanceAndRender(); startRealtimeListener(); } if (id === 'send-view') { startScanner();
+        } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code');
+        } }
         
         function renderTransactionHistory() {
             const listUl = document.getElementById('transaction-list-ul');
@@ -689,12 +728,12 @@ if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(docume
                 let typeText;
 
         
-                switch (tx.type) {
+                 switch (tx.type) {
                     case 'send':
                         typeText = 'Sent';
                         break;
                    
-                    case 'fee':
+                     case 'fee':
                         typeText = 'Transaction Fee';
                         break;
                     case 'charge':
@@ -703,7 +742,8 @@ if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(docume
                     case 'receive':
                     default:
                         typeText = tx.comment || 'Received';
-                        break;
+       
+                         break;
                 }
 
                 const amountFormatted = formatAuraValue(tx.amount || '0');
@@ -747,26 +787,34 @@ if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(docume
                 try {
                     const linked = tx.linkedTxHash || tx.linkedTxHash || tx.id || tx.hash;
                     if (linked) {
-                        const server = await SupabaseLedger.findConfirmation(linked).catch(()=>null);
+     
+                                           const server = await SupabaseLedger.findConfirmation(linked).catch(()=>null);
                         if (server) {
                             tx = Object.assign({}, tx, {
-                                id: server.id || tx.id,
+                   
+                             id: server.id || tx.id,
                                 status: 'completed',
                                 from: server.senderAddress || server.sender_address || tx.from,
-                                to: server.receiverAddress || server.receiver_address || tx.to,
+              
+                                   to: server.receiverAddress || server.receiver_address || tx.to,
                                 amount: server.amount || tx.amount,
                                 fee: server.fee || tx.fee || server.confirmation_data?.fee,
-                                comment: server.comment || server.confirmation_data?.comment || tx.comment,
-                                linkedTxHash: server.linked_tx_hash || linked,
-                                timestamp: server.timestamp || server.created_at || tx.timestamp
+     
+                                                             comment: server.comment ||
+server.confirmation_data?.comment || tx.comment,
+                                linkedTxHash: server.linked_tx_hash ||
+linked,
+                                timestamp: server.timestamp ||
+server.created_at || tx.timestamp
                             });
                         }
                     }
-                } catch (e) { console.warn('Could not fetch server details for tx:', e); }
+                } catch (e) { console.warn('Could not fetch server details for tx:', e);
+                }
             })();
-            // The 'tx' object already contains all necessary data.
+        // The 'tx' object already contains all necessary data.
             // This corrected version simply displays the data instead of re-fetching it.
-            const displayData = tx;
+        const displayData = tx;
 
             const fromAddress = displayData.from || displayData.senderAddress || 'N/A';
             const toAddress = displayData.to || displayData.receiverAddress || 'N/A';
@@ -788,10 +836,13 @@ if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(docume
             document.getElementById('close-modal-button').onclick = () => { modal.style.display = 'none'; };
         }
 
-        function saveCurrencySettings() { const settings = { display: state.displayCurrency }; localStorage.setItem(AppConstants.CURRENCY_STORAGE_KEY, JSON.stringify(settings)); }
+        function saveCurrencySettings() { const settings = { display: state.displayCurrency }; localStorage.setItem(AppConstants.CURRENCY_STORAGE_KEY, JSON.stringify(settings));
+        }
         function loadCurrencySettings() {
             const savedSettings = localStorage.getItem(AppConstants.CURRENCY_STORAGE_KEY);
-            if (savedSettings) { try { const settings = JSON.parse(savedSettings); state.displayCurrency = settings.display || 'USD'; } catch (e) { console.error("Could not parse currency settings, using defaults."); } }
+            if (savedSettings) { try { const settings = JSON.parse(savedSettings); state.displayCurrency = settings.display || 'USD';
+            } catch (e) { console.error("Could not parse currency settings, using defaults.");
+            } }
         }
         
         async function initializeApp() {
@@ -807,7 +858,8 @@ if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(docume
                 setupEventListeners();
                 
                 const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
-                if (storedWallet) { showView('unlock-view'); } else { showView('onboarding-view'); }
+                if (storedWallet) { showView('unlock-view'); } else { showView('onboarding-view');
+                }
             } catch (e) {
                 console.error("Initialization Error:", e);
                 document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not contact the server to start the application. Please check your network connection and refresh the page.</p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
@@ -819,19 +871,22 @@ if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(docume
             document.getElementById('unlock-wallet-button').addEventListener('click', async () => {
                 const button = document.getElementById('unlock-wallet-button');
                 const statusEl = document.getElementById('unlock-status');
-                const pass = document.getElementById('unlock-password-input').value;
+  
+                               const pass = document.getElementById('unlock-password-input').value;
 
                 setStatus(statusEl, '');
                 if (!pass) {
                     setStatus(statusEl, 'Password is required.', 'error');
                     return;
-                }
+    
+                 }
                 
                 button.disabled = true;
                 setLoader('unlock-loader', true);
                 
                 try {
-                    // 1. Check server for existing lockouts
+    
+                     // 1. Check server for existing lockouts
                     const { failedAttempts } = await SupabaseLedger.checkUnlockStatus();
                     if (failedAttempts >= AppConstants.MAX_LOGIN_ATTEMPTS) {
                         setStatus(statusEl, `Too many failed attempts. Please try again in 15 minutes.`, 'error');
@@ -871,7 +926,8 @@ if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(docume
                     SupabaseLedger.cancelTransactionIntent(state.activeTransactionIntent.transactionIntentId)
                         .catch(err => console.error("Failed to cancel intent on server:", err));
                     state.activeTransactionIntent = null;
-                }
+   
+                 }
                 showView('send-options-view');
             });
             document.getElementById('back-from-qr-display').addEventListener('click', () => { showView('wallet-view'); });
@@ -887,7 +943,8 @@ if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(docume
             let generatedMnemonic = '';
             document.getElementById('create-wallet-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(); const confirmPass = document.getElementById('confirm-password-input').value.trim(); setStatus(statusEl, ''); if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); const { mnemonic, userStore, wallet } = await WalletLogic.createWallet(pass); generatedMnemonic = mnemonic; state.tempUserStore = userStore; state.tempWallet = wallet; SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic); showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); });
             document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => { const words = generatedMnemonic.split(' '); const idx1 = Math.floor(Math.random() * 6); const idx2 = Math.floor(Math.random() * 6) + 6; const verifyBtn = document.getElementById('verify-seed-button'); verifyBtn.dataset.word1 = words[idx1]; verifyBtn.dataset.word2 = words[idx2]; document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`; document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`; resetViewInputs('seed-confirm-view'); showView('seed-confirm-view'); });
-            document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { state.userStore = state.tempUserStore; state.wallet = state.tempWallet; WalletLogic.saveUserStore(); state.tempUserStore = null; state.tempWallet = null; generatedMnemonic = ''; resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error'); } });
+            document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { state.userStore = state.tempUserStore; state.wallet = state.tempWallet; WalletLogic.saveUserStore(); state.tempUserStore = null; state.tempWallet = null; generatedMnemonic = ''; resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error');
+            } });
             document.getElementById('restore-wallet-button').addEventListener('click', async () => { const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); setStatus(statusEl, ''); if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; } if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } button.disabled = true; setLoader('restore-loader', true); const success = await WalletLogic.restoreWallet(mnemonic, pass); if (success) { await showView('wallet-view'); } else { setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); } button.disabled = false; setLoader('restore-loader', false); resetViewInputs('restore-wallet-view'); });
             document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); });
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
@@ -895,8 +952,8 @@ if (id === 'wallet-view') { if(state.wallet) SecurityUtils.setTextContent(docume
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
             // UPDATED: send-manual-button logic with nonce
             document.getElementById('send-manual-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-manual-status'); const recipientAddress = document.getElementById('send-address-input').value.trim(); const amountDecimalString = document.getElementById('send-amount-input').value; const comment = document.getElementById('send-comment-input').value.trim(); setStatus(statusEl, ''); if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; } if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; } if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; } let amountInt; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error();
-amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true;
-setStatus(statusEl, 'Preparing transaction with server...', 'info');
+            amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true;
+            setStatus(statusEl, 'Preparing transaction with server...', 'info');
                 try { 
                     const senderTxHash = WalletLogic.precomputeTransactionHash({ type: 'send', amount: amountInt.toString(), fee: '0', from: state.wallet.address, to: recipientAddress });
                     const preAuthTimestamp = Date.now();
@@ -908,7 +965,8 @@ setStatus(statusEl, 'Preparing transaction with server...', 'info');
                     const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(amountInt); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit);
                     const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`;
                     SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : ''); await showView('send-confirm-view');
-                } catch (err) { setStatus(statusEl, err.message, 'error'); } finally { button.disabled = false; } 
+                } catch (err) { setStatus(statusEl, err.message, 'error'); } finally { button.disabled = false;
+                } 
             });
             document.getElementById('refresh-tx-button').addEventListener('click', async () => {
                 const button = document.getElementById('refresh-tx-button');
@@ -916,12 +974,14 @@ setStatus(statusEl, 'Preparing transaction with server...', 'info');
                 const loader = button.querySelector('.loader');
                 const syncStatusEl = document.getElementById('sync-status');
                 button.disabled = true;
-                icon.style.display = 'none';
+  
+                               icon.style.display = 'none';
                 loader.style.display = 'block';
                 setStatus(syncStatusEl, 'Updating history...', 'info');
                 try {
                     await WalletLogic.synchronizeChainFromServer();
-                    await updateBalanceAndRender();
+         
+                   await updateBalanceAndRender();
                     setStatus(syncStatusEl, 'History updated successfully.', 'success');
                 } catch (error) {
                     console.error("Manual refresh failed:", error);
@@ -932,7 +992,8 @@ setStatus(statusEl, 'Preparing transaction with server...', 'info');
                         button.disabled = false;
                         icon.style.display = 'block';
                         loader.style.display = 'none';
-                        if (syncStatusEl.textContent === originalMessage) {
+                    
+                         if (syncStatusEl.textContent === originalMessage) {
                            setStatus(syncStatusEl, '');
                         }
                     }, 2500);
@@ -945,7 +1006,8 @@ let shown = false;
 try {
     const txHash = state?.activeTransactionIntent?.details?.txHash;
     if (txHash) {
-        const confirmation = await SupabaseLedger.findConfirmation(txHash);
+     
+       const confirmation = await SupabaseLedger.findConfirmation(txHash);
         if (confirmation) {
             // Treat as success;
             // write to local chain and UI
@@ -964,18 +1026,21 @@ try {
 }
 if (!shown) setStatus(statusEl, baseMsg, 'error');} finally { button.disabled = false; } });
             document.getElementById('show-charge-view-button').addEventListener('click', () => { resetViewInputs('charge-view'); showView('charge-view'); });
-            document.getElementById('banknote-image-input').addEventListener('change', async (event) => { const file = event.target.files[0]; const statusEl = document.getElementById('validation-status'); if (!file) return; const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']; if (!allowedTypes.includes(file.type)) { setStatus(statusEl, 'Invalid file type. Please upload a JPEG, PNG, or WebP file.', 'error'); event.target.value = ''; return; } setStatus(statusEl, 'Preparing image...', 'info'); try { const resizedDataUrl = await CoreLogic.Utils.resizeImage(file, CoreLogic.Constants.MAX_IMAGE_DIMENSION); const processedDataUrl = await CoreLogic.Utils.preprocessImage(resizedDataUrl); const imageData = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0); resolve(ctx.getImageData(0, 0, img.width, img.height)); }; img.onerror = reject; img.src = processedDataUrl; });
+            document.getElementById('banknote-image-input').addEventListener('change', async (event) => { const file = event.target.files[0]; const statusEl = document.getElementById('validation-status'); if (!file) return; const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']; if (!allowedTypes.includes(file.type)) { setStatus(statusEl, 'Invalid file type. Please upload a JPEG, PNG, or WebP file.', 'error'); event.target.value = ''; return; } setStatus(statusEl, 'Preparing image...', 'info'); try { const resizedDataUrl = await CoreLogic.Utils.resizeImage(file, CoreLogic.Constants.MAX_IMAGE_DIMENSION); const processedDataUrl = await CoreLogic.Utils.preprocessImage(resizedDataUrl); const imageData = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0); resolve(ctx.getImageData(0, 0, img.width, img.height)); 
+            }; img.onerror = reject; img.src = processedDataUrl; });
             const banknotePayload = await CoreLogic.Banknote.decodeQrGrid(imageData, statusEl);
             setStatus(statusEl, 'Banknote scanned. Validating with server...', 'info'); const validationResult = await SupabaseLedger.validateBanknote(banknotePayload);
             if (validationResult.success) { state.tempBanknotePayload = banknotePayload;
-                const amountAura = formatAuraValue(validationResult.amount); SecurityUtils.setHTMLContent(document.getElementById('confirm-banknote-amount-display'), `${auraIconHTML} ${amountAura}`, ['img']); SecurityUtils.setTextContent(document.getElementById('confirm-banknote-serial-display'), validationResult.serial); resetViewInputs('charge-view'); showView('banknote-confirm-view');
-            } else { throw new Error("Validation failed for an unknown reason."); } } catch (err) { setStatus(statusEl, `Validation Failed: ${SecurityUtils.sanitizeText(err.message)}`, 'error'); } finally { event.target.value = ''; } });
+            const amountAura = formatAuraValue(validationResult.amount); SecurityUtils.setHTMLContent(document.getElementById('confirm-banknote-amount-display'), `${auraIconHTML} ${amountAura}`, ['img']); SecurityUtils.setTextContent(document.getElementById('confirm-banknote-serial-display'), validationResult.serial); resetViewInputs('charge-view'); showView('banknote-confirm-view');
+            } else { throw new Error("Validation failed for an unknown reason.");
+            } } catch (err) { setStatus(statusEl, `Validation Failed: ${SecurityUtils.sanitizeText(err.message)}`, 'error'); } finally { event.target.value = ''; } });
             document.getElementById('confirm-banknote-button').addEventListener('click', async (event) => {
                 const button = event.target;
                 const statusEl = document.getElementById('banknote-confirm-status');
                 if (!state.tempBanknotePayload) {
                     setStatus(statusEl, 'No banknote data to confirm.', 'error');
-                    return;
+              
+                   return;
                 }
                 button.disabled = true;
                 setStatus(statusEl, 'Redeeming banknote...', 'info');
@@ -984,7 +1049,8 @@ if (!shown) setStatus(statusEl, baseMsg, 'error');} finally { button.disabled = 
                     if (result.success) {
                         const amountAura = formatAuraValue(result.amount);
                         setStatusHTML(statusEl, `Success! ${auraIconHTML} ${amountAura} added.`, 'success');
-                        CacheManager.invalidate(state.wallet.address);
+                     
+                       CacheManager.invalidate(state.wallet.address);
                         await updateBalanceAndRender();
                         setTimeout(() => {
                             state.tempBanknotePayload = null;
