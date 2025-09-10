@@ -327,11 +327,9 @@ if (!parts[partNum]) { parts[partNum] = match[3]; count++; } } } } if (count < C
                
                  getPublicConfig: () => apiCall('getPublicConfig'),
                 getAppConfig: () => apiCall('getAppConfig'), 
-                // UPDATED: Added preAuthNonce for replay protection
                 prepareTransaction: (senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce) => 
                     apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, 
 preAuthSignature, preAuthNonce }),
-                // UPDATED: Added preAuthNonce for replay protection
                 executeTransaction: (transactionIntentId, signature, preAuthNonce) => apiCall('executeTransaction', { transactionIntentId, signature, preAuthNonce }),
                 cancelTransactionIntent: (transactionIntentId) => apiCall('cancelTransactionIntent', { transactionIntentId }),
                 hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', 
@@ -349,13 +347,32 @@ return txs; },
                 findTransactionById: (transactionId) => apiCall('findTransactionById', { transactionId }),
                 validateBanknote: (banknotePayload) => apiCall('validateBanknote', { banknotePayload }),
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress }),
-      
-                   // ADDED: Server-side lockout functions
                 checkUnlockStatus: () => apiCall('checkUnlockStatus'),
                 recordFailedUnlock: (reason) => apiCall('recordFailedUnlock', { reason })
             };
         })();
         const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
+        
+        // Helper function to add a timeout to any promise
+        const timeout = (ms, promise) => {
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                    reject(new Error('Operation timed out'));
+                }, ms);
+
+                promise.then(
+                    value => {
+                        clearTimeout(timer);
+                        resolve(value);
+                    },
+                    error => {
+                        clearTimeout(timer);
+                        reject(error);
+                    }
+                );
+            });
+        };
+
         const WalletLogic = {
             async createWallet(password) {
                 const wallet = ethers.Wallet.createRandom();
@@ -368,7 +385,6 @@ return txs; },
                     address: wallet.address,
                     encryptedPrivateKey: encryptedPrivateKey,
                     chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
-   
                  };
                 return { mnemonic, userStore, wallet };
             },
@@ -382,7 +398,6 @@ return txs; },
                         publicKey: wallet.publicKey,
                         address: wallet.address,
                         encryptedPrivateKey: encryptedPrivateKey,
-                      
                        chain: [{ id: parseInt(genesisHash.slice(-10), 16), hash: genesisHash, type: 'creation', timestamp: Date.now() }]
                     };
                     state.userStore = userStore;
@@ -401,7 +416,10 @@ return txs; },
                 if (!storedUserStore) throw new Error("No wallet found on this device.");
                 const userStore = JSON.parse(storedUserStore);
                 try {
-                    const privateKey = await CryptoWallet.decrypt(userStore.encryptedPrivateKey, password);
+                    // **FIX APPLIED**: Add a 5-second timeout to the decryption process.
+                    // This prevents the application from hanging if decryption fails silently.
+                    const privateKey = await timeout(5000, CryptoWallet.decrypt(userStore.encryptedPrivateKey, password));
+                    
                     const wallet = new ethers.Wallet(privateKey);
                     state.userStore = userStore;
                     state.wallet = wallet;
@@ -410,6 +428,7 @@ return txs; },
                     return true;
                 } catch (error) {
                     console.error("Unlock failed:", error);
+                    // This catch block now also handles the timeout error, ensuring it returns false.
                     return false;
                 }
             },
@@ -455,7 +474,6 @@ return txs; },
                 const prevTx = WalletLogic.getLastTransaction();
                 const amountInt = BigInt(txDetails.amount || '0');
                 const feeInt = BigInt(txDetails.fee || '0');
-                // Use a robust nonce for guaranteed uniqueness
                 const nonce = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
                 return ethers.solidityPackedKeccak256(
                     ['string', 'uint256', 'uint256', 'string', 'string', 'string', 'string'], 
@@ -485,7 +503,6 @@ return txs; },
                     const recoveredAddress = ethers.verifyMessage(messageToSign, signature);
                     if (recoveredAddress.toLowerCase() !== state.wallet.address.toLowerCase()) { throw new Error('Client-side signature verification failed. Aborting transaction.');
                     }
-                    // UPDATED: Pass preAuthNonce to execute
                     const result = await SupabaseLedger.executeTransaction(transactionIntentId, signature, preAuthNonce);
                     WalletLogic.addToChain({ type: 'send', amount: details.amount, fee: details.fee, from: state.wallet.address, to: details.receiverAddress, status: 'completed', comment: details.comment, linkedTxHash: result.txHash, id: details.id, timestamp: result.timestamp });
                     CacheManager.invalidate(state.wallet.address);
@@ -543,7 +560,6 @@ return txs; },
                 status: 'completed',
                 linkedTxHash: newTx.linked_tx_hash,
                 timestamp: new Date(newTx.created_at).getTime(),
-              
                  comment: newTx.confirmation_data?.comment
             };
             if (!state.transactionIndex.has(formattedTx.linkedTxHash)) {
@@ -569,7 +585,6 @@ return txs; },
                 const syncStatusEl = document.getElementById('sync-status');
                 if(syncStatusEl) {
                     if (status === 'SUBSCRIBED') setStatus(syncStatusEl, '🟢 Real-time sync active', 'success');
-              
                    if (status === 'CHANNEL_ERROR') setStatus(syncStatusEl, 'Real-time sync failed.', 'error');
                     if (status === 'CLOSED') setStatus(syncStatusEl, '🔴 Real-time sync disconnected', 'error');
                     if (status === 'TIMED_OUT') setStatus(syncStatusEl, '⏰ Real-time sync timeout', 'error');
@@ -593,20 +608,16 @@ return txs; },
             return {
                 async fetchRates() {
                     try {
-     
-                                       const cachedRates = CacheManager.get('fxRates');
+                        const cachedRates = CacheManager.get('fxRates');
                         if (cachedRates) { state.fxRates = cachedRates; console.log("Loaded FX rates from cache."); return; }
                         const response = await fetch(API_URL);
-              
                        if (!response.ok) { throw new Error(`Failed to fetch FX rates. Status: ${response.status}`); }
                         const data = await response.json();
                         state.fxRates = { ...data.rates, USD: 1 };
-                    
                          CacheManager.set('fxRates', state.fxRates, 3600000);
                         console.log("Fetched and cached new FX rates:", state.fxRates);
                     } catch (error) {
                         console.error("Could not fetch FX rates:", error);
-            
                          const settingsStatusEl = document.getElementById('settings-status');
                         if (settingsStatusEl) { setStatus(settingsStatusEl, 'Could not update exchange rates.', 'error');
                         }
@@ -727,12 +738,10 @@ return txs; },
                 const typeClass = isOutgoing ? 'sent' : 'received';
                 let typeText;
 
-        
                  switch (tx.type) {
                     case 'send':
                         typeText = 'Sent';
                         break;
-                   
                      case 'fee':
                         typeText = 'Transaction Fee';
                         break;
@@ -742,7 +751,6 @@ return txs; },
                     case 'receive':
                     default:
                         typeText = tx.comment || 'Received';
-       
                          break;
                 }
 
@@ -782,38 +790,28 @@ return txs; },
         
         function showTransactionDetails(tx) {
             const modal = document.getElementById('transaction-detail-modal');
-            // Prefer server-confirmation details: if tx has linkedTxHash, try fetching authoritative server confirmation
             (async () => {
                 try {
                     const linked = tx.linkedTxHash || tx.linkedTxHash || tx.id || tx.hash;
                     if (linked) {
-     
-                                           const server = await SupabaseLedger.findConfirmation(linked).catch(()=>null);
+                        const server = await SupabaseLedger.findConfirmation(linked).catch(()=>null);
                         if (server) {
                             tx = Object.assign({}, tx, {
-                   
                              id: server.id || tx.id,
                                 status: 'completed',
                                 from: server.senderAddress || server.sender_address || tx.from,
-              
                                    to: server.receiverAddress || server.receiver_address || tx.to,
                                 amount: server.amount || tx.amount,
                                 fee: server.fee || tx.fee || server.confirmation_data?.fee,
-     
-                                                             comment: server.comment ||
-server.confirmation_data?.comment || tx.comment,
-                                linkedTxHash: server.linked_tx_hash ||
-linked,
-                                timestamp: server.timestamp ||
-server.created_at || tx.timestamp
+                                comment: server.comment || server.confirmation_data?.comment || tx.comment,
+                                linkedTxHash: server.linked_tx_hash || linked,
+                                timestamp: server.timestamp || server.created_at || tx.timestamp
                             });
                         }
                     }
                 } catch (e) { console.warn('Could not fetch server details for tx:', e);
                 }
             })();
-        // The 'tx' object already contains all necessary data.
-            // This corrected version simply displays the data instead of re-fetching it.
         const displayData = tx;
 
             const fromAddress = displayData.from || displayData.senderAddress || 'N/A';
@@ -867,7 +865,6 @@ server.created_at || tx.timestamp
         }
         
         function setupEventListeners() {
-            // UPDATED: Unlock logic with server-side atomic lockout
             document.getElementById('unlock-wallet-button').addEventListener('click', async () => {
               const button = document.getElementById('unlock-wallet-button');
               const statusEl = document.getElementById('unlock-status');
@@ -883,9 +880,7 @@ server.created_at || tx.timestamp
               setLoader('unlock-loader', true);
 
               try {
-                // 1) Check server for existing lockouts (RPC get_lock_status)
                 const status = await SupabaseLedger.checkUnlockStatus();
-                // expect { locked: bool, lockUntil: '2025-...', failedAttempts: int, strikeCount: int }
                 if (status.locked) {
                   const until = new Date(status.lockUntil);
                   const remainingMs = until.getTime() - Date.now();
@@ -894,16 +889,12 @@ server.created_at || tx.timestamp
                   throw new Error('Lockout active');
                 }
 
-                // 2) Try to open locally
                 const success = await WalletLogic.unlockWallet(pass);
                 if (success) {
                   await showView('wallet-view');
                   resetViewInputs('unlock-view');
-                  // We intentionally do not delete audit rows to preserve forensics.
                 } else {
-                  // 3) Record failure on server (atomic RPC). It returns details about lock state.
                   const result = await SupabaseLedger.recordFailedUnlock('invalid_password');
-                  // expected result: { success: true, failedAttempts: n, locked: bool, lockUntil: '...' }
 
                   if (result.locked) {
                     const until = result.lockUntil ? new Date(result.lockUntil) : null;
@@ -937,7 +928,6 @@ server.created_at || tx.timestamp
                     SupabaseLedger.cancelTransactionIntent(state.activeTransactionIntent.transactionIntentId)
                         .catch(err => console.error("Failed to cancel intent on server:", err));
                     state.activeTransactionIntent = null;
-   
                  }
                 showView('send-options-view');
             });
@@ -961,7 +951,6 @@ server.created_at || tx.timestamp
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
-            // UPDATED: send-manual-button logic with nonce
             document.getElementById('send-manual-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-manual-status'); const recipientAddress = document.getElementById('send-address-input').value.trim(); const amountDecimalString = document.getElementById('send-amount-input').value; const comment = document.getElementById('send-comment-input').value.trim(); setStatus(statusEl, ''); if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; } if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; } if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; } let amountInt; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error();
             amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true;
             setStatus(statusEl, 'Preparing transaction with server...', 'info');
@@ -985,13 +974,11 @@ server.created_at || tx.timestamp
                 const loader = button.querySelector('.loader');
                 const syncStatusEl = document.getElementById('sync-status');
                 button.disabled = true;
-  
                                icon.style.display = 'none';
                 loader.style.display = 'block';
                 setStatus(syncStatusEl, 'Updating history...', 'info');
                 try {
                     await WalletLogic.synchronizeChainFromServer();
-         
                    await updateBalanceAndRender();
                     setStatus(syncStatusEl, 'History updated successfully.', 'success');
                 } catch (error) {
@@ -1003,7 +990,6 @@ server.created_at || tx.timestamp
                         button.disabled = false;
                         icon.style.display = 'block';
                         loader.style.display = 'none';
-                    
                          if (syncStatusEl.textContent === originalMessage) {
                            setStatus(syncStatusEl, '');
                         }
@@ -1011,17 +997,14 @@ server.created_at || tx.timestamp
                 }
             });
             document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } const localTransaction = state.userStore.chain.find(tx => tx.id && tx.id.toString() === searchId); if (localTransaction) { showTransactionDetails(localTransaction); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { showTransactionDetails(serverTransaction); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
-            document.getElementById('confirm-payment-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-confirm-status'); button.disabled = true; setStatus(statusEl, 'Awaiting signature and sending...', 'info'); try { const result = await WalletLogic.executePreparedTransaction(); if (result.success) { const amountAura = formatAuraValue(state.activeTransactionIntent.details.amount); setStatusHTML(statusEl, `Payment of ${auraIconHTML} ${amountAura} sent successfully!`, 'success'); await updateBalanceAndRender(); await new Promise(resolve => setTimeout(resolve, 1500)); state.activeTransactionIntent = null; await showView('wallet-view'); } } catch (err) {// Soft-recovery: if server responded error but funds moved, check confirmation by txHash
+            document.getElementById('confirm-payment-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-confirm-status'); button.disabled = true; setStatus(statusEl, 'Awaiting signature and sending...', 'info'); try { const result = await WalletLogic.executePreparedTransaction(); if (result.success) { const amountAura = formatAuraValue(state.activeTransactionIntent.details.amount); setStatusHTML(statusEl, `Payment of ${auraIconHTML} ${amountAura} sent successfully!`, 'success'); await updateBalanceAndRender(); await new Promise(resolve => setTimeout(resolve, 1500)); state.activeTransactionIntent = null; await showView('wallet-view'); } } catch (err) {
 const baseMsg = `Payment Failed: ${err.message}`;
 let shown = false;
 try {
     const txHash = state?.activeTransactionIntent?.details?.txHash;
     if (txHash) {
-     
        const confirmation = await SupabaseLedger.findConfirmation(txHash);
         if (confirmation) {
-            // Treat as success;
-            // write to local chain and UI
             const amountAura = formatAuraValue(state.activeTransactionIntent.details.amount);
             setStatusHTML(statusEl, `Payment of ${auraIconHTML} ${amountAura} sent successfully!`, 'success');
             await updateBalanceAndRender();
@@ -1032,7 +1015,6 @@ try {
         }
     }
 } catch (recoveryErr) {
-    // fall through to error display
     console.warn("Recovery check failed:", recoveryErr);
 }
 if (!shown) setStatus(statusEl, baseMsg, 'error');} finally { button.disabled = false; } });
@@ -1050,7 +1032,6 @@ if (!shown) setStatus(statusEl, baseMsg, 'error');} finally { button.disabled = 
                 const statusEl = document.getElementById('banknote-confirm-status');
                 if (!state.tempBanknotePayload) {
                     setStatus(statusEl, 'No banknote data to confirm.', 'error');
-              
                    return;
                 }
                 button.disabled = true;
@@ -1060,7 +1041,6 @@ if (!shown) setStatus(statusEl, baseMsg, 'error');} finally { button.disabled = 
                     if (result.success) {
                         const amountAura = formatAuraValue(result.amount);
                         setStatusHTML(statusEl, `Success! ${auraIconHTML} ${amountAura} added.`, 'success');
-                     
                        CacheManager.invalidate(state.wallet.address);
                         await updateBalanceAndRender();
                         setTimeout(() => {
