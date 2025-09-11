@@ -192,13 +192,11 @@
     <script type="module" nonce="aura-wallet-script">
         if (typeof globalThis.Buffer === 'undefined') {
             globalThis.Buffer = {
-          
-               from: (input, encoding) => {
+                from: (input, encoding) => {
                     if (encoding === 'base64') {
                         const binary = atob(input);
                         const len = binary.length;
-   
-                         const bytes = new Uint8Array(len);
+                        const bytes = new Uint8Array(len);
                         for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
                         return bytes;
                     }
@@ -220,7 +218,6 @@
             tempBanknotePayload: null,
             activeTransactionIntent: null,
             activePollingTimer: null, 
-  
             cameraStream: null, 
             isScannerActive: false, 
             currentBalance: 0n, 
@@ -228,12 +225,9 @@
             realtimeChannel: null,
             config: null,
             displayCurrency: 'USD',
-
-            // State for paginated history
             historyPage: 1,
             isFetchingHistory: false,
             hasMoreHistory: true,
-    
             fxRates: { 'USD': 1 }
         };
         const SvgIcons = {
@@ -251,8 +245,7 @@
             });
         }
         function loadTheme() {
-            const savedTheme = localStorage.getItem('aura_theme') ||
-            'starlight';
+            const savedTheme = localStorage.getItem('aura_theme') || 'starlight';
             applyTheme(savedTheme);
         }
         const SecurityUtils = {
@@ -335,39 +328,22 @@
                    apiCall('prepareTransaction', { senderAddress, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce }),
                 executeTransaction: (transactionIntentId, signature, preAuthNonce) => apiCall('executeTransaction', { transactionIntentId, signature, preAuthNonce }),
                 cancelTransactionIntent: (transactionIntentId) => apiCall('cancelTransactionIntent', { transactionIntentId }),
-                hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', 
-                    { identifier });
-                    return result.spent; } catch (error) { console.error('Failed to check identifier status:', error);
-                    alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true;
-                } }, 
+                hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } }, 
                 findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }), 
-                findIncomingTxs: (receiverAddress, page = 1, limit = 10) => {
-                    // Caching is less critical here now that we paginate, but can still help for quick re-renders.
-                    const cacheKey = `incoming_${receiverAddress}_p${page}_l${limit}`;
-                    const cached = CacheManager.get(cacheKey); if (cached) return Promise.resolve(cached);
-                    return apiCall('findIncomingTxs', { receiverAddress, page, limit }).then(txs => {
-                        CacheManager.set(cacheKey, txs, 15000); // Shorter cache for history
-                        return txs;
-                    });
-                }, 
-                findOutgoingTxs: (senderAddress, page = 1, limit = 10) => {
-                    const cacheKey = `outgoing_${senderAddress}_p${page}_l${limit}`;
-                    const cached = CacheManager.get(cacheKey); if (cached) return Promise.resolve(cached);
-                     return apiCall('findOutgoingTxs', { senderAddress, page, limit }).then(txs => {
-                        CacheManager.set(cacheKey, txs, 15000); // Shorter cache for history
-                        return txs;
-                    });
-                }, 
+                findIncomingTxs: (receiverAddress, page = 1, limit = 10) => apiCall('findIncomingTxs', { receiverAddress, page, limit }),
+                findOutgoingTxs: (senderAddress, page = 1, limit = 10) => apiCall('findOutgoingTxs', { senderAddress, page, limit }),
                 getSpendDetails: (identifier) => apiCall('getSpendDetails', { identifier }), 
                 findTransactionById: (transactionId) => apiCall('findTransactionById', { transactionId }),
                 validateBanknote: (banknotePayload) => apiCall('validateBanknote', { banknotePayload }),
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress }),
-                checkUnlockStatus: () => apiCall('checkUnlockStatus'),
-                recordFailedUnlock: (reason) => apiCall('recordFailedUnlock', { reason })
+                // **NEW Progressive Lockout Functions**
+                getWalletStatus: (walletAddress) => apiCall('getWalletStatus', { walletAddress }),
+                recordFailedUnlock: (reason, walletAddress) => apiCall('recordFailedUnlock', { reason, walletAddress }),
+                clearFailedAttempts: (walletAddress) => apiCall('clearFailedAttempts', { walletAddress })
             };
         })();
 
-        const AppConstants = { MAX_LOGIN_ATTEMPTS: 5, LOGIN_LOCKOUT_PERIOD: 30000, POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
+        const AppConstants = { POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
         
         const WalletLogic = {
             async createWallet(password) {
@@ -375,7 +351,6 @@
                 const mnemonic = wallet.mnemonic.phrase;
                 const privateKey = wallet.privateKey;
                 const encryptedPrivateKey = await CryptoWallet.encrypt(privateKey, password);
-                // The 'chain' is now only for local, in-session tracking, not for permanent history storage.
                 const genesisHash = ethers.id("GENESIS_BLOCK");
                 const userStore = {
                     publicKey: wallet.publicKey,
@@ -400,7 +375,6 @@
                     state.userStore = userStore;
                     state.wallet = wallet;
                     this.saveUserStore();
-                    // No longer need to synchronize the chain here; the UI will fetch it directly.
                     return true;
                 } catch (e) {
                     console.error("Restore failed:", e);
@@ -432,7 +406,6 @@
             },
             saveUserStore: () => {
                 if (!state.userStore) return;
-                // We no longer save the transaction chain to prevent localStorage bloat.
                 const userStoreToSave = { 
                     publicKey: state.userStore.publicKey,
                     address: state.userStore.address,
@@ -440,7 +413,6 @@
                  };
                 localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(userStoreToSave));
             },
-            // The local chain is now only for calculating the hash of the *next* transaction.
             getLastTransaction: () => {
                 if (!state.userStore || !state.userStore.chain || state.userStore.chain.length === 0) {
                      const genesisHash = ethers.id("GENESIS_BLOCK");
@@ -448,7 +420,6 @@
                 }
                 return state.userStore.chain[state.userStore.chain.length - 1];
             },
-            // This now only adds to the in-memory chain for the current session.
             addToChain: (txData) => {
                 if (!state.userStore) return;
                 const prevTx = WalletLogic.getLastTransaction();
@@ -497,7 +468,6 @@
                     if (recoveredAddress.toLowerCase() !== state.wallet.address.toLowerCase()) { throw new Error('Client-side signature verification failed. Aborting transaction.');
                     }
                     const result = await SupabaseLedger.executeTransaction(transactionIntentId, signature, preAuthNonce);
-                    // Add to the local in-memory chain for hash continuity.
                     WalletLogic.addToChain({ type: 'send', amount: details.amount, fee: details.fee, from: state.wallet.address, to: details.receiverAddress, status: 'completed', comment: details.comment, linkedTxHash: result.txHash, id: details.id, timestamp: result.timestamp });
                     CacheManager.invalidate(state.wallet.address);
                     return result;
@@ -509,9 +479,9 @@
 
         async function handleRealtimePayload(payload, direction) {
             console.log(`New real-time ${direction} transaction received:`, payload);
-            await updateBalanceAndRender(); // Re-fetch authoritative balance
-            state.historyPage = 1; // Reset to page 1
-            await renderTransactionHistory(state.historyPage); // Re-render history from server
+            await updateBalanceAndRender();
+            state.historyPage = 1;
+            await renderTransactionHistory(state.historyPage);
             
             const syncStatusEl = document.getElementById('sync-status');
             if (syncStatusEl) {
@@ -536,7 +506,6 @@
                     if (status === 'CLOSED') setStatus(syncStatusEl, '🔴 Real-time sync disconnected', 'error');
                     if (status === 'TIMED_OUT') setStatus(syncStatusEl, '⏰ Real-time sync timeout', 'error');
              }
-            
             });
             state.realtimeChannel = channel;
         }
@@ -609,7 +578,6 @@
             }
         }
         
-        // This function now only handles rendering the balance display.
         async function updateBalanceAndRender() {
             try {
                 const balance = await WalletLogic.getServerAuthoritativeBalance();
@@ -681,7 +649,7 @@
                 if(state.wallet) {
                     SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address));
                     await updateBalanceAndRender();
-                    state.historyPage = 1; // Reset history to page 1
+                    state.historyPage = 1;
                     await renderTransactionHistory(state.historyPage);
                     startRealtimeListener(); 
                 }
@@ -693,20 +661,18 @@
             } 
         }
         
-        // **REWRITTEN for SCALABILITY**
-        // Fetches history from server page by page instead of relying on localStorage.
         async function renderTransactionHistory(page = 1) {
             if (state.isFetchingHistory || !state.wallet) return;
 
             const listUl = document.getElementById('transaction-list-ul');
             const seeMoreBtn = document.getElementById('see-more-tx-button');
             const limitPerPage = 20;
-            const fetchLimit = limitPerPage / 2; // Fetch 10 incoming, 10 outgoing
+            const fetchLimit = limitPerPage / 2;
 
             state.isFetchingHistory = true;
             if (page === 1) {
                 listUl.innerHTML = '<div class="loader" style="margin-top:20px;"></div>';
-                state.hasMoreHistory = true; // Reset on refresh
+                state.hasMoreHistory = true;
             } else {
                 SecurityUtils.setTextContent(seeMoreBtn, 'Loading...');
                 seeMoreBtn.disabled = true;
@@ -718,7 +684,7 @@
                     SupabaseLedger.findOutgoingTxs(state.wallet.address, page, fetchLimit)
                 ]);
 
-                if (page === 1) listUl.innerHTML = ''; // Clear loader/old content
+                if (page === 1) listUl.innerHTML = '';
 
                 const allTxs = [...incoming, ...outgoing];
                 const sortedTxs = allTxs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -894,38 +860,67 @@
                 setStatus(statusEl, '');
                 if (!pass) {
                     setStatus(statusEl, 'Password is required.', 'error');
-                     return;
-                 }
-                
+                    return;
+                }
+
                 button.disabled = true;
                 setLoader('unlock-loader', true);
-               
+
                 try {
-                    const { failedAttempts } = await SupabaseLedger.checkUnlockStatus();
-                    if (failedAttempts >= AppConstants.MAX_LOGIN_ATTEMPTS) {
-                        setStatus(statusEl, `Too many failed attempts. Please try again in 15 minutes.`, 'error');
+                    const storedUserStore = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
+                    if (!storedUserStore) throw new Error("No wallet found on this device.");
+                    
+                    const userStore = JSON.parse(storedUserStore);
+                    const walletAddress = userStore.address;
+                    if (!walletAddress) throw new Error("Could not identify the wallet address.");
+
+                    // 1. Get current wallet status from server
+                    const status = await SupabaseLedger.getWalletStatus(walletAddress);
+
+                    // 2. Check if the wallet is already locked
+                    if (status.isLocked) {
+                        const now = new Date();
+                        const expires = new Date(status.expiresAt);
+                        const remainingMinutes = Math.ceil((expires - now) / (1000 * 60));
+                        setStatus(statusEl, `This wallet is locked. Please try again in ${remainingMinutes} minute(s).`, 'error');
                         throw new Error("Lockout active");
                     }
-                    
+
+                    // 3. Attempt to unlock the wallet
                     const success = await WalletLogic.unlockWallet(pass);
 
                     if (success) {
+                        // 4. On success, clear any failed attempt records
+                        await SupabaseLedger.clearFailedAttempts(walletAddress);
                         await showView('wallet-view');
                         resetViewInputs('unlock-view');
                     } else {
-                        await SupabaseLedger.recordFailedUnlock('invalid_password');
-                        const remaining = AppConstants.MAX_LOGIN_ATTEMPTS - (failedAttempts + 1);
-                        setStatus(statusEl, `Incorrect password. ${remaining > 0 ? `${remaining} attempts remaining.` : 'Account locked.'}`, 'error');
+                        // 5. On failure, record the failed attempt
+                        const { totalAttempts } = await SupabaseLedger.recordFailedUnlock('invalid_password', walletAddress);
+                        
+                        // 6. Display the appropriate message based on the new total attempts
+                        if (totalAttempts >= 7) {
+                            setStatus(statusEl, 'Incorrect password. Wallet is now locked for 1 hour.', 'error');
+                        } else if (totalAttempts >= 5) {
+                            setStatus(statusEl, 'Incorrect password. Wallet is now locked for 15 minutes.', 'error');
+                        } else if (totalAttempts >= 3) {
+                            setStatus(statusEl, 'Incorrect password. Wallet is now locked for 5 minutes.', 'error');
+                        } else {
+                            const remaining = 3 - totalAttempts;
+                            setStatus(statusEl, `Incorrect password. ${remaining} attempt(s) remaining before a 5-minute lock.`, 'error');
+                        }
                     }
                 } catch (err) {
-                    if (err.message !== "Lockout active") {
-                       setStatus(statusEl, `An error occurred: ${err.message}`, 'error');
+                    // Prevents displaying duplicate error messages
+                    if (err.message && err.message !== "Lockout active") {
+                        setStatus(statusEl, `An error occurred: ${err.message}`, 'error');
                     }
                 } finally {
                     button.disabled = false;
                     setLoader('unlock-loader', false);
                 }
             });
+
             document.getElementById('forget-wallet-button').addEventListener('click', () => { if (confirm('Are you sure you want to forget this wallet? You will need your 12-word recovery phrase to access it again.')) { WalletLogic.logout(); } });
             document.getElementById('go-to-create-wallet').addEventListener('click', () => showView('create-wallet-view'));
             document.getElementById('go-to-restore-wallet').addEventListener('click', () => showView('restore-wallet-view'));
@@ -962,18 +957,19 @@
             document.getElementById('settings-button').addEventListener('click', () => { document.getElementById('display-currency-select').value = state.displayCurrency; setStatus(document.getElementById('settings-status'), ''); showView('settings-view'); });
             document.getElementById('back-from-settings').addEventListener('click', () => showView('wallet-view'));
             document.getElementById('display-currency-select').addEventListener('change', (e) => { const newDisplay = e.target.value; const statusEl = document.getElementById('settings-status'); state.displayCurrency = newDisplay; saveCurrencySettings(); updateBalanceAndRender(); setStatus(statusEl, 'Settings saved.', 'success'); });
+            
             let generatedMnemonic = '';
             document.getElementById('create-wallet-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(); const confirmPass = document.getElementById('confirm-password-input').value.trim(); setStatus(statusEl, ''); if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); const { mnemonic, userStore, wallet } = await WalletLogic.createWallet(pass); generatedMnemonic = mnemonic; state.tempUserStore = userStore; state.tempWallet = wallet; SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic); showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); });
             document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => { const words = generatedMnemonic.split(' '); const idx1 = Math.floor(Math.random() * 6); const idx2 = Math.floor(Math.random() * 6) + 6; const verifyBtn = document.getElementById('verify-seed-button'); verifyBtn.dataset.word1 = words[idx1]; verifyBtn.dataset.word2 = words[idx2]; document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`; document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`; resetViewInputs('seed-confirm-view'); showView('seed-confirm-view'); });
-            document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { state.userStore = state.tempUserStore; state.wallet = state.tempWallet; WalletLogic.saveUserStore(); state.tempUserStore = null; state.tempWallet = null; generatedMnemonic = ''; resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error');
-            } });
+            document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { state.userStore = state.tempUserStore; state.wallet = state.tempWallet; WalletLogic.saveUserStore(); state.tempUserStore = null; state.tempWallet = null; generatedMnemonic = ''; resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error'); } });
             document.getElementById('restore-wallet-button').addEventListener('click', async () => { const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); setStatus(statusEl, ''); if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; } if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } button.disabled = true; setLoader('restore-loader', true); const success = await WalletLogic.restoreWallet(mnemonic, pass); if (success) { await showView('wallet-view'); } else { setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); } button.disabled = false; setLoader('restore-loader', false); resetViewInputs('restore-wallet-view'); });
+            
             document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); });
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
-            document.getElementById('send-manual-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-manual-status'); const recipientAddress = document.getElementById('send-address-input').value.trim(); const amountDecimalString = document.getElementById('send-amount-input').value; const comment = document.getElementById('send-comment-input').value.trim(); setStatus(statusEl, ''); if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; } if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; } if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; } let amountInt; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error();
-            amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true;
+            
+            document.getElementById('send-manual-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-manual-status'); const recipientAddress = document.getElementById('send-address-input').value.trim(); const amountDecimalString = document.getElementById('send-amount-input').value; const comment = document.getElementById('send-comment-input').value.trim(); setStatus(statusEl, ''); if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; } if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; } if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; } let amountInt; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error(); amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true;
             setStatus(statusEl, 'Preparing transaction with server...', 'info');
                 try { 
                     const senderTxHash = WalletLogic.precomputeTransactionHash({ type: 'send', amount: amountInt.toString(), fee: '0', from: state.wallet.address, to: recipientAddress });
@@ -989,6 +985,7 @@
                 } catch (err) { setStatus(statusEl, err.message, 'error'); } finally { button.disabled = false;
                 } 
             });
+            
             document.getElementById('refresh-tx-button').addEventListener('click', async () => {
                 const button = document.getElementById('refresh-tx-button');
                 const icon = button.querySelector('.icon');
@@ -999,9 +996,9 @@
                 loader.style.display = 'block';
                 setStatus(syncStatusEl, 'Updating...', 'info');
                 try {
-                    await updateBalanceAndRender(); // Update balance first
-                    state.historyPage = 1; // Reset to page 1
-                    await renderTransactionHistory(state.historyPage); // Re-render history from server
+                    await updateBalanceAndRender();
+                    state.historyPage = 1;
+                    await renderTransactionHistory(state.historyPage);
                     setStatus(syncStatusEl, 'Updated successfully.', 'success');
                 } catch (error) {
                     console.error("Manual refresh failed:", error);
@@ -1018,15 +1015,20 @@
                  }, 2500);
                 }
             });
+            
             document.getElementById('see-more-tx-button').addEventListener('click', async () => {
                 if (state.hasMoreHistory && !state.isFetchingHistory) {
                     state.historyPage++;
                     await renderTransactionHistory(state.historyPage);
                 }
             });
+            
             document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { showTransactionDetails(serverTransaction); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
+            
             document.getElementById('confirm-payment-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-confirm-status'); button.disabled = true; setStatus(statusEl, 'Awaiting signature and sending...', 'info'); try { const result = await WalletLogic.executePreparedTransaction(); if (result.success) { const amountAura = formatAuraValue(state.activeTransactionIntent.details.amount); setStatusHTML(statusEl, `Payment of ${auraIconHTML} ${amountAura} sent successfully!`, 'success'); await updateBalanceAndRender(); state.historyPage = 1; await renderTransactionHistory(1); await new Promise(resolve => setTimeout(resolve, 1500)); state.activeTransactionIntent = null; await showView('wallet-view'); } } catch (err) { const baseMsg = `Payment Failed: ${err.message}`; let shown = false; try { const txHash = state?.activeTransactionIntent?.details?.txHash; if (txHash) { const confirmation = await SupabaseLedger.findConfirmation(txHash); if (confirmation) { const amountAura = formatAuraValue(state.activeTransactionIntent.details.amount); setStatusHTML(statusEl, `Payment of ${auraIconHTML} ${amountAura} sent successfully!`, 'success'); await updateBalanceAndRender(); state.historyPage = 1; await renderTransactionHistory(1); await new Promise(resolve => setTimeout(resolve, 1200)); state.activeTransactionIntent = null; await showView('wallet-view'); shown = true; } } } catch (recoveryErr) { console.warn("Recovery check failed:", recoveryErr); } if (!shown) setStatus(statusEl, baseMsg, 'error'); } finally { button.disabled = false; } });
+            
             document.getElementById('show-charge-view-button').addEventListener('click', () => { resetViewInputs('charge-view'); showView('charge-view'); });
+            
             document.getElementById('banknote-image-input').addEventListener('change', async (event) => { const file = event.target.files[0]; const statusEl = document.getElementById('validation-status'); if (!file) return; const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']; if (!allowedTypes.includes(file.type)) { setStatus(statusEl, 'Invalid file type. Please upload a JPEG, PNG, or WebP file.', 'error'); event.target.value = ''; return; } setStatus(statusEl, 'Preparing image...', 'info'); try { const resizedDataUrl = await CoreLogic.Utils.resizeImage(file, CoreLogic.Constants.MAX_IMAGE_DIMENSION); const processedDataUrl = await CoreLogic.Utils.preprocessImage(resizedDataUrl); const imageData = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0); resolve(ctx.getImageData(0, 0, img.width, img.height)); 
             }; img.onerror = reject; img.src = processedDataUrl; });
             const banknotePayload = await CoreLogic.Banknote.decodeQrGrid(imageData, statusEl);
@@ -1035,6 +1037,7 @@
             const amountAura = formatAuraValue(validationResult.amount); SecurityUtils.setHTMLContent(document.getElementById('confirm-banknote-amount-display'), `${auraIconHTML} ${amountAura}`, ['img']); SecurityUtils.setTextContent(document.getElementById('confirm-banknote-serial-display'), validationResult.serial); resetViewInputs('charge-view'); showView('banknote-confirm-view');
             } else { throw new Error("Validation failed for an unknown reason.");
             } } catch (err) { setStatus(statusEl, `Validation Failed: ${SecurityUtils.sanitizeText(err.message)}`, 'error'); } finally { event.target.value = ''; } });
+            
             document.getElementById('confirm-banknote-button').addEventListener('click', async (event) => {
                 const button = event.target;
                 const statusEl = document.getElementById('banknote-confirm-status');
@@ -1063,8 +1066,10 @@
                     button.disabled = false;
                 }
             });
+            
             document.querySelectorAll('.theme-button').forEach(button => { button.addEventListener('click', (e) => { applyTheme(e.target.dataset.theme); }); });
         }
+        
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
