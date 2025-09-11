@@ -1385,9 +1385,9 @@
                     const preAuthNonce = crypto.randomUUID();
                     const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`;
                     const preAuthSignature = await state.wallet.signMessage(preAuthMessage);
-                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction( state.wallet.address, recipientAddress, amountInt.toString(), comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce);
+                    const { transactionIntentId, messageToSign, fee, totalDebit, localTxId } = await SupabaseLedger.prepareTransaction( state.wallet.address, recipientAddress, amountInt.toString(), comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce);
 
-                    state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit, txHash: senderTxHash }, preAuthNonce };
+                    state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id: localTxId, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit, txHash: senderTxHash }, preAuthNonce };
 
                     const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(amountInt); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit);
 
