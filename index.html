@@ -137,12 +137,19 @@
         .transaction-details { display: flex; flex-direction: column; flex-grow: 1; }
         .transaction-type { font-weight: 600; font-size: 16px; }
         .transaction-date { font-size: 12px; color: color-mix(in srgb, var(--text-light) 70%, transparent); margin-top: 4px; }
-        /* **NEW CSS ADDED HERE** */
+        
+        /* #### 🚀 REPAIRED CODE START: Added new CSS style for the transaction ID #### */
         .transaction-id-display {
+            font-family: monospace;
             font-size: 11px;
-            color: color-mix(in srgb, var(--text-light) 50%, transparent);
-            margin-top: 4px;
+            color: color-mix(in srgb, var(--text-light) 60%, transparent);
+            margin-top: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
+        /* #### 🚀 REPAIRED CODE END #### */
+
         .transaction-amount { font-weight: 700; font-size: 16px; margin-left: auto; text-align: right; }
         .transaction-amount.sent { color: var(--danger-color); }
         .transaction-amount.received { color: var(--success-color); }
@@ -297,7 +304,6 @@
 
         const CoreLogic = (() => { const Constants = { VALIDATION_PREFIX: "SADAT_V2_PART", MAX_IMAGE_DIMENSION: 2000, NUM_QR_CODES: 9 }; const Utils = { preprocessImage: (dataUrl) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.filter = 'grayscale(1) contrast(2.5) brightness(1.1)'; ctx.drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = dataUrl; }), resizeImage: (file, maxDimension) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { let { width, height } = img; if (width > height) { if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; } } else { if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; } } const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = e.target.result; }; reader.onerror = reject; reader.readAsDataURL(file); }), }; const Banknote = { getLayout: (imageWidth) => { const standardWidth = 790; const scale = imageWidth / standardWidth; return { qrSize: Math.round(250 * scale), xSpacing: Math.round(20 * scale), ySpacing: Math.round(20 * scale), }; }, decodeQrGrid: async (imageData, statusEl) => { const layout = Banknote.getLayout(imageData.width); const parts = {}; let count = 0; const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = imageData.width; canvas.height = imageData.height; ctx.putImageData(imageData, 0, 0); for (let i = 0; i < Constants.NUM_QR_CODES; i++) { setStatus(statusEl, `Scanning section ${i + 1}/${Constants.NUM_QR_CODES}...`, 'info'); await new Promise(r => setTimeout(r, 5)); const row = Math.floor(i / 3), col = i % 3; const regionX = col * (layout.qrSize + layout.xSpacing); const regionY = row * (layout.qrSize + layout.ySpacing); const data = ctx.getImageData(regionX, regionY, layout.qrSize, layout.qrSize); const code = jsQR(data.data, data.width, data.height); if (code && code.data.startsWith(Constants.VALIDATION_PREFIX)) { const match = code.data.substring(Constants.VALIDATION_PREFIX.length).match(/^(\d+)\/(\d+):(.*)$/s); if (match) { const partNum = parseInt(match[1], 10); if (!parts[partNum]) { parts[partNum] = match[3]; count++; } } } } if (count < Constants.NUM_QR_CODES) { throw new Error(`Scan failed. Found ${count}/${Constants.NUM_QR_CODES} valid sections.`); } let payload = ''; for (let i = 1; i <= Constants.NUM_QR_CODES; i++) { payload += parts[i]; } return payload; } }; return { Constants, Utils, Banknote }; })();
         const CacheManager = { cache: new Map(), DEFAULT_CACHE_DURATION: 30000, set(key, data, duration = this.DEFAULT_CACHE_DURATION) { this.cache.set(key, { data, expiresAt: Date.now() + duration }); }, get(key) { const cached = this.cache.get(key); if (!cached) return null; if (Date.now() > cached.expiresAt) { this.cache.delete(key); return null; } return cached.data; }, invalidate(pattern) { for (const key of this.cache.keys()) { if (key.includes(pattern)) { this.cache.delete(key); } } } };
-        // **UPDATED** SupabaseLedger to match the new Edge Function API
         const SupabaseLedger = (() => {
             const apiCall = async (action, payload) => {
                 const response = await fetch(EDGE_FUNCTION_URL, {
@@ -327,7 +333,6 @@
                 findTransactionById: (transactionId) => apiCall('findTransactionById', { transactionId }),
                 validateBanknote: (banknotePayload) => apiCall('validateBanknote', { banknotePayload }),
                 redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress }),
-                // **NEW** Progressive Lockout Functions
                 getWalletStatus: (walletAddress) => apiCall('getWalletStatus', { walletAddress }),
                 recordFailedUnlock: (reason, walletAddress) => apiCall('recordFailedUnlock', { reason, walletAddress }),
                 clearFailedAttempts: (walletAddress) => apiCall('clearFailedAttempts', { walletAddress })
@@ -447,7 +452,6 @@
                     return state.currentBalance;
                 }
             },
-            // **UPDATED** to align with asynchronous execution
             executePreparedTransaction: async () => {
                 if (!state.activeTransactionIntent || !state.activeTransactionIntent.messageToSign) {
                     throw new Error("No pending transaction to execute.");
@@ -459,26 +463,20 @@
                     if (recoveredAddress.toLowerCase() !== state.wallet.address.toLowerCase()) {
                         throw new Error('Client-side signature verification failed. Aborting transaction.');
                     }
-                    
-                    // The server now queues the transaction instead of executing it immediately.
                     const result = await SupabaseLedger.executeTransaction(transactionIntentId, signature, preAuthNonce);
-
-                    // Add to local chain optimistically with a 'pending' status.
-                    // The real-time listener will update this later.
                     WalletLogic.addToChain({ 
                         type: 'send', 
                         amount: details.amount, 
                         fee: details.fee, 
                         from: state.wallet.address, 
                         to: details.receiverAddress, 
-                        status: 'pending', // Important: status is now pending
+                        status: 'pending',
                         comment: details.comment, 
                         linkedTxHash: details.txHash, 
                         id: details.id
                     });
-
                     CacheManager.invalidate(state.wallet.address);
-                    return result; // Returns { success: true, queuedJobId: ... }
+                    return result;
                 } catch (signingError) {
                     throw new Error(`Failed to sign or queue transaction: ${signingError.message}`);
                 }
@@ -608,9 +606,16 @@
 
         function generateQrCode(data, containerId) { const container = document.getElementById(containerId); container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10); const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); }
         function abbreviateAddress(address) { if (!address) return ''; const sanitized = SecurityUtils.sanitizeAddress(address); return `${sanitized.substring(0, 6)}...${sanitized.substring(sanitized.length - 4)}`; }
+        
+        // #### 🚀 REPAIRED CODE START: New helper function to abbreviate hashes ####
+        function abbreviateHash(hash) {
+            if (typeof hash !== 'string' || hash.length < 12) return hash;
+            return `${hash.substring(0, 6)}...${hash.substring(hash.length - 6)}`;
+        }
+        // #### 🚀 REPAIRED CODE END ####
+
         function stopScanner() { if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); state.cameraStream = null; state.isScannerActive = false; } }
         async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; 
-        
         const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status');
         setStatus(sendStatusEl, '');
         loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err); SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false; } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth; canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) {
@@ -652,6 +657,7 @@
             } 
         }
         
+        // #### 🚀 REPAIRED CODE START: Updated function to display the transaction ID ####
         async function renderTransactionHistory(page = 1) {
             if (state.isFetchingHistory || !state.wallet) return;
             const listUl = document.getElementById('transaction-list-ul');
@@ -731,8 +737,15 @@
                     dateSpan.className = 'transaction-date';
                     SecurityUtils.setTextContent(dateSpan, date);
                     
+                    // This is the new part that adds the ID
+                    const idSpan = document.createElement('div');
+                    idSpan.className = 'transaction-id-display';
+                    const txId = tx.linkedTxHash || tx.id || 'N/A';
+                    SecurityUtils.setTextContent(idSpan, `ID: ${abbreviateHash(txId)}`);
+
                     detailsDiv.appendChild(typeSpan);
                     detailsDiv.appendChild(dateSpan);
+                    detailsDiv.appendChild(idSpan); // Append the new ID element
                     
                     const amountSpan = document.createElement('span');
                     amountSpan.className = `transaction-amount ${typeClass}`;
@@ -759,7 +772,8 @@
                 seeMoreBtn.disabled = false;
             }
         }
-        
+        // #### 🚀 REPAIRED CODE END ####
+
         async function showTransactionDetails(tx) {
             const modal = document.getElementById('transaction-detail-modal');
             let displayData = { ...tx };
@@ -834,7 +848,6 @@
         }
         
         function setupEventListeners() {
-            // **UPDATED** unlock-wallet-button listener with progressive lockout
             document.getElementById('unlock-wallet-button').addEventListener('click', async () => {
                 const button = document.getElementById('unlock-wallet-button');
                 const statusEl = document.getElementById('unlock-status');
@@ -857,10 +870,8 @@
                     const walletAddress = userStore.address;
                     if (!walletAddress) throw new Error("Could not identify the wallet address.");
                     
-                    // 1. Get current wallet status from server
                     const status = await SupabaseLedger.getWalletStatus(walletAddress);
                     
-                    // 2. Check if the wallet is already locked
                     if (status.isLocked) {
                         const now = new Date();
                         const expires = new Date(status.expiresAt);
@@ -869,19 +880,15 @@
                         throw new Error("Lockout active");
                     }
 
-                    // 3. Attempt to unlock the wallet
                     const success = await WalletLogic.unlockWallet(pass);
                     
                     if (success) {
-                        // 4. On success, clear any failed attempt records
                         await SupabaseLedger.clearFailedAttempts(walletAddress);
                         await showView('wallet-view');
                         resetViewInputs('unlock-view');
                     } else {
-                        // 5. On failure, record the failed attempt
                         const { totalAttempts } = await SupabaseLedger.recordFailedUnlock('invalid_password', walletAddress);
                         
-                        // 6. Display the appropriate message based on the new total attempts
                         if (totalAttempts >= 7) {
                             setStatus(statusEl, 'Incorrect password. Wallet is now locked for 1 hour.', 'error');
                         } else if (totalAttempts >= 5) {
@@ -894,7 +901,6 @@
                         }
                     }
                 } catch (err) {
-                    // Prevents displaying duplicate error messages
                     if (err.message && err.message !== "Lockout active") {
                         setStatus(statusEl, `An error occurred: ${err.message}`, 'error');
                     }
@@ -999,7 +1005,6 @@
                 }
             });
             document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { showTransactionDetails(serverTransaction); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
-            // **UPDATED** confirm-payment-button listener for asynchronous processing
             document.getElementById('confirm-payment-button').addEventListener('click', async (event) => {
                 const button = event.target;
                 const statusEl = document.getElementById('send-confirm-status');
@@ -1012,6 +1017,7 @@
                     if (result.success && result.queuedJobId) {
                         setStatus(statusEl, 'Your transaction is being processed...', 'info');
                         
+                        // **UPDATED** to call new listener function
                         const channel = supabaseClient.channel(`queue-updates-for-job-${result.queuedJobId}`)
                             .on('postgres_changes', {
                                 event: 'UPDATE',
