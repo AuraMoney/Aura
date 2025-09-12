@@ -137,19 +137,11 @@
         .transaction-details { display: flex; flex-direction: column; flex-grow: 1; }
         .transaction-type { font-weight: 600; font-size: 16px; }
         .transaction-date { font-size: 12px; color: color-mix(in srgb, var(--text-light) 70%, transparent); margin-top: 4px; }
-        
-        /* #### 🚀 REPAIRED CODE START: Added new CSS style for the transaction ID #### */
         .transaction-id-display {
-            font-family: monospace;
             font-size: 11px;
-            color: color-mix(in srgb, var(--text-light) 60%, transparent);
-            margin-top: 5px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            color: color-mix(in srgb, var(--text-light) 50%, transparent);
+            margin-top: 4px;
         }
-        /* #### 🚀 REPAIRED CODE END #### */
-
         .transaction-amount { font-weight: 700; font-size: 16px; margin-left: auto; text-align: right; }
         .transaction-amount.sent { color: var(--danger-color); }
         .transaction-amount.received { color: var(--success-color); }
@@ -191,7 +183,7 @@
     <div id="send-confirm-view" class="view"><div class="card"><h2>Confirm Payment</h2><p>You are about to send:</p><h2 id="confirm-amount-display" style="color: var(--primary-color);"></h2><p>To:</p><p id="confirm-recipient-address-display" style="font-size: 12px; word-wrap: break-word; background: var(--input-bg); padding: 10px; border-radius: var(--border-radius-md);"></p><p style="font-style: italic; opacity: 0.8; word-wrap: break-word;" id="confirm-comment-display"></p><button id="confirm-payment-button">Confirm and Pay</button><div id="send-confirm-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-send-confirm">Cancel</button></div></div>
     <div id="qr-display-view" class="view"><div class="card"><h2 id="qr-display-title"></h2><p id="qr-display-instruction"></p><div id="qr-display-box"></div><div id="waiting-on-payment" style="display: none;"><div id="payment-timer"></div><div class="loader"></div><p id="final-status-message" class="status-box" style="font-size:18px;" aria-live="polite"></p></div><button class="back-button" id="back-from-qr-display">Back to Wallet</button></div></div>
     <div id="settings-view" class="view"><div class="card"><h2>Settings</h2><p>Select your preferred currency for display.</p><div class="setting-row" style="text-align: left; margin-bottom: 20px;"><label for="display-currency-select" style="display: block; margin-bottom: 5px; opacity: 0.8;">Display Currency (Optional)</label><select id="display-currency-select" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background-color: var(--input-bg); color: var(--text-dark); font-size: 16px;"><option value="NONE">None</option><option value="USD">US Dollar (USD)</option><option value="EUR">Euro (EUR)</option><option value="AFN">Afghan Afghani (AFN)</option><option value="AED">UAE Dirham (AED)</option><option value="RUB">Russian Ruble (RUB)</option></select></div><div id="settings-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-settings">Back to Wallet</button></div></div>
-    <div id="transaction-detail-modal" class="modal-overlay" style="display:none;"><div class="modal-content card"><h2>Transaction Details</h2><div id="modal-details-content" style="text-align:left; font-size: 14px;"><p style="margin-bottom: 10px;"><strong>ID:</strong> <span id="detail-id"></span></p><p style="margin-bottom: 10px;"><strong>Status:</strong> <span id="detail-status"></span></p><p style="margin-bottom: 10px;"><strong>Type:</strong> <span id="detail-type"></span></p><p style="margin-bottom: 10px;"><strong>Date & Time:</strong> <span id="detail-datetime"></span></p><p style="margin-bottom: 10px;"><strong>Amount:</strong> <span id="detail-amount"></span></p><p style="margin-bottom: 10px;"><strong>Fee:</strong> <span id="detail-fee"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>From:</strong> <span id="detail-from"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>To:</strong> <span id="detail-to"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>Comment:</strong> <span id="detail-comment"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>Transaction Hash (TxID):</strong> <span id="detail-linked-hash"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>Local Receipt Hash:</strong> <span id="detail-local-hash"></span></p></div><button id="close-modal-button" class="back-button">Close</button></div></div>
+    <div id="transaction-detail-modal" class="modal-overlay" style="display:none;"><div class="modal-content card"><h2>Transaction Details</h2><div id="modal-details-content" style="text-align:left; font-size: 14px;"><p style="margin-bottom: 10px;"><strong>ID:</strong> <span id="detail-id"></span></p><p style="margin-bottom: 10px;"><strong>Status:</strong> <span id="detail-status"></span></p><p style="margin-bottom: 10px;"><strong>Type:</strong> <span id="detail-type"></span></p><p style="margin-bottom: 10px;"><strong>Date & Time:</strong> <span id="detail-datetime"></span></p><p style="margin-bottom: 10px;"><strong>Amount:</strong> <span id="detail-amount"></span></p><p style="margin-bottom: 10px;"><strong>Fee:</strong> <span id="detail-fee"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>From:</strong> <span id="detail-from"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>To:</strong> <span id="detail-to"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>Comment:</strong> <span id="detail-comment"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>Transaction Hash (TxID):</strong> <span id="detail-linked-hash"></span></p><p style="word-wrap: break-word; margin-bottom: 10px;"><strong>Signature Hash:</strong> <span id="detail-local-hash"></span></p></div><button id="close-modal-button" class="back-button">Close</button></div></div>
 </main>
    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
@@ -304,6 +296,7 @@
 
         const CoreLogic = (() => { const Constants = { VALIDATION_PREFIX: "SADAT_V2_PART", MAX_IMAGE_DIMENSION: 2000, NUM_QR_CODES: 9 }; const Utils = { preprocessImage: (dataUrl) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.filter = 'grayscale(1) contrast(2.5) brightness(1.1)'; ctx.drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = dataUrl; }), resizeImage: (file, maxDimension) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { let { width, height } = img; if (width > height) { if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; } } else { if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; } } const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = e.target.result; }; reader.onerror = reject; reader.readAsDataURL(file); }), }; const Banknote = { getLayout: (imageWidth) => { const standardWidth = 790; const scale = imageWidth / standardWidth; return { qrSize: Math.round(250 * scale), xSpacing: Math.round(20 * scale), ySpacing: Math.round(20 * scale), }; }, decodeQrGrid: async (imageData, statusEl) => { const layout = Banknote.getLayout(imageData.width); const parts = {}; let count = 0; const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = imageData.width; canvas.height = imageData.height; ctx.putImageData(imageData, 0, 0); for (let i = 0; i < Constants.NUM_QR_CODES; i++) { setStatus(statusEl, `Scanning section ${i + 1}/${Constants.NUM_QR_CODES}...`, 'info'); await new Promise(r => setTimeout(r, 5)); const row = Math.floor(i / 3), col = i % 3; const regionX = col * (layout.qrSize + layout.xSpacing); const regionY = row * (layout.qrSize + layout.ySpacing); const data = ctx.getImageData(regionX, regionY, layout.qrSize, layout.qrSize); const code = jsQR(data.data, data.width, data.height); if (code && code.data.startsWith(Constants.VALIDATION_PREFIX)) { const match = code.data.substring(Constants.VALIDATION_PREFIX.length).match(/^(\d+)\/(\d+):(.*)$/s); if (match) { const partNum = parseInt(match[1], 10); if (!parts[partNum]) { parts[partNum] = match[3]; count++; } } } } if (count < Constants.NUM_QR_CODES) { throw new Error(`Scan failed. Found ${count}/${Constants.NUM_QR_CODES} valid sections.`); } let payload = ''; for (let i = 1; i <= Constants.NUM_QR_CODES; i++) { payload += parts[i]; } return payload; } }; return { Constants, Utils, Banknote }; })();
         const CacheManager = { cache: new Map(), DEFAULT_CACHE_DURATION: 30000, set(key, data, duration = this.DEFAULT_CACHE_DURATION) { this.cache.set(key, { data, expiresAt: Date.now() + duration }); }, get(key) { const cached = this.cache.get(key); if (!cached) return null; if (Date.now() > cached.expiresAt) { this.cache.delete(key); return null; } return cached.data; }, invalidate(pattern) { for (const key of this.cache.keys()) { if (key.includes(pattern)) { this.cache.delete(key); } } } };
+        
         const SupabaseLedger = (() => {
             const apiCall = async (action, payload) => {
                 const response = await fetch(EDGE_FUNCTION_URL, {
@@ -340,6 +333,7 @@
         })();
 
         const AppConstants = { POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
+        
         const WalletLogic = {
             async createWallet(password) {
                 const wallet = ethers.Wallet.createRandom();
@@ -606,16 +600,9 @@
 
         function generateQrCode(data, containerId) { const container = document.getElementById(containerId); container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10); const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); }
         function abbreviateAddress(address) { if (!address) return ''; const sanitized = SecurityUtils.sanitizeAddress(address); return `${sanitized.substring(0, 6)}...${sanitized.substring(sanitized.length - 4)}`; }
-        
-        // #### 🚀 REPAIRED CODE START: New helper function to abbreviate hashes ####
-        function abbreviateHash(hash) {
-            if (typeof hash !== 'string' || hash.length < 12) return hash;
-            return `${hash.substring(0, 6)}...${hash.substring(hash.length - 6)}`;
-        }
-        // #### 🚀 REPAIRED CODE END ####
-
         function stopScanner() { if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); state.cameraStream = null; state.isScannerActive = false; } }
         async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; 
+        
         const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status');
         setStatus(sendStatusEl, '');
         loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err); SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false; } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth; canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) {
@@ -657,7 +644,7 @@
             } 
         }
         
-        // #### 🚀 REPAIRED CODE START: Updated function to display the transaction ID ####
+        // **FIXED** to display the transaction ID
         async function renderTransactionHistory(page = 1) {
             if (state.isFetchingHistory || !state.wallet) return;
             const listUl = document.getElementById('transaction-list-ul');
@@ -737,15 +724,13 @@
                     dateSpan.className = 'transaction-date';
                     SecurityUtils.setTextContent(dateSpan, date);
                     
-                    // This is the new part that adds the ID
-                    const idSpan = document.createElement('div');
+                    const idSpan = document.createElement('span');
                     idSpan.className = 'transaction-id-display';
-                    const txId = tx.linkedTxHash || tx.id || 'N/A';
-                    SecurityUtils.setTextContent(idSpan, `ID: ${abbreviateHash(txId)}`);
+                    SecurityUtils.setTextContent(idSpan, `ID: ${tx.id || 'N/A'}`);
 
                     detailsDiv.appendChild(typeSpan);
                     detailsDiv.appendChild(dateSpan);
-                    detailsDiv.appendChild(idSpan); // Append the new ID element
+                    detailsDiv.appendChild(idSpan);
                     
                     const amountSpan = document.createElement('span');
                     amountSpan.className = `transaction-amount ${typeClass}`;
@@ -772,37 +757,26 @@
                 seeMoreBtn.disabled = false;
             }
         }
-        // #### 🚀 REPAIRED CODE END ####
-
+        
+        // **FIXED** to display correct IDs
         async function showTransactionDetails(tx) {
             const modal = document.getElementById('transaction-detail-modal');
             let displayData = { ...tx };
             
             try {
-                const linked = tx.linkedTxHash || tx.id || tx.hash;
+                const linked = tx.linkedTxHash || tx.id;
                 if (linked) {
                     const serverConfirmation = await SupabaseLedger.findConfirmation(linked).catch(() => null);
                     if (serverConfirmation) {
-                        displayData = {
-                            ...displayData,
-                            id: serverConfirmation.id || displayData.id,
-                            status: 'completed',
-                            from: serverConfirmation.senderAddress || displayData.from,
-                            to: serverConfirmation.receiverAddress || displayData.to,
-                            amount: serverConfirmation.amount || displayData.amount,
-                            fee: serverConfirmation.fee || displayData.fee,
-                            comment: serverConfirmation.comment || displayData.comment,
-                            linkedTxHash: serverConfirmation.linkedTxHash || linked,
-                            timestamp: serverConfirmation.timestamp || displayData.timestamp
-                        };
+                        displayData = { ...displayData, ...serverConfirmation };
                     }
                 }
             } catch (e) {
                 console.warn('Could not fetch authoritative details for transaction:', e);
             }
 
-            const fromAddress = displayData.from || displayData.senderAddress || 'N/A';
-            const toAddress = displayData.to || displayData.receiverAddress || 'N/A';
+            const fromAddress = displayData.senderAddress || 'N/A';
+            const toAddress = displayData.receiverAddress || 'N/A';
             const amountText = `${auraIconHTML} ${formatAuraValue(displayData.amount || '0')}`;
             const feeText = `${auraIconHTML} ${formatAuraValue(displayData.fee || '0')}`;
 
@@ -816,7 +790,8 @@
             SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress);
             SecurityUtils.setTextContent(document.getElementById('detail-comment'), displayData.comment || 'N/A');
             SecurityUtils.setTextContent(document.getElementById('detail-linked-hash'), SecurityUtils.sanitizeTransactionId(displayData.linkedTxHash || 'N/A'));
-            SecurityUtils.setTextContent(document.getElementById('detail-local-hash'), SecurityUtils.sanitizeTransactionId(displayData.hash || 'N/A'));
+            SecurityUtils.setTextContent(document.getElementById('detail-local-hash'), SecurityUtils.sanitizeTransactionId(displayData.signature_hash || 'N/A'));
+            
             modal.style.display = 'flex';
             document.getElementById('close-modal-button').onclick = () => { modal.style.display = 'none'; };
         }
@@ -936,7 +911,15 @@
                 }
             });
             document.getElementById('back-from-qr-display').addEventListener('click', () => { showView('wallet-view'); });
-            document.getElementById('show-send-view-button').addEventListener('click', () => { resetViewInputs('send-manual-view'); resetViewInputs('send-view'); showView('send-options-view'); });
+            
+            // **FIXED** to prevent stuck transactions
+            document.getElementById('show-send-view-button').addEventListener('click', () => {
+                state.activeTransactionIntent = null; // Clear any stale transaction intent
+                resetViewInputs('send-manual-view');
+                resetViewInputs('send-view');
+                showView('send-options-view');
+            });
+
             document.getElementById('go-to-send-manual').addEventListener('click', () => showView('send-manual-view'));
             document.getElementById('go-to-send-scan').addEventListener('click', () => showView('send-view'));
             document.getElementById('back-from-send-options').addEventListener('click', () => showView('wallet-view'));
@@ -1005,6 +988,8 @@
                 }
             });
             document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { showTransactionDetails(serverTransaction); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
+            
+            // **FIXED** confirm-payment-button listener for better UX
             document.getElementById('confirm-payment-button').addEventListener('click', async (event) => {
                 const button = event.target;
                 const statusEl = document.getElementById('send-confirm-status');
@@ -1017,7 +1002,6 @@
                     if (result.success && result.queuedJobId) {
                         setStatus(statusEl, 'Your transaction is being processed...', 'info');
                         
-                        // **UPDATED** to call new listener function
                         const channel = supabaseClient.channel(`queue-updates-for-job-${result.queuedJobId}`)
                             .on('postgres_changes', {
                                 event: 'UPDATE',
@@ -1027,22 +1011,23 @@
                             }, (payload) => {
                                 const updatedJob = payload.new;
                                 if (updatedJob.status === 'completed') {
-                                    setStatusHTML(statusEl, `Payment sent successfully!`, 'success');
                                     updateBalanceAndRender();
-                                    state.historyPage = 1;
                                     renderTransactionHistory(1);
-                                    setTimeout(() => {
-                                        state.activeTransactionIntent = null;
-                                        showView('wallet-view');
-                                    }, 1500);
                                     channel.unsubscribe();
                                 } else if (updatedJob.status === 'failed') {
-                                    setStatus(statusEl, `Payment failed: ${updatedJob.error_message}`, 'error');
-                                    button.disabled = false;
+                                    alert(`Transaction Failed: ${updatedJob.error_message || 'Unknown error'}`);
+                                    updateBalanceAndRender();
+                                    renderTransactionHistory(1);
                                     channel.unsubscribe();
                                 }
                             })
                             .subscribe();
+                        
+                        // Navigate home after a short delay
+                        setTimeout(() => {
+                            state.activeTransactionIntent = null;
+                            showView('wallet-view');
+                        }, 1500);
 
                     } else {
                          throw new Error("Failed to queue the transaction.");
