@@ -68,7 +68,7 @@
             color: var(--text-light); overflow: hidden;
             transition: background-color 0.5s ease;
         }
-        .aura-icon { width: 1em; height: 1em; vertical-align: -0.15em; margin-right: 0.2em; }
+        .aura-icon { width: 1em; height: 1em; vertical-align: middle; }
         main { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; zoom: 0.65; }
         .view { position: absolute; opacity: 0; pointer-events: none; transform: translateY(20px); transition: opacity 0.4s ease, transform 0.4s ease; width: 100%; display: flex; justify-content: center; }
         .view.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
@@ -144,7 +144,19 @@
         .address-display-box { background: var(--input-bg); padding: 8px 8px 8px 15px; border-radius: var(--border-radius-md); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
         .address-text { font-family: monospace; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
         .copy-button { padding: 8px 12px; font-size: 12px; width: auto; background: color-mix(in srgb, var(--border-color), transparent 20%); min-width: 80px; }
-        #balance-display { font-size: clamp(2.8rem, 12vw, 3.8rem); font-weight: 700; margin: 10px 0 25px 0; background: linear-gradient(95deg, var(--primary-color), var(--accent-color)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        #balance-display { 
+            font-size: clamp(2.8rem, 12vw, 3.8rem); 
+            font-weight: 700;
+            margin: 10px 0 25px 0; 
+            background: linear-gradient(95deg, var(--primary-color), var(--accent-color)); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5em;
+        }
         .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
         .action-buttons button { margin: 0 !important; padding: 20px; flex-direction: column; gap: 10px; background: var(--input-bg); color: var(--text-light); }
         .action-buttons button:hover { background: color-mix(in srgb, var(--border-color), transparent 20%); box-shadow: none; transform: translateY(-2px); }
@@ -228,7 +240,8 @@
             historyPage: 1,
             isFetchingHistory: false,
             hasMoreHistory: true,
-            fxRates: { 'USD': 1 }
+            fxRates: { 'USD': 1 },
+            lastWalletViewUpdate: 0, // <-- ADDED: For smart refresh
         };
         const SvgIcons = {
             txSend: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>',
@@ -385,6 +398,7 @@
                 state.wallet = null;
                 state.userStore = null;
                 state.transactionIndex.clear();
+                state.lastWalletViewUpdate = 0;
                 localStorage.removeItem(AppConstants.WALLET_STORAGE_KEY);
                 showView('onboarding-view');
             },
@@ -579,7 +593,7 @@
                 const startBalanceText = numberMatch ? numberMatch[0] : '0';
                 const startBalanceAura = parseFloat(startBalanceText);
                 if (Math.abs(startBalanceAura - endBalanceAura) > 0.01) {
-                    animateBalance(balanceEl, startBalanceAura, endBalanceAura, 1000, auraIconHTML);
+                    animateBalance(balanceEl, startBalanceAura, endBalanceAura, 1000, `${auraIconHTML} `);
                 } else {
                     balanceEl.innerHTML = `${auraIconHTML} ${endBalanceAura.toFixed(2)}`;
                 }
@@ -618,6 +632,8 @@
                 }
                 return;
             } } requestAnimationFrame(tick); } }
+        
+        // MODIFIED: For smoother navigation and less blinking
         async function showView(id) { 
             if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner();
             if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } 
@@ -629,10 +645,22 @@
             if (id === 'wallet-view') { 
                 if(state.wallet) {
                     SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address));
-                    await updateBalanceAndRender();
-                    state.historyPage = 1;
-                    await renderTransactionHistory(state.historyPage);
-                    startRealtimeListener(); 
+                    startRealtimeListener();
+
+                    const now = Date.now();
+                    const timeSinceLastUpdate = now - state.lastWalletViewUpdate;
+                    const refreshThreshold = 30000; // 30 seconds
+
+                    // Only do a full, jarring refresh if it's been a while
+                    if (timeSinceLastUpdate > refreshThreshold) {
+                        console.log("Stale data, performing full refresh of wallet view.");
+                        await updateBalanceAndRender();
+                        state.historyPage = 1;
+                        await renderTransactionHistory(state.historyPage);
+                        state.lastWalletViewUpdate = now;
+                    } else {
+                        console.log("Data is recent, skipping full refresh for smoother navigation.");
+                    }
                 }
             } 
             if (id === 'send-view') { startScanner(); } 
@@ -931,6 +959,8 @@
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
+            
+            // MODIFIED: Added "Aura" unit for clarity
             document.getElementById('send-manual-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-manual-status'); const recipientAddress = document.getElementById('send-address-input').value.trim(); const amountDecimalString = document.getElementById('send-amount-input').value; const comment = document.getElementById('send-comment-input').value.trim(); setStatus(statusEl, ''); if (!ethers.isAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient address format.', 'error'); return; } if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; } if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; } let amountInt; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error(); amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true;
             setStatus(statusEl, 'Preparing transaction with server...', 'info');
             try { 
@@ -942,10 +972,11 @@
                     const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction( state.wallet.address, recipientAddress, amountInt.toString(), comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce);
                     state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit, txHash: senderTxHash }, preAuthNonce };
                     const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(amountInt); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit);
-                    const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura}<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura}</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura}</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`;
+                    const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura} Aura<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura} Aura</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura} Aura</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`;
                     SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : ''); await showView('send-confirm-view');
             } catch (err) { setStatus(statusEl, err.message, 'error'); } finally { button.disabled = false; } 
             });
+
             document.getElementById('refresh-tx-button').addEventListener('click', async () => {
                 const button = document.getElementById('refresh-tx-button');
                 const icon = button.querySelector('.icon');
@@ -959,6 +990,7 @@
                     await updateBalanceAndRender();
                     state.historyPage = 1;
                     await renderTransactionHistory(state.historyPage);
+                    state.lastWalletViewUpdate = Date.now(); // Update timestamp after manual refresh
                     setStatus(syncStatusEl, 'Updated successfully.', 'success');
                 } catch (error) {
                     console.error("Manual refresh failed:", error);
@@ -983,7 +1015,6 @@
             });
             document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { showTransactionDetails(serverTransaction); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
             
-            // CORRECTED: confirm-payment-button listener for robust, multi-send capability
             document.getElementById('confirm-payment-button').addEventListener('click', async (event) => {
                 const button = event.target;
                 const confirmStatusEl = document.getElementById('send-confirm-status');
@@ -994,16 +1025,11 @@
                     const result = await WalletLogic.executePreparedTransaction();
                     
                     if (result.success && result.queuedJobId) {
-                        // Immediately clear the temp transaction state to allow for another one
                         state.activeTransactionIntent = null;
-                        
-                        // Return user to the main wallet view immediately
                         await showView('wallet-view');
-                        
                         const syncStatusEl = document.getElementById('sync-status');
                         setStatus(syncStatusEl, 'Transaction sent. Awaiting network confirmation...', 'info');
 
-                        // Listen for the final confirmation in the background
                         const channel = supabaseClient.channel(`queue-updates-for-job-${result.queuedJobId}`)
                             .on('postgres_changes', {
                                 event: 'UPDATE',
@@ -1017,8 +1043,8 @@
                                     updateBalanceAndRender();
                                     state.historyPage = 1;
                                     renderTransactionHistory(1);
+                                    state.lastWalletViewUpdate = Date.now(); // Update timestamp after confirmed TX
                                     setTimeout(() => {
-                                        // Clear the success message after a few seconds
                                         if (syncStatusEl.innerHTML.includes('Payment sent successfully!')) {
                                             setStatus(syncStatusEl, '');
                                         }
@@ -1031,15 +1057,11 @@
                             })
                             .subscribe();
                     } else {
-                        // This case handles if the server doesn't return a success or jobId
                         throw new Error("Failed to queue the transaction with the server.");
                     }
                 } catch (err) {
-                    // Display the error message on the confirmation screen so the user knows what happened
                     setStatus(confirmStatusEl, `Payment Failed: ${err.message}`, 'error');
                 } finally {
-                    // **THE FIX**: Re-enable the button in all cases (success or failure).
-                    // This ensures that if the user navigates back or an error occurs, the button is ready for the next transaction.
                     button.disabled = false;
                 }
             });
@@ -1069,6 +1091,7 @@
                         await updateBalanceAndRender();
                         state.historyPage = 1;
                         await renderTransactionHistory(1);
+                        state.lastWalletViewUpdate = Date.now(); // Update timestamp after charge
                         setTimeout(() => {
                             state.tempBanknotePayload = null;
                             showView('wallet-view');
