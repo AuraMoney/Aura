@@ -242,7 +242,6 @@
             fxRates: { 'USD': 1 },
             lastWalletViewUpdate: 0,
         };
-
         const SvgIcons = {
             txSend: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>',
             txReceive: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>',
@@ -272,7 +271,6 @@
             sanitizeNumeric: (value) => { if (typeof value === 'number') return value; if (typeof value !== 'string') return 0; const cleaned = value.replace(/[^0-9.-]/g, ''); const parsed = parseFloat(cleaned); return isNaN(parsed) ? 0 : parsed; },
             sanitizeTransactionId: (txId) => { if (typeof txId !== 'string') return ''; const cleaned = txId.replace(/[^0-9a-fA-F]/g, ''); return SecurityUtils.sanitizeText(cleaned); }
         };
-
         // --- HMAC-DRBG & REFILLABLE RNG (CORE CRYPTO HELPERS FOR DETERMINISTIC FALCON) ---
         class HmacDrbg {
             constructor(seed) {
@@ -392,7 +390,6 @@
         
         const CoreLogic = (() => { const Constants = { VALIDATION_PREFIX: "SADAT_V2_PART", MAX_IMAGE_DIMENSION: 2000, NUM_QR_CODES: 9 }; const Utils = { preprocessImage: (dataUrl) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.filter = 'grayscale(1) contrast(2.5) brightness(1.1)'; ctx.drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = dataUrl; }), resizeImage: (file, maxDimension) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { let { width, height } = img; if (width > height) { if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; } } else { if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; } } const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = e.target.result; }; reader.onerror = reject; reader.readAsDataURL(file); }), }; const Banknote = { getLayout: (imageWidth) => { const standardWidth = 790; const scale = imageWidth / standardWidth; return { qrSize: Math.round(250 * scale), xSpacing: Math.round(20 * scale), ySpacing: Math.round(20 * scale), }; }, decodeQrGrid: async (imageData, statusEl) => { const layout = Banknote.getLayout(imageData.width); const parts = {}; let count = 0; const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = imageData.width; canvas.height = imageData.height; ctx.putImageData(imageData, 0, 0); for (let i = 0; i < Constants.NUM_QR_CODES; i++) { setStatus(statusEl, `Scanning section ${i + 1}/${Constants.NUM_QR_CODES}...`, 'info'); await new Promise(r => setTimeout(r, 5)); const row = Math.floor(i / 3), col = i % 3; const regionX = col * (layout.qrSize + layout.xSpacing); const regionY = row * (layout.qrSize + layout.ySpacing); const data = ctx.getImageData(regionX, regionY, layout.qrSize, layout.qrSize); const code = jsQR(data.data, data.width, data.height); if (code && code.data.startsWith(Constants.VALIDATION_PREFIX)) { const match = code.data.substring(Constants.VALIDATION_PREFIX.length).match(/^(\d+)\/(\d+):(.*)$/s); if (match) { const partNum = parseInt(match[1], 10); if (!parts[partNum]) { parts[partNum] = match[3]; count++; } } } } if (count < Constants.NUM_QR_CODES) { throw new Error(`Scan failed. Found ${count}/${Constants.NUM_QR_CODES} valid sections.`); } let payload = ''; for (let i = 1; i <= Constants.NUM_QR_CODES; i++) { payload += parts[i]; } return payload; } }; return { Constants, Utils, Banknote }; })();
         const CacheManager = { cache: new Map(), DEFAULT_CACHE_DURATION: 30000, set(key, data, duration = this.DEFAULT_CACHE_DURATION) { this.cache.set(key, { data, expiresAt: Date.now() + duration }); }, get(key) { const cached = this.cache.get(key); if (!cached) return null; if (Date.now() > cached.expiresAt) { this.cache.delete(key); return null; } return cached.data; }, invalidate(pattern) { for (const key of this.cache.keys()) { if (key.includes(pattern)) { this.cache.delete(key); } } } };
-
         const SupabaseLedger = (() => {
             const apiCall = async (action, payload) => {
                 const response = await fetch(EDGE_FUNCTION_URL, {
@@ -430,7 +427,6 @@
         })();
 
         const AppConstants = { POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store_pqc', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
-
         // --- QUANTUM-RESISTANT WALLET LOGIC ---
         const WalletLogic = {
             async _keypairFromMnemonic(mnemonic) {
@@ -463,19 +459,16 @@
             async createWallet(password) {
                 const mnemonic = PQC_MODULES.bip39.generateMnemonic(PQC_MODULES.wordlist, 128); // 12 words
                 const { privateKey, publicKey } = await this._keypairFromMnemonic(mnemonic);
-
                 const privateKeyHex = CryptoUtils.toHex(privateKey);
                 const publicKeyHex = CryptoUtils.toHex(publicKey);
                 const address = this._generateAddressFromPubKey(publicKey);
                 
                 const encryptedPrivateKey = await CryptoUtils.encrypt(privateKeyHex, password);
-                
                 const userStore = {
                     publicKey: publicKeyHex,
                     address: address,
                     encryptedPrivateKey: encryptedPrivateKey,
                 };
-
                 const wallet = { privateKey, publicKey: publicKeyHex, address };
                 return { mnemonic, userStore, wallet };
             },
@@ -486,19 +479,16 @@
                         return false;
                     }
                     const { privateKey, publicKey } = await this._keypairFromMnemonic(mnemonic);
-                    
                     const privateKeyHex = CryptoUtils.toHex(privateKey);
                     const publicKeyHex = CryptoUtils.toHex(publicKey);
                     const address = this._generateAddressFromPubKey(publicKey);
 
                     const encryptedPrivateKey = await CryptoUtils.encrypt(privateKeyHex, password);
-                    
                     const userStore = {
                         publicKey: publicKeyHex,
                         address: address,
                         encryptedPrivateKey: encryptedPrivateKey,
                     };
-                    
                     state.userStore = userStore;
                     state.wallet = { privateKey, publicKey: publicKeyHex, address }; // store raw private key in memory
                     this.saveUserStore();
@@ -514,7 +504,6 @@
                 if (!storedUserStore) throw new Error("No wallet found on this device.");
                 
                 const userStore = JSON.parse(storedUserStore);
-                
                 try {
                     const privateKeyHex = await CryptoUtils.decrypt(userStore.encryptedPrivateKey, password);
                     const privateKey = CryptoUtils.hexToBytes(privateKeyHex);
@@ -572,7 +561,6 @@
                     throw new Error("No pending transaction to execute.");
                 }
                 const { transactionIntentId, messageToSign, details, preAuthNonce } = state.activeTransactionIntent;
-
                 try {
                     // Sign with Falcon
                     const msgBytes = new TextEncoder().encode(messageToSign);
@@ -589,7 +577,6 @@
                 }
             }
         };
-
         async function handleRealtimePayload(payload, direction) {
             console.log(`New real-time ${direction} transaction received:`, payload);
             await updateBalanceAndRender();
@@ -610,7 +597,6 @@
             
             channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `receiver_address=eq.${state.wallet.address}` }, (payload) => handleRealtimePayload(payload, 'incoming'));
             channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `sender_address=eq.${state.wallet.address}` }, (payload) => handleRealtimePayload(payload, 'outgoing'));
-            
             channel.subscribe((status, err) => {
                 console.log('Subscription status:', status);
                 const syncStatusEl = document.getElementById('sync-status');
@@ -635,7 +621,6 @@
         // ... ALL OTHER FUNCTIONS (UI, Fetching, etc.) REMAIN THE SAME ...
         // FXRateProvider, setLoader, setStatus, animateBalance, formatAuraValue, etc.
         // I will paste them here for completeness.
-
         const FXRateProvider = (() => { const API_URL = 'https://open.er-api.com/v6/latest/USD'; return { async fetchRates() { try { const cachedRates = CacheManager.get('fxRates'); if (cachedRates) { state.fxRates = cachedRates; console.log("Loaded FX rates from cache."); return; } const response = await fetch(API_URL); if (!response.ok) { throw new Error(`Failed to fetch FX rates. Status: ${response.status}`); } const data = await response.json(); state.fxRates = { ...data.rates, USD: 1 }; CacheManager.set('fxRates', state.fxRates, 3600000); console.log("Fetched and cached new FX rates:", state.fxRates); } catch (error) { console.error("Could not fetch FX rates:", error); const settingsStatusEl = document.getElementById('settings-status'); if (settingsStatusEl) { setStatus(settingsStatusEl, 'Could not update exchange rates.', 'error'); } } } }; })();
         function setLoader(loaderId, isLoading) { document.getElementById(loaderId).classList.toggle('hidden', !isLoading); }
         function setStatus(element, message, type = '') { if (!element) return; SecurityUtils.setTextContent(element, message); element.className = 'status-box'; if (type) element.classList.add(type); }
@@ -673,7 +658,6 @@
                 await FXRateProvider.fetchRates();
                 document.getElementById('manual-address-icon').innerHTML = SvgIcons.address;
                 setupEventListeners();
-                
                 const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
                 if (storedWallet) { showView('unlock-view'); } else { showView('onboarding-view'); }
             } catch (e) {
@@ -712,7 +696,73 @@
             document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
             document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
             document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
-            document.getElementById('send-manual-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('send-manual-status'); const recipientAddress = document.getElementById('send-address-input').value.trim(); const amountDecimalString = document.getElementById('send-amount-input').value; const comment = document.getElementById('send-comment-input').value.trim(); setStatus(statusEl, ''); if (!isPqcAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient PQC address format.', 'error'); return; } if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; } if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; } let amountInt; try { const amount = parseFloat(amountDecimalString); if (isNaN(amount) || amount <= 0) throw new Error(); amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION); } catch (e) { setStatus(statusEl, 'Invalid amount.', 'error'); return; } button.disabled = true; setStatus(statusEl, 'Preparing transaction with server...', 'info'); try { const preAuthTimestamp = Date.now(); const preAuthNonce = crypto.randomUUID(); const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`; const msgBytes = new TextEncoder().encode(preAuthMessage); const signResult = await PQC_MODULES.falcon.sign(msgBytes, state.wallet.privateKey); const signatureBytes = signResult.signature instanceof Uint8Array ? signResult.signature : new Uint8Array(signResult.signature); const preAuthSignature = CryptoUtils.toHex(signatureBytes); const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(state.wallet.address, state.wallet.publicKey, recipientAddress, amountInt.toString(), comment, 'N/A', preAuthTimestamp, preAuthSignature, preAuthNonce); state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit, txHash: 'N/A' }, preAuthNonce }; const confirmAmountEl = document.getElementById('confirm-amount-display'); const amountAura = formatAuraValue(amountInt); const feeAura = formatAuraValue(fee); const totalAura = formatAuraValue(totalDebit); const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency); const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura} Aura<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura} Aura</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura} Aura</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`; SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']); SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress); SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : ''); await showView('send-confirm-view'); } catch (err) { setStatus(statusEl, err.message, 'error'); } finally { button.disabled = false; } });
+            document.getElementById('send-manual-button').addEventListener('click', async (event) => {
+                const button = event.target;
+                const statusEl = document.getElementById('send-manual-status');
+                const recipientAddress = document.getElementById('send-address-input').value.trim();
+                const amountDecimalString = document.getElementById('send-amount-input').value;
+                const comment = document.getElementById('send-comment-input').value.trim();
+                setStatus(statusEl, '');
+                if (!isPqcAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient PQC address format.', 'error'); return; }
+                if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; }
+                if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; }
+                let amountInt;
+                try {
+                    const amount = parseFloat(amountDecimalString);
+                    if (isNaN(amount) || amount <= 0) throw new Error();
+                    amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION);
+                } catch (e) {
+                    setStatus(statusEl, 'Invalid amount.', 'error');
+                    return;
+                }
+                button.disabled = true;
+                setStatus(statusEl, 'Preparing transaction with server...', 'info');
+                try {
+                    // **FIX APPLIED HERE**
+                    // 1. Create a unique string from transaction details + a random nonce
+                    const uniqueTxString = `${state.wallet.address}-${recipientAddress}-${amountInt.toString()}-${crypto.randomUUID()}`;
+                    
+                    // 2. Hash the unique string to create a unique transaction ID
+                    const uniqueSenderTxHash = ethers.id(uniqueTxString);
+
+                    const preAuthTimestamp = Date.now();
+                    const preAuthNonce = crypto.randomUUID();
+                    const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`;
+                    const msgBytes = new TextEncoder().encode(preAuthMessage);
+                    const signResult = await PQC_MODULES.falcon.sign(msgBytes, state.wallet.privateKey);
+                    const signatureBytes = signResult.signature instanceof Uint8Array ? signResult.signature : new Uint8Array(signResult.signature);
+                    const preAuthSignature = CryptoUtils.toHex(signatureBytes);
+
+                    // 3. Use the new unique hash when preparing the transaction
+                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(
+                        state.wallet.address, 
+                        state.wallet.publicKey, 
+                        recipientAddress, 
+                        amountInt.toString(), 
+                        comment, 
+                        uniqueSenderTxHash, // <-- Pass the unique hash here
+                        preAuthTimestamp, 
+                        preAuthSignature, 
+                        preAuthNonce
+                    );
+
+                    state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit, txHash: uniqueSenderTxHash }, preAuthNonce };
+                    const confirmAmountEl = document.getElementById('confirm-amount-display');
+                    const amountAura = formatAuraValue(amountInt);
+                    const feeAura = formatAuraValue(fee);
+                    const totalAura = formatAuraValue(totalDebit);
+                    const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency);
+                    const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura} Aura<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura} Aura</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura} Aura</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`;
+                    SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']);
+                    SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress);
+                    SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : '');
+                    await showView('send-confirm-view');
+                } catch (err) {
+                    setStatus(statusEl, err.message, 'error');
+                } finally {
+                    button.disabled = false;
+                }
+            });
             document.getElementById('refresh-tx-button').addEventListener('click', async () => { const button = document.getElementById('refresh-tx-button'); const icon = button.querySelector('.icon'); const loader = button.querySelector('.loader'); const syncStatusEl = document.getElementById('sync-status'); button.disabled = true; icon.style.display = 'none'; loader.style.display = 'block'; setStatus(syncStatusEl, 'Updating...', 'info'); try { await updateBalanceAndRender(); state.historyPage = 1; await renderTransactionHistory(state.historyPage); state.lastWalletViewUpdate = Date.now(); setStatus(syncStatusEl, 'Updated successfully.', 'success'); } catch (error) { console.error("Manual refresh failed:", error); setStatus(syncStatusEl, 'Update failed.', 'error'); } finally { const originalMessage = syncStatusEl.textContent; setTimeout(() => { button.disabled = false; icon.style.display = 'block'; loader.style.display = 'none'; if (syncStatusEl.textContent === originalMessage) { setStatus(syncStatusEl, ''); } }, 2500); } });
             document.getElementById('see-more-tx-button').addEventListener('click', async () => { if (state.hasMoreHistory && !state.isFetchingHistory) { state.historyPage++; await renderTransactionHistory(state.historyPage); } });
             document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { showTransactionDetails(serverTransaction); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
