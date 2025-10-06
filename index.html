@@ -3,6 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      Content Security Policy (CSP)
+      This policy hardens the application against Cross-Site Scripting (XSS) and other injection attacks
+      by strictly defining which resources are allowed to be loaded and executed.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'nonce-aura-wallet-script' https://cdn.jsdelivr.net/npm/ https://cdnjs.cloudflare.com/ https://esm.sh/ 'wasm-unsafe-eval';
+        style-src 'self' https://fonts.googleapis.com/ 'unsafe-inline';
+        connect-src 'self' https://yuozqhimrkyjopgidqje.supabase.co/ wss://yuozqhimrkyjopgidqje.supabase.co/ https://open.er-api.com/;
+        img-src 'self' data:;
+        font-src https://fonts.gstatic.com/;
+        media-src 'self' blob:;
+        worker-src 'self' blob:;
+        frame-src 'none';
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+    ">
     <title>Aura Wallet (Supabase Ledger) - S Tier Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
