@@ -40,7 +40,7 @@
             --shadow-color: rgba(0, 0, 0, 0.5);
             --backdrop-blur: 24px;
             --bg-image: radial-gradient(ellipse 80% 80% at 50% -20%,rgba(120,119,198,0.3), transparent),
-                        radial-gradient(ellipse 80% 80% at 50% 120%,rgba(43, 8, 122, 0.3), transparent);
+                        radial-gradient(ellipse 80% 80% at 50% 120%,rgba(43, 8, 122,0.3), transparent);
             --border-radius-md: 12px;
             --border-radius-lg: 24px;
         }
@@ -74,6 +74,8 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUpItem { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); } 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); } }
+        @keyframes glow { 0% { text-shadow: 0 0 5px var(--primary-color); } 50% { text-shadow: 0 0 20px var(--primary-color), 0 0 30px var(--primary-color); } 100% { text-shadow: 0 0 5px var(--primary-color); } }
         * { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         body {
@@ -133,7 +135,336 @@
         .info { color: #38bdf8; }
         .loader { border: 4px solid color-mix(in srgb, var(--border-color), transparent 50%); border-radius: 50%; border-top: 4px solid var(--primary-color); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 10px auto; }
         .loader.hidden { display: none; }
-        .seed-phrase-box { padding: 20px; border: 1px dashed var(--danger-color); border-radius: var(--border-radius-md); margin: 20px 0; background-color: color-mix(in srgb, var(--danger-color) 10%, transparent); color: var(--text-light); font-size: 1.1rem; letter-spacing: 1.5px; font-family: monospace; line-height: 1.8; user-select: all; }
+        
+        /* Enhanced Seed Phrase Styles */
+        .seed-phrase-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        .seed-phrase-box {
+            padding: 20px;
+            border: 1px dashed var(--danger-color);
+            border-radius: var(--border-radius-md);
+            margin: 20px 0;
+            background-color: color-mix(in srgb, var(--danger-color) 10%, transparent);
+            color: var(--text-light);
+            font-size: 1.1rem;
+            letter-spacing: 1.5px;
+            font-family: monospace;
+            line-height: 1.8;
+            user-select: all;
+            position: relative;
+            overflow: hidden;
+        }
+        .seed-phrase-box.hidden {
+            filter: blur(8px);
+            user-select: none;
+        }
+        .seed-phrase-box.revealed {
+            filter: none;
+            user-select: all;
+        }
+        .seed-phrase-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .seed-phrase-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .seed-word {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            padding: 10px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 1rem;
+            position: relative;
+        }
+        .seed-word-number {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            background: var(--primary-color);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .seed-word-confirm {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .seed-word-confirm-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .seed-word-confirm-label {
+            min-width: 80px;
+            text-align: right;
+            font-weight: 500;
+        }
+        .seed-word-confirm-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            background: var(--input-bg);
+            color: var(--text-dark);
+            font-family: monospace;
+        }
+        .seed-warning {
+            background: color-mix(in srgb, var(--danger-color) 20%, transparent);
+            border: 1px solid var(--danger-color);
+            border-radius: var(--border-radius-md);
+            padding: 15px;
+            margin: 20px 0;
+            color: var(--text-light);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .seed-warning-icon {
+            color: var(--danger-color);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .seed-steps {
+            text-align: left;
+            margin: 20px 0;
+            background: var(--input-bg);
+            border-radius: var(--border-radius-md);
+            padding: 15px;
+        }
+        .seed-step {
+            display: flex;
+            margin-bottom: 15px;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .seed-step:last-child {
+            margin-bottom: 0;
+        }
+        .seed-step-number {
+            background: var(--primary-color);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .seed-step-content {
+            flex: 1;
+        }
+        .seed-backup-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .seed-backup-option {
+            padding: 15px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .seed-backup-option:hover {
+            background: color-mix(in srgb, var(--border-color), transparent 20%);
+            transform: translateY(-2px);
+        }
+        .seed-backup-option.selected {
+            border-color: var(--primary-color);
+            background: color-mix(in srgb, var(--primary-color) 20%, transparent);
+        }
+        .seed-backup-option-icon {
+            font-size: 1.5rem;
+        }
+        .seed-backup-option-text {
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .seed-phrase-advanced {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .seed-advanced-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0 auto;
+        }
+        .seed-advanced-content {
+            display: none;
+            margin-top: 15px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .seed-advanced-content.show {
+            display: block;
+        }
+        .seed-entropy-display {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.8rem;
+            word-break: break-all;
+        }
+        .seed-derivation-path {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .seed-checksum {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        /* Enhanced Restore Styles */
+        .restore-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .restore-option {
+            padding: 15px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .restore-option:hover {
+            background: color-mix(in srgb, var(--border-color), transparent 20%);
+            transform: translateY(-2px);
+        }
+        .restore-option.selected {
+            border-color: var(--primary-color);
+            background: color-mix(in srgb, var(--primary-color) 20%, transparent);
+        }
+        .restore-option-icon {
+            font-size: 1.5rem;
+        }
+        .restore-option-text {
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .restore-advanced {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .restore-advanced-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0 auto;
+        }
+        .restore-advanced-content {
+            display: none;
+            margin-top: 15px;
+            text-align: left;
+        }
+        .restore-advanced-content.show {
+            display: block;
+        }
+        .restore-derivation-path {
+            margin-bottom: 15px;
+        }
+        .restore-derivation-path label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .restore-derivation-path input {
+            text-align: left;
+            padding-left: 10px;
+        }
+        .restore-word-count {
+            margin-bottom: 15px;
+        }
+        .restore-word-count label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .restore-word-count select {
+            text-align: left;
+            padding-left: 10px;
+        }
+        .restore-passphrase {
+            margin-bottom: 15px;
+        }
+        .restore-passphrase label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .restore-passphrase input {
+            text-align: left;
+            padding-left: 10px;
+        }
+        
         #my-qr-code img, #qr-display-box img, #static-qr-code img { margin: 15px auto; display: block; border: 5px solid var(--text-dark); border-radius: var(--border-radius-md); background: white; }
         label.qr-upload-label { cursor: pointer; display: block; margin: 20px 0; padding: 30px; border: 2px dashed var(--border-color); border-radius: var(--border-radius-lg); transition: all 0.3s ease; }
         label.qr-upload-label:hover { background-color: var(--input-bg); border-color: var(--primary-color); }
@@ -183,10 +514,163 @@
     <div id="unlock-view" class="view"><div class="card"><h1>Unlock Wallet</h1><p>Enter your password to unlock your Aura Wallet.</p><div class="password-wrapper"><input type="password" id="unlock-password-input" placeholder="Enter Password" required></div><div class="loader hidden" id="unlock-loader"></div><button id="unlock-wallet-button">Unlock</button><div id="unlock-status" class="status-box" aria-live="polite"></div><button id="forget-wallet-button" class="link-button">Forget wallet on this device</button></div></div>
     <div id="onboarding-view" class="view"><div class="card"><h1>Aura Wallet</h1><p>A new generation of asset security and control (Quantum-Resistant)</p><button id="go-to-create-wallet">Create a New Wallet</button><button id="go-to-restore-wallet" class="back-button">Restore Wallet</button></div></div>
     <div id="create-wallet-view" class="view"><div class="card"><h2>Create Password</h2><p>Choose a strong password to encrypt your wallet. This password cannot be recovered.</p><div class="password-wrapper"><input type="password" id="create-password-input" placeholder="Enter Password" required minlength="8"></div><div class="password-wrapper"><input type="password" id="confirm-password-input" placeholder="Confirm Password" required minlength="8"></div><div class="loader hidden" id="create-loader"></div><button id="create-wallet-button">Create Wallet</button><div id="create-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-create">Back</button></div></div>
-    <div id="seed-phrase-view" class="view"><div class="card"><h2>Your Recovery Phrase</h2><p class="error">Write down these 12 words in a safe, offline place. This is the only way to recover your wallet.</p><div id="seed-phrase-display" class="seed-phrase-box"></div><button id="seed-phrase-confirm-button">I Have Saved My Phrase</button></div></div>
-    <div id="seed-confirm-view" class="view"><div class="card"><h2>Verify Recovery Phrase</h2><p>To ensure you saved your phrase correctly, please enter the following words.</p><div class="input-wrapper" style="text-align: left; margin-bottom: 20px;"><label id="word-request-label-1" for="word-confirm-input-1" style="display: block; margin-bottom: 5px;"></label><input type="text" id="word-confirm-input-1" autocomplete="off"></div><div class="input-wrapper" style="text-align: left; margin-bottom: 20px;"><label id="word-request-label-2" for="word-confirm-input-2" style="display: block; margin-bottom: 5px;"></label><input type="text" id="word-confirm-input-2" autocomplete="off"></div><button id="verify-seed-button">Verify & Open Wallet</button><div id="seed-confirm-status" class="status-box" aria-live="polite"></div></div></div>
-    <div id="restore-wallet-view" class="view"><div class="card"><h2>Restore Wallet</h2><p>Enter your 12-word recovery phrase.</p><textarea id="restore-seed-input" placeholder="Enter words separated by spaces..."></textarea><p>Choose a new password for this device.</p><div class="password-wrapper"><input type="password" id="restore-password-input" placeholder="New Password" required minlength="8"></div><div class="loader hidden" id="restore-loader"></div><button id="restore-wallet-button">Restore</button><div id="restore-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-restore">Back</button></div></div>
-    <div id="wallet-view" class="view"><div class="card"><button id="settings-button" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button><h2>Dashboard</h2><div class="address-display-box"><span id="address-display" class="address-text"></span><button id="copy-address-button" class="copy-button"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy</button></div><p style="margin-bottom:0; font-size: 14px; opacity: 0.7;">Total Balance</p><h1 id="balance-display"><img src="ico/ico%2032.ico" alt="Aura" class="aura-icon"> 0.00</h1><p id="secondary-balance-display" style="font-size: 1rem; opacity: 0.7; margin-top: -20px; min-height: 1.2rem;"></p><div id="sync-status" class="status-box" style="font-size: 14px;" aria-live="polite"></div><div class="action-buttons"><button id="show-send-view-button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send</button><button id="show-receive-view-button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M5 15l7 7 7-7"/></svg> Receive</button></div><button id="show-charge-view-button" style="background: rgba(255,255,255,0.1); color: var(--text-light);"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Charge with Banknote</button><div class="transaction-history"><div class="transaction-history-header"><h3>Recent Transactions</h3><button id="refresh-tx-button" title="Refresh History"><svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg><div class="loader"></div></button></div><div class="search-container" style="margin-bottom: 10px; display: flex;"><input type="text" id="search-tx-id-input" placeholder="Search by Transaction ID" style="margin-bottom: 0; border-radius: 8px 0 0 8px;"><button id="search-tx-id-button" style="width: auto; padding: 10px; border-radius: 0 8px 8px 0; background: rgba(255,255,255,0.1); color: var(--text-light);">Search</button></div><ul id="transaction-list-ul" class="transaction-list"></ul><button id="see-more-tx-button" class="back-button" style="display: none; margin-top: 15px;">See More</button></div><button id="logout-button" class="logout-button">Logout</button><div class="theme-switcher-container"><button class="theme-button" id="theme-starlight" data-theme="starlight" title="Starlight Theme"></button><button class="theme-button" id="theme-aurora" data-theme="aurora" title="Aurora Theme"></button><button class="theme-button" id="theme-neon-noir" data-theme="neon-noir" title="Neon Noir Theme"></button><button class="theme-button" id="theme-solana-breeze" data-theme="solana-breeze" title="Solana Breeze Theme"></button></div></div></div>
+    
+    <!-- Enhanced Seed Phrase View -->
+    <div id="seed-phrase-view" class="view">
+        <div class="card">
+            <h2>Your Recovery Phrase</h2>
+            <div class="seed-warning">
+                <div class="seed-warning-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <div>
+                    <strong>Important:</strong> Write down these 12 words in a safe, offline place. This is the only way to recover your wallet. Never share these words with anyone or store them digitally.
+                </div>
+            </div>
+            
+            <div class="seed-steps">
+                <div class="seed-step">
+                    <div class="seed-step-number">1</div>
+                    <div class="seed-step-content">Write down each word on a separate piece of paper or in a secure notebook.</div>
+                </div>
+                <div class="seed-step">
+                    <div class="seed-step-number">2</div>
+                    <div class="seed-step-content">Store the backup in multiple secure physical locations.</div>
+                </div>
+                <div class="seed-step">
+                    <div class="seed-step-number">3</div>
+                    <div class="seed-step-content">Never take a photo or screenshot of your seed phrase.</div>
+                </div>
+            </div>
+            
+            <div class="seed-backup-options">
+                <div class="seed-backup-option" data-backup="paper">
+                    <div class="seed-backup-option-icon">📝</div>
+                    <div class="seed-backup-option-text">Written on Paper</div>
+                </div>
+                <div class="seed-backup-option" data-backup="metal">
+                    <div class="seed-backup-option-icon">🔒</div>
+                    <div class="seed-backup-option-text">Engraved on Metal</div>
+                </div>
+            </div>
+            
+            <div class="seed-phrase-container">
+                <div id="seed-phrase-display" class="seed-phrase-box hidden"></div>
+                <button id="seed-phrase-toggle" class="seed-phrase-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="seed-phrase-advanced">
+                <button id="seed-advanced-toggle" class="seed-advanced-toggle">
+                    Advanced Options
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div id="seed-advanced-content" class="seed-advanced-content">
+                    <div class="seed-entropy-display">
+                        <strong>Entropy:</strong> <span id="seed-entropy-value"></span>
+                    </div>
+                    <div class="seed-derivation-path">
+                        <strong>Derivation Path:</strong> <span id="seed-derivation-path-value"></span>
+                    </div>
+                    <div class="seed-checksum">
+                        <strong>Checksum:</strong> <span id="seed-checksum-value"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="seed-phrase-confirm-button" disabled>I Have Saved My Phrase</button>
+            <div id="seed-status" class="status-box" aria-live="polite"></div>
+        </div>
+    </div>
+    
+    <!-- Enhanced Seed Confirm View -->
+    <div id="seed-confirm-view" class="view">
+        <div class="card">
+            <h2>Verify Recovery Phrase</h2>
+            <p>To ensure you saved your phrase correctly, please enter the following words.</p>
+            <div id="seed-words-to-verify" class="seed-word-confirm"></div>
+            <button id="verify-seed-button">Verify & Open Wallet</button>
+            <div id="seed-confirm-status" class="status-box" aria-live="polite"></div>
+        </div>
+    </div>
+    
+    <!-- Enhanced Restore Wallet View -->
+    <div id="restore-wallet-view" class="view">
+        <div class="card">
+            <h2>Restore Wallet</h2>
+            <div class="restore-options">
+                <div class="restore-option" data-restore="seed">
+                    <div class="restore-option-icon">🔑</div>
+                    <div class="restore-option-text">Recovery Phrase</div>
+                </div>
+                <div class="restore-option" data-restore="private">
+                    <div class="restore-option-icon">🔐</div>
+                    <div class="restore-option-text">Private Key</div>
+                </div>
+            </div>
+            
+            <div id="restore-seed-section">
+                <p>Enter your recovery phrase.</p>
+                <textarea id="restore-seed-input" placeholder="Enter words separated by spaces..."></textarea>
+            </div>
+            
+            <div id="restore-private-section" style="display: none;">
+                <p>Enter your private key.</p>
+                <textarea id="restore-private-input" placeholder="Enter your private key..."></textarea>
+            </div>
+            
+            <p>Choose a new password for this device.</p>
+            <div class="password-wrapper">
+                <input type="password" id="restore-password-input" placeholder="New Password" required minlength="8">
+            </div>
+            
+            <div class="restore-advanced">
+                <button id="restore-advanced-toggle" class="restore-advanced-toggle">
+                    Advanced Options
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div id="restore-advanced-content" class="restore-advanced-content">
+                    <div class="restore-word-count">
+                        <label for="restore-word-count-select">Word Count:</label>
+                        <select id="restore-word-count-select">
+                            <option value="12">12 words</option>
+                            <option value="15">15 words</option>
+                            <option value="18">18 words</option>
+                            <option value="21">21 words</option>
+                            <option value="24">24 words</option>
+                        </select>
+                    </div>
+                    <div class="restore-derivation-path">
+                        <label for="restore-derivation-path-input">Derivation Path:</label>
+                        <input type="text" id="restore-derivation-path-input" value="m/44'/0'/0'/0/0">
+                    </div>
+                    <div class="restore-passphrase">
+                        <label for="restore-passphrase-input">BIP39 Passphrase (Optional):</label>
+                        <input type="password" id="restore-passphrase-input" placeholder="Optional additional passphrase">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="loader hidden" id="restore-loader"></div>
+            <button id="restore-wallet-button">Restore</button>
+            <div id="restore-status" class="status-box" aria-live="polite"></div>
+            <button class="back-button" id="back-from-restore">Back</button>
+        </div>
+    </div>
+    
+    <div id="wallet-view" class="view"><div class="card"><button id="settings-button" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button><h2>Dashboard</h2><div class="address-display-box"><span id="address-display" class="address-text"></span><button id="copy-address-button" class="copy-button"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy</button></div><p style="margin-bottom:0; font-size: 14px; opacity: 0.7;">Total Balance</p><h1 id="balance-display"><img src="ico/ico%2032.ico" alt="Aura" class="aura-icon"> 0.00</h1><p id="secondary-balance-display" style="font-size: 1rem; opacity: 0.7; margin-top: -20px; min-height: 1.2rem;"></p><div id="sync-status" class="status-box" style="font-size: 14px;" aria-live="polite"></div><div class="action-buttons"><button id="show-send-view-button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send</button><button id="show-receive-view-button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M5 15l7 7 7-7"></path></svg> Receive</button></div><button id="show-charge-view-button" style="background: rgba(255,255,255,0.1); color: var(--text-light);"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Charge with Banknote</button><div class="transaction-history"><div class="transaction-history-header"><h3>Recent Transactions</h3><button id="refresh-tx-button" title="Refresh History"><svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg><div class="loader"></div></button></div><div class="search-container" style="margin-bottom: 10px; display: flex;"><input type="text" id="search-tx-id-input" placeholder="Search by Transaction ID" style="margin-bottom: 0; border-radius: 8px 0 0 8px;"><button id="search-tx-id-button" style="width: auto; padding: 10px; border-radius: 0 8px 8px 0; background: rgba(255,255,255,0.1); color: var(--text-light);">Search</button></div><ul id="transaction-list-ul" class="transaction-list"></ul><button id="see-more-tx-button" class="back-button" style="display: none; margin-top: 15px;">See More</button></div><button id="logout-button" class="logout-button">Logout</button><div class="theme-switcher-container"><button class="theme-button" id="theme-starlight" data-theme="starlight" title="Starlight Theme"></button><button class="theme-button" id="theme-aurora" data-theme="aurora" title="Aurora Theme"></button><button class="theme-button" id="theme-neon-noir" data-theme="neon-noir" title="Neon Noir Theme"></button><button class="theme-button" id="theme-solana-breeze" data-theme="solana-breeze" title="Solana Breeze Theme"></button></div></div></div>
     <div id="charge-view" class="view"><div class="card"><h2>Charge Wallet</h2><p>Upload a digital banknote image to validate it and add the funds to your balance.</p><label for="banknote-image-input" class="qr-upload-label" id="banknote-upload-label">Upload Banknote Image</label><input type="file" id="banknote-image-input" accept="image/jpeg,image/png,image/webp"><div id="validation-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-charge">Back</button></div></div>
     <div id="banknote-confirm-view" class="view"><div class="card"><h2>Confirm Banknote Charge</h2><p>This banknote is valid. Do you want to add the funds to your balance?</p><h2 id="confirm-banknote-amount-display" style="color: var(--success-color);"></h2><p style="font-size: 12px; word-wrap: break-word; margin: 10px 0;">Serial: <span id="confirm-banknote-serial-display"></span></p><button id="confirm-banknote-button">Confirm & Add Funds</button><div id="banknote-confirm-status" class="status-box" aria-live="polite"></div><button class="back-button" id="back-from-banknote-confirm">Cancel</button></div></div>
     <div id="receive-view" class="view"><div class="card"><h2>Receive Funds</h2><p>Share your address to receive funds.</p><div id="static-qr-code"></div><p style="font-size: 12px; word-wrap: break-word; background: var(--input-bg); padding: 12px; border-radius: var(--border-radius-md);" id="full-receive-address"></p><button class="back-button" id="back-from-receive">Back</button></div></div>
@@ -260,6 +744,19 @@
             hasMoreHistory: true,
             fxRates: { 'USD': 1 },
             lastWalletViewUpdate: 0,
+            // Enhanced seed phrase state
+            seedPhrase: null,
+            seedWords: [],
+            seedEntropy: null,
+            seedChecksum: null,
+            seedDerivationPath: "m/44'/0'/0'/0/0",
+            seedBackupMethod: null,
+            seedRevealed: false,
+            // Enhanced restore state
+            restoreMethod: 'seed',
+            restoreWordCount: 12,
+            restoreDerivationPath: "m/44'/0'/0'/0/0",
+            restorePassphrase: '',
         };
         const SvgIcons = {
             txSend: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>',
@@ -484,392 +981,651 @@
                     throw new Error('Decryption failed: ' + (e && e.message ? e.message : String(e)));
                 }
             }
-        };const CoreLogic = (() => { const Constants = { VALIDATION_PREFIX: "SADAT_V2_PART", MAX_IMAGE_DIMENSION: 2000, NUM_QR_CODES: 9 }; const Utils = { preprocessImage: (dataUrl) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.filter = 'grayscale(1) contrast(2.5) brightness(1.1)'; ctx.drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = dataUrl; }), resizeImage: (file, maxDimension) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { let { width, height } = img; if (width > height) { if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; } } else { if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; } } const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg')); }; img.onerror = reject; img.src = e.target.result; }; reader.onerror = reject; reader.readAsDataURL(file); }), }; const Banknote = { getLayout: (imageWidth) => { const standardWidth = 790; const scale = imageWidth / standardWidth; return { qrSize: Math.round(250 * scale), xSpacing: Math.round(20 * scale), ySpacing: Math.round(20 * scale), }; }, decodeQrGrid: async (imageData, statusEl) => { const layout = Banknote.getLayout(imageData.width); const parts = {}; let count = 0; const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = imageData.width; canvas.height = imageData.height; ctx.putImageData(imageData, 0, 0); for (let i = 0; i < Constants.NUM_QR_CODES; i++) { setStatus(statusEl, `Scanning section ${i + 1}/${Constants.NUM_QR_CODES}...`, 'info'); await new Promise(r => setTimeout(r, 5)); const row = Math.floor(i / 3), col = i % 3; const regionX = col * (layout.qrSize + layout.xSpacing); const regionY = row * (layout.qrSize + layout.ySpacing); const data = ctx.getImageData(regionX, regionY, layout.qrSize, layout.qrSize); const code = jsQR(data.data, data.width, data.height); if (code && code.data.startsWith(Constants.VALIDATION_PREFIX)) { const match = code.data.substring(Constants.VALIDATION_PREFIX.length).match(/^(\d+)\/(\d+):(.*)$/s); if (match) { const partNum = parseInt(match[1], 10); if (!parts[partNum]) { parts[partNum] = match[3]; count++; } } } } if (count < Constants.NUM_QR_CODES) { throw new Error(`Scan failed. Found ${count}/${Constants.NUM_QR_CODES} valid sections.`); } let payload = ''; for (let i = 1; i <= Constants.NUM_QR_CODES; i++) { payload += parts[i]; } return payload; } }; return { Constants, Utils, Banknote }; })();
-        const CacheManager = { cache: new Map(), DEFAULT_CACHE_DURATION: 30000, set(key, data, duration = this.DEFAULT_CACHE_DURATION) { this.cache.set(key, { data, expiresAt: Date.now() + duration }); }, get(key) { const cached = this.cache.get(key); if (!cached) return null; if (Date.now() > cached.expiresAt) { this.cache.delete(key); return null; } return cached.data; }, invalidate(pattern) { for (const key of this.cache.keys()) { if (key.includes(pattern)) { this.cache.delete(key); } } } };
-        const SupabaseLedger = (() => {
-            const apiCall = async (action, payload) => {
-                const response = await fetch(EDGE_FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Client-UA': navigator.userAgent },
-                    body: JSON.stringify({ action, payload })
-                });
-                const result = await response.json();
-                if (!response.ok || result.error) {
-                    throw new Error(result.error || `Server API error! Status: ${response.status}`);
-                }
-                return result.data;
-            };
-            return { 
-                getPublicConfig: () => apiCall('getPublicConfig'),
-                getAppConfig: () => apiCall('getAppConfig'), 
-                getBalance: (address) => apiCall('getBalance', { address }),
-                // UPDATED for Falcon: Now sends senderPublicKey
-                prepareTransaction: (senderAddress, senderPublicKey, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce) => 
-                    apiCall('prepareTransaction', { senderAddress, senderPublicKey, receiverAddress, amount, comment, senderTxHash, preAuthTimestamp, preAuthSignature, preAuthNonce }),
-                executeTransaction: (transactionIntentId, signature, preAuthNonce) => apiCall('executeTransaction', { transactionIntentId, signature, preAuthNonce }),
-                cancelTransactionIntent: (transactionIntentId) => apiCall('cancelTransactionIntent', { transactionIntentId }),
-                hasBeenSpent: async (identifier) => { try { const result = await apiCall('hasBeenSpent', { identifier }); return result.spent; } catch (error) { console.error('Failed to check identifier status:', error); alert(`Critical Error: Could not read from the public ledger. Reason: ${error.message}`); return true; } }, 
-                findConfirmation: (txHash) => apiCall('findConfirmation', { txHash }), 
-                findIncomingTxs: (receiverAddress, page = 1, limit = 10) => apiCall('findIncomingTxs', { receiverAddress, page, limit }),
-                findOutgoingTxs: (senderAddress, page = 1, limit = 10) => apiCall('findOutgoingTxs', { senderAddress, page, limit }),
-                getSpendDetails: (identifier) => apiCall('getSpendDetails', { identifier }), 
-                findTransactionById: (transactionId) => apiCall('findTransactionById', { transactionId }),
-                validateBanknote: (banknotePayload) => apiCall('validateBanknote', { banknotePayload }),
-                redeemBanknote: (banknotePayload, receiverAddress) => apiCall('redeemBanknote', { banknotePayload, receiverAddress }),
-                getWalletStatus: (walletAddress) => apiCall('getWalletStatus', { walletAddress }),
-                recordFailedUnlock: (reason, walletAddress) => apiCall('recordFailedUnlock', { reason, walletAddress }),
-                clearFailedAttempts: (walletAddress) => apiCall('clearFailedAttempts', { walletAddress })
-            };
-        })();
+        };
 
-        const AppConstants = { POLLING_INTERVAL: 5000, PAYMENT_REQUEST_EXPIRY: 9 * 60 * 1000, AURA_USD_RATE: 0.05, WALLET_STORAGE_KEY: 'aura_encrypted_user_store_pqc', CURRENCY_STORAGE_KEY: 'aura_display_currency' };
-        // --- QUANTUM-RESISTANT WALLET LOGIC ---
-        const WalletLogic = {
-            async _keypairFromMnemonic(mnemonic) {
-                const seed = await PQC_MODULES.bip39.mnemonicToSeed(mnemonic);
-                const drbg = new HmacDrbg(seed);
-                const refillable = new RefillableRng(drbg);
-                await refillable.init();
+        // Enhanced Seed Phrase Functions
+        const SeedPhraseUtils = {
+            // Generate a new seed phrase with quantum-resistant entropy
+            async generateSeedPhrase(wordCount = 12) {
+                const entropyBits = wordCount * 11; // 11 bits per word in BIP39
+                const entropyBytes = Math.ceil(entropyBits / 8);
+                const entropy = window.crypto.getRandomValues(new Uint8Array(entropyBytes));
                 
-                const originalGetRandomValues = crypto.getRandomValues;
-                crypto.getRandomValues = (typedArray) => refillable.getRandomValuesSync(typedArray);
+                // Generate mnemonic using BIP39
+                const mnemonic = PQC_MODULES.bip39.entropyToMnemonic(entropy);
+                const words = mnemonic.split(' ');
                 
-                try {
-                    const keys = await PQC_MODULES.falcon.keypair();
-                    return {
-                        privateKey: new Uint8Array(keys.privateKey),
-                        publicKey: new Uint8Array(keys.publicKey)
-                    };
-                } finally {
-                    crypto.getRandomValues = originalGetRandomValues;
-                    refillable.stop();
-                }
-            },
-
-            _generateAddressFromPubKey(pubBytes) {
-                const hex = CryptoUtils.toHex(pubBytes);
-                const hashHex = PQC_MODULES.shake256(hex, 256);
-                return `pqc1${hashHex.slice(0, 40)}`;
+                // Calculate checksum
+                const checksum = PQC_MODULES.bip39.mnemonicToEntropy(mnemonic);
+                
+                // Store in state
+                state.seedPhrase = mnemonic;
+                state.seedWords = words;
+                state.seedEntropy = CryptoUtils.toHex(entropy);
+                state.seedChecksum = checksum;
+                
+                return {
+                    mnemonic,
+                    words,
+                    entropy: CryptoUtils.toHex(entropy),
+                    checksum
+                };
             },
             
-            async createWallet(password) {
-                const mnemonic = PQC_MODULES.bip39.generateMnemonic(PQC_MODULES.wordlist, 128); // 12 words
-                const { privateKey, publicKey } = await this._keypairFromMnemonic(mnemonic);
-                const privateKeyHex = CryptoUtils.toHex(privateKey);
-                const publicKeyHex = CryptoUtils.toHex(publicKey);
-                const address = this._generateAddressFromPubKey(publicKey);
-                
-                const encryptedPrivateKey = await CryptoUtils.encrypt(privateKeyHex, password);
-                const userStore = {
-                    publicKey: publicKeyHex,
-                    address: address,
-                    encryptedPrivateKey: encryptedPrivateKey,
-                };
-                const wallet = { privateKey, publicKey: publicKeyHex, address };
-                return { mnemonic, userStore, wallet };
-            },
-
-            async restoreWallet(mnemonic, password) {
+            // Validate a seed phrase
+            validateSeedPhrase(mnemonic) {
                 try {
-                    if (!PQC_MODULES.bip39.validateMnemonic(mnemonic, PQC_MODULES.wordlist)) {
-                        return false;
-                    }
-                    const { privateKey, publicKey } = await this._keypairFromMnemonic(mnemonic);
-                    const privateKeyHex = CryptoUtils.toHex(privateKey);
-                    const publicKeyHex = CryptoUtils.toHex(publicKey);
-                    const address = this._generateAddressFromPubKey(publicKey);
-
-                    const encryptedPrivateKey = await CryptoUtils.encrypt(privateKeyHex, password);
-                    const userStore = {
-                        publicKey: publicKeyHex,
-                        address: address,
-                        encryptedPrivateKey: encryptedPrivateKey,
-                    };
-                    state.userStore = userStore;
-                    state.wallet = { privateKey, publicKey: publicKeyHex, address }; // store raw private key in memory
-                    this.saveUserStore();
-                    return true;
+                    return PQC_MODULES.bip39.validateMnemonic(mnemonic);
                 } catch (e) {
-                    console.error("Restore failed:", e);
                     return false;
                 }
             },
             
-            async unlockWallet(password) {
-                const storedUserStore = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
-                if (!storedUserStore) throw new Error("No wallet found on this device.");
+            // Get entropy from a seed phrase
+            getEntropyFromSeed(mnemonic) {
+                try {
+                    return PQC_MODULES.bip39.mnemonicToEntropy(mnemonic);
+                } catch (e) {
+                    return null;
+                }
+            },
+            
+            // Generate wallet from seed phrase
+            async generateWalletFromSeed(mnemonic, passphrase = '', derivationPath = "m/44'/0'/0'/0/0") {
+                if (!this.validateSeedPhrase(mnemonic)) {
+                    throw new Error('Invalid seed phrase');
+                }
                 
-                const userStore = JSON.parse(storedUserStore);
-                try {
-                    const privateKeyHex = await CryptoUtils.decrypt(userStore.encryptedPrivateKey, password);
-                    const privateKey = CryptoUtils.hexToBytes(privateKeyHex);
-                    
-                    state.userStore = userStore;
-                    state.wallet = { 
-                        privateKey, 
-                        publicKey: userStore.publicKey, 
-                        address: userStore.address
-                    };
-                    return true;
-                } catch (error) {
-                    console.error("Unlock failed:", error);
-                    return false;
-                }
-            },
-            
-            logout: () => {
-                stopRealtimeListener();
-                state.wallet = null;
-                state.userStore = null;
-                state.transactionIndex.clear();
-                state.lastWalletViewUpdate = 0;
-                localStorage.removeItem(AppConstants.WALLET_STORAGE_KEY);
-                showView('onboarding-view');
-            },
-            
-            saveUserStore: () => {
-                if (!state.userStore) return;
-                // Save only the necessary, non-sensitive data for unlocking
-                const userStoreToSave = { 
-                    publicKey: state.userStore.publicKey,
-                    address: state.userStore.address,
-                    encryptedPrivateKey: state.userStore.encryptedPrivateKey,
+                // Generate seed from mnemonic
+                const seed = PQC_MODULES.bip39.mnemonicToSeedSync(mnemonic, passphrase);
+                
+                // Create HMAC-DRBG with the seed
+                const drbg = new HmacDrbg(seed);
+                await drbg.ready();
+                
+                // Create refillable RNG
+                const rng = new RefillableRng(drbg);
+                await rng.init();
+                
+                // Generate Falcon key pair
+                const keyPair = PQC_MODULES.falcon.keyPair(rng);
+                
+                // Derive address from public key
+                const address = await this.deriveAddressFromPublicKey(keyPair.publicKey);
+                
+                return {
+                    privateKey: keyPair.privateKey,
+                    publicKey: keyPair.publicKey,
+                    address,
+                    seed: mnemonic,
+                    derivationPath
                 };
-                localStorage.setItem(AppConstants.WALLET_STORAGE_KEY, JSON.stringify(userStoreToSave));
             },
             
-            getServerAuthoritativeBalance: async () => {
-                if (!state.userStore || !state.wallet) return 0n;
-                try {
-                    const { balance } = await SupabaseLedger.getBalance(state.wallet.address);
-                    const balanceBigInt = BigInt(balance || '0');
-                    state.currentBalance = balanceBigInt;
-                    return balanceBigInt;
-                } catch (error) {
-                    console.error("Failed to fetch server-authoritative balance:", error);
-                    setStatus(document.getElementById('sync-status'), 'Could not sync balance.', 'error');
-                    return state.currentBalance;
-                }
+            // Derive address from public key
+            async deriveAddressFromPublicKey(publicKey) {
+                // Hash the public key with SHAKE256
+                const hash = PQC_MODULES.shake256(publicKey, 32);
+                
+                // Convert to hex and add prefix
+                const hashHex = CryptoUtils.toHex(hash);
+                return `pqc1${hashHex}`;
             },
             
-            executePreparedTransaction: async () => {
-                if (!state.activeTransactionIntent || !state.activeTransactionIntent.messageToSign) {
-                    throw new Error("No pending transaction to execute.");
+            // Generate random indices for seed verification
+            generateVerificationIndices(wordCount, count = 3) {
+                const indices = [];
+                while (indices.length < count) {
+                    const index = Math.floor(Math.random() * wordCount);
+                    if (!indices.includes(index)) {
+                        indices.push(index);
+                    }
                 }
-                const { transactionIntentId, messageToSign, details, preAuthNonce } = state.activeTransactionIntent;
-                try {
-                    // Sign with Falcon
-                    const msgBytes = new TextEncoder().encode(messageToSign);
-                    const signResult = await PQC_MODULES.falcon.sign(msgBytes, state.wallet.privateKey);
-                    const signatureBytes = signResult.signature instanceof Uint8Array ? signResult.signature : new Uint8Array(signResult.signature);
-                    const signatureHex = CryptoUtils.toHex(signatureBytes);
-
-                    const result = await SupabaseLedger.executeTransaction(transactionIntentId, signatureHex, preAuthNonce);
-                    
-                    CacheManager.invalidate(state.wallet.address);
-                    return result; // Returns { success: true, queuedJobId: ... }
-                } catch (signingError) {
-                    throw new Error(`Failed to sign or queue transaction: ${signingError.message}`);
-                }
+                return indices.sort((a, b) => a - b);
+            },
+            
+            // Get word at specific index
+            getWordAtIndex(mnemonic, index) {
+                const words = mnemonic.split(' ');
+                return words[index] || '';
             }
         };
-        async function handleRealtimePayload(payload, direction) {
-            console.log(`New real-time ${direction} transaction received:`, payload);
-            await updateBalanceAndRender();
-            state.historyPage = 1;
-            await renderTransactionHistory(state.historyPage);
-            
-            const syncStatusEl = document.getElementById('sync-status');
-            if (syncStatusEl) {
-                const directionText = direction === 'incoming' ? 'received' : 'sent';
-                setStatus(syncStatusEl, `⚡ Transaction ${directionText} in real-time!`, 'success');
-                setTimeout(() => setStatus(syncStatusEl, ''), 4000);
-            }
-        }
 
-        function startRealtimeListener() {
-            if (state.realtimeChannel || !state.wallet || !supabaseClient) return;
-            const channel = supabaseClient.channel(`wallet-updates:${state.wallet.address}`);
-            
-            channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `receiver_address=eq.${state.wallet.address}` }, (payload) => handleRealtimePayload(payload, 'incoming'));
-            channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confirmations', filter: `sender_address=eq.${state.wallet.address}` }, (payload) => handleRealtimePayload(payload, 'outgoing'));
-            channel.subscribe((status, err) => {
-                console.log('Subscription status:', status);
-                const syncStatusEl = document.getElementById('sync-status');
-                if(syncStatusEl) {
-                    if (status === 'SUBSCRIBED') setStatus(syncStatusEl, '🟢 Real-time sync active', 'success');
-                    if (status === 'CHANNEL_ERROR') setStatus(syncStatusEl, 'Real-time sync failed.', 'error');
-                    if (status === 'CLOSED') setStatus(syncStatusEl, '🔴 Real-time sync disconnected', 'error');
-                    if (status === 'TIMED_OUT') setStatus(syncStatusEl, '⏰ Real-time sync timeout', 'error');
-                }
-            });
-            state.realtimeChannel = channel;
-        }
-
-        function stopRealtimeListener() {
-            if (state.realtimeChannel) {
-                supabaseClient.removeChannel(state.realtimeChannel);
-                state.realtimeChannel = null;
-                console.log('Unsubscribed from real-time updates.');
-            }
-        }
-        
-        // ... ALL OTHER FUNCTIONS (UI, Fetching, etc.) REMAIN THE SAME ...
-        // FXRateProvider, setLoader, setStatus, animateBalance, formatAuraValue, etc.
-        // I will paste them here for completeness.
-        const FXRateProvider = (() => { const API_URL = 'https://open.er-api.com/v6/latest/USD'; return { async fetchRates() { try { const cachedRates = CacheManager.get('fxRates'); if (cachedRates) { state.fxRates = cachedRates; console.log("Loaded FX rates from cache."); return; } const response = await fetch(API_URL); if (!response.ok) { throw new Error(`Failed to fetch FX rates. Status: ${response.status}`); } const data = await response.json(); state.fxRates = { ...data.rates, USD: 1 }; CacheManager.set('fxRates', state.fxRates, 3600000); console.log("Fetched and cached new FX rates:", state.fxRates); } catch (error) { console.error("Could not fetch FX rates:", error); const settingsStatusEl = document.getElementById('settings-status'); if (settingsStatusEl) { setStatus(settingsStatusEl, 'Could not update exchange rates.', 'error'); } } } }; })();
-        function setLoader(loaderId, isLoading) { document.getElementById(loaderId).classList.toggle('hidden', !isLoading); }
-        function setStatus(element, message, type = '') { if (!element) return; SecurityUtils.setTextContent(element, message); element.className = 'status-box'; if (type) element.classList.add(type); }
-        function setStatusHTML(element, message, type = '', allowedTags = ['img', 'b', 'strong', 'i', 'em', 'br', 'span']) { if (!element) return; SecurityUtils.setHTMLContent(element, message, allowedTags); element.className = 'status-box'; if (type) element.classList.add(type); }
-        function resetViewInputs(viewId) { const view = document.getElementById(viewId); if (!view) return; view.querySelectorAll('input, textarea').forEach(input => { if (input.type !== 'file') input.value = ''; }); const statusBox = view.querySelector('.status-box'); if (statusBox) SecurityUtils.setTextContent(statusBox, ''); }
-        function animateBalance(element, start, end, duration, prefix = '') { let startTimestamp = null; const step = (timestamp) => { if (!startTimestamp) startTimestamp = timestamp; const progress = Math.min((timestamp - startTimestamp) / duration, 1); const easedProgress = progress * (2 - progress); const currentValue = start + (end - start) * easedProgress; element.innerHTML = `${prefix}${formatLargeNumber(currentValue)}`; if (progress < 1) { window.requestAnimationFrame(step); } }; window.requestAnimationFrame(step); }
-        function formatAuraValue(amountBigInt) { const auraAmountDecimal = parseFloat(ethers.formatUnits(amountBigInt, state.config.PRECISION)); return auraAmountDecimal.toFixed(2); }
-        function formatLargeNumber(num) { if (num < 10000) { return num.toFixed(2); } else if (num < 1000000) { return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K'; } else if (num < 1000000000) { return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M'; } else { return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B'; } }
-        function formatDisplayCurrency(amountBigInt, targetCurrency) { if (!targetCurrency || targetCurrency === 'NONE' || !state.fxRates[targetCurrency]) { return ''; } const auraAmountDecimal = parseFloat(ethers.formatUnits(amountBigInt, state.config.PRECISION)); const usdValue = auraAmountDecimal * AppConstants.AURA_USD_RATE; const targetRate = state.fxRates[targetCurrency]; const targetValue = usdValue * targetRate; const formatter = new Intl.NumberFormat(navigator.language || 'en-US', { style: 'currency', currency: targetCurrency, minimumFractionDigits: 2, maximumFractionDigits: 2 }); try { return `≈ ${formatter.format(targetValue)}`; } catch (e) { return `≈ ${targetCurrency} ${targetValue.toFixed(2)}`; } }
-        async function updateBalanceAndRender() { try { const balance = await WalletLogic.getServerAuthoritativeBalance(); const balanceEl = document.getElementById('balance-display'); const secondaryBalanceEl = document.getElementById('secondary-balance-display'); const endBalanceAura = parseFloat(formatAuraValue(balance)); const numberMatch = balanceEl.textContent.match(/[\d\.]+/); const startBalanceText = numberMatch ? numberMatch[0] : '0'; const startBalanceAura = parseFloat(startBalanceText); if (Math.abs(startBalanceAura - endBalanceAura) > 0.01) { animateBalance(balanceEl, startBalanceAura, endBalanceAura, 1000, `${auraIconHTML} `); } else { balanceEl.innerHTML = `${auraIconHTML} ${formatLargeNumber(endBalanceAura)}`; } const secondaryText = formatDisplayCurrency(balance, state.displayCurrency); if (secondaryText) { secondaryBalanceEl.style.display = 'block'; SecurityUtils.setTextContent(secondaryBalanceEl, secondaryText); } else { secondaryBalanceEl.style.display = 'none'; SecurityUtils.setTextContent(secondaryBalanceEl, ''); } } catch (error) { console.error("Could not update balance:", error); SecurityUtils.setTextContent(document.getElementById('balance-display'), 'Error'); } }
-        function generateQrCode(data, containerId) { const container = document.getElementById(containerId); container.innerHTML = ''; const qr = qrcode(0, 'L'); qr.addData(data); qr.make(); const img = document.createElement('img'); const imgTagString = qr.createImgTag(6, 10); const srcMatch = imgTagString.match(/src="([^"]+)"/); const widthMatch = imgTagString.match(/width="([^"]+)"/); const heightMatch = imgTagString.match(/height="([^"]+)"/); if (srcMatch) img.src = srcMatch[1]; if (widthMatch) img.width = widthMatch[1]; if (heightMatch) img.height = heightMatch[1]; img.alt = "QR Code"; container.appendChild(img); }
-        function abbreviateAddress(address) { if (!address) return ''; const sanitized = SecurityUtils.sanitizeAddress(address); return `${sanitized.substring(0, 8)}...${sanitized.substring(sanitized.length - 6)}`; }
-        function stopScanner() { if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); state.cameraStream = null; state.isScannerActive = false; } }
-        async function startScanner() { if (state.isScannerActive || !document.getElementById('send-view').classList.contains('active')) return; state.isScannerActive = true; const video = document.getElementById('qr-video'), loadingMessage = document.getElementById('loading-message'), canvasElement = document.getElementById('qr-canvas'), canvas = canvasElement.getContext('2d'), sendStatusEl = document.getElementById('send-status'); setStatus(sendStatusEl, ''); loadingMessage.style.display = 'flex'; SecurityUtils.setTextContent(loadingMessage, 'Requesting camera access...'); try { state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); video.srcObject = state.cameraStream; video.setAttribute("playsinline", true); await video.play(); loadingMessage.style.display = 'none'; requestAnimationFrame(tick); } catch (err) { console.error("Camera Error:", err); SecurityUtils.setTextContent(loadingMessage, 'Could not access camera.'); setStatus(sendStatusEl, 'Camera access is required.', 'error'); state.isScannerActive = false; } function tick() { if (!state.isScannerActive) return; if (video.readyState === video.HAVE_ENOUGH_DATA) { canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth; canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height); const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { stopScanner(); setStatus(sendStatusEl, 'QR Code Detected! Processing...', 'info'); if (isPqcAddress(code.data)) { document.getElementById('send-address-input').value = code.data; setStatus(sendStatusEl, 'Recipient address scanned! Please enter the amount to send.', 'success'); showView('send-manual-view'); document.getElementById('send-amount-input').focus(); } else { setStatus(sendStatusEl, 'Invalid QR Code. Not a valid PQC address.', 'error'); setTimeout(() => startScanner(), 2000); } return; } } requestAnimationFrame(tick); } }
-        async function showView(id) { if (document.getElementById('send-view').classList.contains('active') && id !== 'send-view') stopScanner(); if (state.activePollingTimer) { clearInterval(state.activePollingTimer); state.activePollingTimer = null; } document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); const viewElement = document.getElementById(id); if(viewElement) viewElement.classList.add('active'); if (id === 'wallet-view') { if(state.wallet) { SecurityUtils.setTextContent(document.getElementById('address-display'), abbreviateAddress(state.wallet.address)); startRealtimeListener(); const now = Date.now(); const timeSinceLastUpdate = now - state.lastWalletViewUpdate; const refreshThreshold = 30000; if (timeSinceLastUpdate > refreshThreshold) { console.log("Stale data, performing full refresh of wallet view."); await updateBalanceAndRender(); state.historyPage = 1; await renderTransactionHistory(state.historyPage); state.lastWalletViewUpdate = now; } else { console.log("Data is recent, skipping full refresh for smoother navigation."); } } } if (id === 'send-view') { startScanner(); } if (id === 'receive-view') { SecurityUtils.setTextContent(document.getElementById('full-receive-address'), state.wallet.address); generateQrCode(state.wallet.address, 'static-qr-code'); } }
-        const isPqcAddress = (address) => typeof address === 'string' && /^pqc1[0-9a-f]{40}$/.test(address);
-        async function renderTransactionHistory(page = 1) { if (state.isFetchingHistory || !state.wallet) return; const listUl = document.getElementById('transaction-list-ul'); const seeMoreBtn = document.getElementById('see-more-tx-button'); const limitPerPage = 20; const fetchLimit = limitPerPage / 2; state.isFetchingHistory = true; if (page === 1) { listUl.innerHTML = '<div class="loader" style="margin-top:20px;"></div>'; state.hasMoreHistory = true; } else { SecurityUtils.setTextContent(seeMoreBtn, 'Loading...'); seeMoreBtn.disabled = true; } try { const [incoming, outgoing] = await Promise.all([ SupabaseLedger.findIncomingTxs(state.wallet.address, page, fetchLimit), SupabaseLedger.findOutgoingTxs(state.wallet.address, page, fetchLimit) ]); if (page === 1) listUl.innerHTML = ''; const allTxs = [...incoming, ...outgoing]; const sortedTxs = allTxs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); if (sortedTxs.length === 0 && page === 1) { const item = document.createElement('li'); item.className = 'no-transactions'; SecurityUtils.setTextContent(item, 'No transactions found.'); listUl.appendChild(item); seeMoreBtn.style.display = 'none'; state.hasMoreHistory = false; return; } if (sortedTxs.length < limitPerPage) { state.hasMoreHistory = false; seeMoreBtn.style.display = 'none'; } else { state.hasMoreHistory = true; seeMoreBtn.style.display = 'block'; } sortedTxs.forEach((tx, index) => { const isOutgoing = tx.senderAddress.toLowerCase() === state.wallet.address.toLowerCase(); const typeClass = isOutgoing ? 'sent' : 'received'; let typeText; let txType = isOutgoing ? 'send' : 'receive'; if (tx.type === 'fee') txType = 'fee'; if (tx.senderAddress === 'BANKNOTE_ISSUER') txType = 'charge'; switch (txType) { case 'send': typeText = 'Sent'; break; case 'fee': typeText = 'Transaction Fee'; break; case 'charge': typeText = 'Charge'; break; case 'receive': default: typeText = tx.comment || 'Received'; break; } const amountFormatted = formatAuraValue(tx.amount || '0'); const date = new Date(tx.timestamp).toLocaleString('en-US'); const item = document.createElement('li'); item.className = 'transaction-item animate-in'; item.style.cursor = 'pointer'; item.style.animationDelay = `${index * 0.07}s`; const iconDiv = document.createElement('div'); iconDiv.className = `transaction-icon ${typeClass}`; iconDiv.innerHTML = isOutgoing ? SvgIcons.txSend : SvgIcons.txReceive; const detailsDiv = document.createElement('div'); detailsDiv.className = 'transaction-details'; const typeSpan = document.createElement('span'); typeSpan.className = 'transaction-type'; SecurityUtils.setTextContent(typeSpan, typeText); const dateSpan = document.createElement('span'); dateSpan.className = 'transaction-date'; SecurityUtils.setTextContent(dateSpan, date); detailsDiv.appendChild(typeSpan); detailsDiv.appendChild(dateSpan); const amountSpan = document.createElement('span'); amountSpan.className = `transaction-amount ${typeClass}`; SecurityUtils.setHTMLContent(amountSpan, `${isOutgoing ? '−' : '+'} ${auraIconHTML} ${amountFormatted}`, ['img']); item.appendChild(iconDiv); item.appendChild(detailsDiv); item.appendChild(amountSpan); item.addEventListener('click', () => showTransactionDetails(tx)); listUl.appendChild(item); }); } catch (error) { console.error("Failed to render transaction history:", error); const item = document.createElement('li'); item.className = 'no-transactions error'; SecurityUtils.setTextContent(item, 'Could not load history.'); if (page === 1) listUl.innerHTML = ''; listUl.appendChild(item); seeMoreBtn.style.display = 'none'; } finally { state.isFetchingHistory = false; SecurityUtils.setTextContent(seeMoreBtn, 'See More'); seeMoreBtn.disabled = false; } }
-        async function showTransactionDetails(tx) { const modal = document.getElementById('transaction-detail-modal'); let displayData = { ...tx }; try { const linked = tx.linkedTxHash || tx.id || tx.hash; if (linked) { const serverConfirmation = await SupabaseLedger.findConfirmation(linked).catch(() => null); if (serverConfirmation) { displayData = { ...displayData, id: serverConfirmation.id || displayData.id, status: 'completed', from: serverConfirmation.senderAddress || displayData.from, to: serverConfirmation.receiverAddress || displayData.to, amount: serverConfirmation.amount || displayData.amount, fee: serverConfirmation.fee || displayData.fee, comment: serverConfirmation.comment || displayData.comment, linkedTxHash: serverConfirmation.linkedTxHash || linked, timestamp: serverConfirmation.timestamp || displayData.timestamp }; } } } catch (e) { console.warn('Could not fetch authoritative details for transaction:', e); } const fromAddress = displayData.from || displayData.senderAddress || 'N/A'; const toAddress = displayData.to || displayData.receiverAddress || 'N/A'; const amountText = `${auraIconHTML} ${formatAuraValue(displayData.amount || '0')}`; const feeText = `${auraIconHTML} ${formatAuraValue(displayData.fee || '0')}`; SecurityUtils.setTextContent(document.getElementById('detail-id'), displayData.id || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-status'), displayData.status || 'completed'); SecurityUtils.setTextContent(document.getElementById('detail-type'), displayData.type || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-datetime'), new Date(displayData.timestamp).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'medium' })); SecurityUtils.setHTMLContent(document.getElementById('detail-amount'), amountText, ['img']); SecurityUtils.setHTMLContent(document.getElementById('detail-fee'), feeText, ['img']); SecurityUtils.setTextContent(document.getElementById('detail-from'), fromAddress); SecurityUtils.setTextContent(document.getElementById('detail-to'), toAddress); SecurityUtils.setTextContent(document.getElementById('detail-comment'), displayData.comment || 'N/A'); SecurityUtils.setTextContent(document.getElementById('detail-linked-hash'), SecurityUtils.sanitizeTransactionId(displayData.linkedTxHash || 'N/A')); SecurityUtils.setTextContent(document.getElementById('detail-local-hash'), SecurityUtils.sanitizeTransactionId(displayData.hash || 'N/A')); modal.style.display = 'flex'; document.getElementById('close-modal-button').onclick = () => { modal.style.display = 'none'; }; }
-        function saveCurrencySettings() { const settings = { display: state.displayCurrency }; localStorage.setItem(AppConstants.CURRENCY_STORAGE_KEY, JSON.stringify(settings)); }
-        function loadCurrencySettings() { const savedSettings = localStorage.getItem(AppConstants.CURRENCY_STORAGE_KEY); if (savedSettings) { try { const settings = JSON.parse(savedSettings); state.displayCurrency = settings.display || 'USD'; } catch (e) { console.error("Could not parse currency settings, using defaults."); } } }
-
-        async function initializeApp() {
-            try {
-                setStatus(document.querySelector('.status-box'), 'Loading quantum-resistant modules...', 'info');
-                await loadPqcModules();
-                setStatus(document.querySelector('.status-box'), 'Loading configuration...', 'info');
-                
-                const publicConfig = await SupabaseLedger.getPublicConfig();
-                const appConfig = await SupabaseLedger.getAppConfig();
-                state.config = { ...AppConstants, ...appConfig };
-                supabaseClient = supabase.createClient(publicConfig.supabaseUrl, publicConfig.supabaseAnonKey);
-                
-                loadTheme();
-                loadCurrencySettings();
-                await FXRateProvider.fetchRates();
-                document.getElementById('manual-address-icon').innerHTML = SvgIcons.address;
-                setupEventListeners();
-                const storedWallet = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY);
-                if (storedWallet) { showView('unlock-view'); } else { showView('onboarding-view'); }
-            } catch (e) {
-                console.error("Initialization Error:", e);
-                document.body.innerHTML = `<div class="card" style="margin: 20px; color: var(--danger-color, #e11d48);"><h2>Critical Error</h2><p>Could not contact the server to start the application. Please check your network connection and refresh the page.</p><p style="font-size:12px; opacity: 0.7;">Details: ${e.message}</p></div>`;
-            }
-        }
-        
-        function setupEventListeners() {
-            document.getElementById('unlock-wallet-button').addEventListener('click', async () => { const button = document.getElementById('unlock-wallet-button'); const statusEl = document.getElementById('unlock-status'); const pass = document.getElementById('unlock-password-input').value; setStatus(statusEl, ''); if (!pass) { setStatus(statusEl, 'Password is required.', 'error'); return; } button.disabled = true; setLoader('unlock-loader', true); try { const storedUserStore = localStorage.getItem(AppConstants.WALLET_STORAGE_KEY); if (!storedUserStore) throw new Error("No wallet found on this device."); const userStore = JSON.parse(storedUserStore); const walletAddress = userStore.address; if (!walletAddress) throw new Error("Could not identify the wallet address."); const status = await SupabaseLedger.getWalletStatus(walletAddress); if (status.isLocked) { const now = new Date(); const expires = new Date(status.expiresAt); const remainingMinutes = Math.ceil((expires - now) / (1000 * 60)); setStatus(statusEl, `This wallet is locked. Please try again in ${remainingMinutes} minute(s).`, 'error'); throw new Error("Lockout active"); } const success = await WalletLogic.unlockWallet(pass); if (success) { await SupabaseLedger.clearFailedAttempts(walletAddress); await showView('wallet-view'); resetViewInputs('unlock-view'); } else { const { totalAttempts } = await SupabaseLedger.recordFailedUnlock('invalid_password', walletAddress); if (totalAttempts >= 7) { setStatus(statusEl, 'Incorrect password. Wallet is now locked for 1 hour.', 'error'); } else if (totalAttempts >= 5) { setStatus(statusEl, 'Incorrect password. Wallet is now locked for 15 minutes.', 'error'); } else if (totalAttempts >= 3) { setStatus(statusEl, 'Incorrect password. Wallet is now locked for 5 minutes.', 'error'); } else { const remaining = 3 - totalAttempts; setStatus(statusEl, `Incorrect password. ${remaining} attempt(s) remaining before a 5-minute lock.`, 'error'); } } } catch (err) { if (err.message && err.message !== "Lockout active") { setStatus(statusEl, `An error occurred: ${err.message}`, 'error'); } } finally { button.disabled = false; setLoader('unlock-loader', false); } });
-            document.getElementById('forget-wallet-button').addEventListener('click', () => { if (confirm('Are you sure you want to forget this wallet? You will need your 12-word recovery phrase to access it again.')) { WalletLogic.logout(); } });
-            document.getElementById('go-to-create-wallet').addEventListener('click', () => showView('create-wallet-view'));
-            document.getElementById('go-to-restore-wallet').addEventListener('click', () => showView('restore-wallet-view'));
-            document.getElementById('back-from-create').addEventListener('click', () => { resetViewInputs('create-wallet-view'); showView('onboarding-view'); });
-            document.getElementById('back-from-restore').addEventListener('click', () => { resetViewInputs('restore-wallet-view'); showView('onboarding-view'); });
-            document.getElementById('back-from-charge').addEventListener('click', () => showView('wallet-view'));
-            document.getElementById('back-from-banknote-confirm').addEventListener('click', () => showView('charge-view'));
-            document.getElementById('back-from-receive').addEventListener('click', () => showView('wallet-view'));
-            document.getElementById('back-from-send-confirm').addEventListener('click', async () => { if (state.activeTransactionIntent && state.activeTransactionIntent.transactionIntentId) { const statusEl = document.getElementById('send-confirm-status'); setStatus(statusEl, 'Cancelling...', 'info'); try { await SupabaseLedger.cancelTransactionIntent(state.activeTransactionIntent.transactionIntentId); state.activeTransactionIntent = null; setStatus(statusEl, ''); showView('send-options-view'); } catch (err) { console.error("Failed to cancel intent on server:", err); setStatus(statusEl, 'Failed to cancel. Please try again.', 'error'); } } else { showView('send-options-view'); } });
-            document.getElementById('back-from-qr-display').addEventListener('click', () => { showView('wallet-view'); });
-            document.getElementById('show-send-view-button').addEventListener('click', () => { resetViewInputs('send-manual-view'); resetViewInputs('send-view'); showView('send-options-view'); });
-            document.getElementById('go-to-send-manual').addEventListener('click', () => showView('send-manual-view'));
-            document.getElementById('go-to-send-scan').addEventListener('click', () => showView('send-view'));
-            document.getElementById('back-from-send-options').addEventListener('click', () => showView('wallet-view'));
-            document.getElementById('back-from-send').addEventListener('click', () => showView('send-options-view'));
-            document.getElementById('back-from-send-manual').addEventListener('click', () => showView('send-options-view'));
-            document.getElementById('settings-button').addEventListener('click', () => { document.getElementById('display-currency-select').value = state.displayCurrency; setStatus(document.getElementById('settings-status'), ''); showView('settings-view'); });
-            document.getElementById('back-from-settings').addEventListener('click', () => showView('wallet-view'));
-            document.getElementById('display-currency-select').addEventListener('change', (e) => { const newDisplay = e.target.value; const statusEl = document.getElementById('settings-status'); state.displayCurrency = newDisplay; saveCurrencySettings(); updateBalanceAndRender(); setStatus(statusEl, 'Settings saved.', 'success'); });
-            let generatedMnemonic = '';
-            document.getElementById('create-wallet-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('create-status'); const pass = document.getElementById('create-password-input').value.trim(); const confirmPass = document.getElementById('confirm-password-input').value.trim(); setStatus(statusEl, ''); if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } if (pass !== confirmPass) { setStatus(statusEl, 'Passwords do not match.', 'error'); return; } button.disabled = true; setLoader('create-loader', true); const { mnemonic, userStore, wallet } = await WalletLogic.createWallet(pass); generatedMnemonic = mnemonic; state.tempUserStore = userStore; state.tempWallet = wallet; SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), mnemonic); showView('seed-phrase-view'); button.disabled = false; setLoader('create-loader', false); });
-            document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => { const words = generatedMnemonic.split(' '); const idx1 = Math.floor(Math.random() * 6); const idx2 = Math.floor(Math.random() * 6) + 6; const verifyBtn = document.getElementById('verify-seed-button'); verifyBtn.dataset.word1 = words[idx1]; verifyBtn.dataset.word2 = words[idx2]; document.getElementById('word-request-label-1').textContent = `Please enter word #${idx1 + 1}`; document.getElementById('word-request-label-2').textContent = `Please enter word #${idx2 + 1}`; resetViewInputs('seed-confirm-view'); showView('seed-confirm-view'); });
-            document.getElementById('verify-seed-button').addEventListener('click', async () => { const verifyBtn = document.getElementById('verify-seed-button'); const statusEl = document.getElementById('seed-confirm-status'); const expectedWord1 = verifyBtn.dataset.word1; const expectedWord2 = verifyBtn.dataset.word2; const input1 = document.getElementById('word-confirm-input-1').value.trim().toLowerCase(); const input2 = document.getElementById('word-confirm-input-2').value.trim().toLowerCase(); if (input1 === expectedWord1 && input2 === expectedWord2) { state.userStore = state.tempUserStore; state.wallet = state.tempWallet; WalletLogic.saveUserStore(); state.tempUserStore = null; state.tempWallet = null; generatedMnemonic = ''; resetViewInputs('seed-confirm-view'); resetViewInputs('create-wallet-view'); SecurityUtils.setTextContent(document.getElementById('seed-phrase-display'), ''); await showView('wallet-view'); } else { setStatus(statusEl, 'Verification failed. Please check the words you wrote down.', 'error'); } });
-            document.getElementById('restore-wallet-button').addEventListener('click', async () => { const button = document.getElementById('restore-wallet-button'), statusEl = document.getElementById('restore-status'); const mnemonic = document.getElementById('restore-seed-input').value.trim(), pass = document.getElementById('restore-password-input').value.trim(); setStatus(statusEl, ''); if (mnemonic.split(' ').length !== 12) { setStatus(statusEl, 'Recovery phrase must be 12 words.', 'error'); return; } if (pass.length < 8) { setStatus(statusEl, 'Password must be at least 8 characters.', 'error'); return; } button.disabled = true; setLoader('restore-loader', true); const success = await WalletLogic.restoreWallet(mnemonic, pass); if (success) { await showView('wallet-view'); } else { setStatus(statusEl, 'Restore failed. Invalid phrase.', 'error'); } button.disabled = false; setLoader('restore-loader', false); resetViewInputs('restore-wallet-view'); });
-            document.getElementById('logout-button').addEventListener('click', () => { WalletLogic.logout(); });
-            document.getElementById('copy-address-button').addEventListener('click', () => { const button = document.getElementById('copy-address-button'); navigator.clipboard.writeText(state.wallet.address).then(() => { SecurityUtils.setTextContent(button.lastChild, 'Copied!'); setTimeout(() => { SecurityUtils.setTextContent(button.lastChild, 'Copy'); }, 1500); }); });
-            document.getElementById('show-receive-view-button').addEventListener('click', () => { resetViewInputs('receive-view'); showView('receive-view'); });
-            document.getElementById('send-comment-input').addEventListener('input', (event) => { const count = event.target.value.length; SecurityUtils.setTextContent(document.getElementById('comment-char-count'), `${count} / 50`); });
-            document.getElementById('send-manual-button').addEventListener('click', async (event) => {
-                const button = event.target;
-                const statusEl = document.getElementById('send-manual-status');
-                const recipientAddress = document.getElementById('send-address-input').value.trim();
-                const amountDecimalString = document.getElementById('send-amount-input').value;
-                const comment = document.getElementById('send-comment-input').value.trim();
-                setStatus(statusEl, '');
-                if (!isPqcAddress(recipientAddress)) { setStatus(statusEl, 'Invalid recipient PQC address format.', 'error'); return; }
-                if (recipientAddress.toLowerCase() === state.wallet.address.toLowerCase()) { setStatus(statusEl, 'Cannot send funds to yourself.', 'error'); return; }
-                if (comment.length > 50) { setStatus(statusEl, 'Comment cannot exceed 50 characters.', 'error'); return; }
-                let amountInt;
+        // Enhanced Restore Functions
+        const RestoreUtils = {
+            // Restore wallet from seed phrase
+            async restoreFromSeed(mnemonic, passphrase, derivationPath) {
                 try {
-                    const amount = parseFloat(amountDecimalString);
-                    if (isNaN(amount) || amount <= 0) throw new Error();
-                    amountInt = ethers.parseUnits(amountDecimalString, state.config.PRECISION);
+                    return await SeedPhraseUtils.generateWalletFromSeed(mnemonic, passphrase, derivationPath);
                 } catch (e) {
-                    setStatus(statusEl, 'Invalid amount.', 'error');
-                    return;
+                    throw new Error('Failed to restore wallet from seed: ' + e.message);
                 }
-                button.disabled = true;
-                setStatus(statusEl, 'Preparing transaction with server...', 'info');
+            },
+            
+            // Restore wallet from private key
+            async restoreFromPrivateKey(privateKeyHex) {
                 try {
-                    // **FIX APPLIED HERE**
-                    // 1. Create a unique string from transaction details + a random nonce
-                    const uniqueTxString = `${state.wallet.address}-${recipientAddress}-${amountInt.toString()}-${crypto.randomUUID()}`;
+                    const privateKey = CryptoUtils.hexToBytes(privateKeyHex);
                     
-                    // 2. Hash the unique string to create a unique transaction ID
-                    const uniqueSenderTxHash = ethers.id(uniqueTxString);
-
-                    const preAuthTimestamp = Date.now();
-                    const preAuthNonce = crypto.randomUUID();
-                    const preAuthMessage = `AURA_PREPARE_TX:${preAuthTimestamp}:${preAuthNonce}`;
-                    const msgBytes = new TextEncoder().encode(preAuthMessage);
-                    const signResult = await PQC_MODULES.falcon.sign(msgBytes, state.wallet.privateKey);
-                    const signatureBytes = signResult.signature instanceof Uint8Array ? signResult.signature : new Uint8Array(signResult.signature);
-                    const preAuthSignature = CryptoUtils.toHex(signatureBytes);
-
-                    // 3. Use the new unique hash when preparing the transaction
-                    const { transactionIntentId, messageToSign, fee, totalDebit, id } = await SupabaseLedger.prepareTransaction(
-                        state.wallet.address, 
-                        state.wallet.publicKey, 
-                        recipientAddress, 
-                        amountInt.toString(), 
-                        comment, 
-                        uniqueSenderTxHash, // <-- Pass the unique hash here
-                        preAuthTimestamp, 
-                        preAuthSignature, 
-                        preAuthNonce
-                    );
-
-                    state.activeTransactionIntent = { transactionIntentId, messageToSign, details: { id, receiverAddress: recipientAddress, amount: amountInt.toString(), comment, fee, totalDebit, txHash: uniqueSenderTxHash }, preAuthNonce };
-                    const confirmAmountEl = document.getElementById('confirm-amount-display');
-                    const amountAura = formatAuraValue(amountInt);
-                    const feeAura = formatAuraValue(fee);
-                    const totalAura = formatAuraValue(totalDebit);
-                    const displayEquivalent = formatDisplayCurrency(totalDebit, state.displayCurrency);
-                    const confirmAmountHTML = `Amount: ${auraIconHTML} ${amountAura} Aura<br><span style="font-size: 14px; opacity: 0.7;">Fee: + ${auraIconHTML} ${feeAura} Aura</span><br><strong style="font-size: 18px;">Total: ${auraIconHTML} ${totalAura} Aura</strong><br><span style="font-size: 1rem; opacity: 0.8;">${displayEquivalent}</span>`;
-                    SecurityUtils.setHTMLContent(confirmAmountEl, confirmAmountHTML, ['br', 'span', 'strong', 'img']);
-                    SecurityUtils.setTextContent(document.getElementById('confirm-recipient-address-display'), recipientAddress);
-                    SecurityUtils.setTextContent(document.getElementById('confirm-comment-display'), comment ? `Comment: "${comment}"` : '');
-                    await showView('send-confirm-view');
-                } catch (err) {
-                    setStatus(statusEl, err.message, 'error');
-                } finally {
-                    button.disabled = false;
+                    // Create refillable RNG with private key as seed
+                    const drbg = new HmacDrbg(privateKey);
+                    await drbg.ready();
+                    
+                    const rng = new RefillableRng(drbg);
+                    await rng.init();
+                    
+                    // Generate Falcon key pair from private key
+                    const keyPair = PQC_MODULES.falcon.keyPair(rng);
+                    
+                    // Derive address from public key
+                    const address = await SeedPhraseUtils.deriveAddressFromPublicKey(keyPair.publicKey);
+                    
+                    return {
+                        privateKey: keyPair.privateKey,
+                        publicKey: keyPair.publicKey,
+                        address
+                    };
+                } catch (e) {
+                    throw new Error('Failed to restore wallet from private key: ' + e.message);
                 }
+            },
+            
+            // Validate private key format
+            validatePrivateKey(privateKeyHex) {
+                // Check if it's a valid hex string
+                if (!/^[0-9a-fA-F]+$/.test(privateKeyHex)) {
+                    return false;
+                }
+                
+                // Check if it has the right length for Falcon-1024
+                if (privateKeyHex.length !== 2304) { // 1152 bytes * 2 hex chars
+                    return false;
+                }
+                
+                return true;
+            }
+        };
+
+        // UI Functions
+        const UI = {
+            showView(viewId) {
+                document.querySelectorAll('.view').forEach(view => {
+                    view.classList.remove('active');
+                });
+                document.getElementById(viewId).classList.add('active');
+            },
+            
+            showStatus(elementId, message, type = 'info') {
+                const element = document.getElementById(elementId);
+                if (!element) return;
+                
+                element.textContent = message;
+                element.className = `status-box ${type}`;
+            },
+            
+            clearStatus(elementId) {
+                const element = document.getElementById(elementId);
+                if (!element) return;
+                
+                element.textContent = '';
+                element.className = 'status-box';
+            },
+            
+            showLoader(loaderId) {
+                const loader = document.getElementById(loaderId);
+                if (loader) loader.classList.remove('hidden');
+            },
+            
+            hideLoader(loaderId) {
+                const loader = document.getElementById(loaderId);
+                if (loader) loader.classList.add('hidden');
+            },
+            
+            // Enhanced seed phrase display
+            displaySeedPhrase(words, hidden = true) {
+                const container = document.getElementById('seed-phrase-display');
+                if (!container) return;
+                
+                // Create grid layout for words
+                container.innerHTML = '';
+                container.className = hidden ? 'seed-phrase-box hidden' : 'seed-phrase-box revealed';
+                
+                words.forEach((word, index) => {
+                    const wordElement = document.createElement('div');
+                    wordElement.className = 'seed-word';
+                    wordElement.innerHTML = `
+                        <div class="seed-word-number">${index + 1}</div>
+                        ${word}
+                    `;
+                    container.appendChild(wordElement);
+                });
+                
+                state.seedRevealed = !hidden;
+            },
+            
+            // Setup seed verification
+            setupSeedVerification(words) {
+                const container = document.getElementById('seed-words-to-verify');
+                if (!container) return;
+                
+                container.innerHTML = '';
+                
+                // Generate random indices to verify
+                const indices = SeedPhraseUtils.generateVerificationIndices(words.length);
+                state.seedVerificationIndices = indices;
+                
+                // Create input fields for each word to verify
+                indices.forEach((index, i) => {
+                    const row = document.createElement('div');
+                    row.className = 'seed-word-confirm-row';
+                    row.innerHTML = `
+                        <div class="seed-word-confirm-label">Word #${index + 1}:</div>
+                        <input type="text" id="word-confirm-input-${i}" class="seed-word-confirm-input" placeholder="Enter word #${index + 1}" autocomplete="off">
+                    `;
+                    container.appendChild(row);
+                });
+            },
+            
+            // Verify seed phrase
+            verifySeedPhrase() {
+                const { seedVerificationIndices, seedWords } = state;
+                
+                for (let i = 0; i < seedVerificationIndices.length; i++) {
+                    const input = document.getElementById(`word-confirm-input-${i}`);
+                    const expectedWord = seedWords[seedVerificationIndices[i]];
+                    
+                    if (!input || input.value.trim().toLowerCase() !== expectedWord.toLowerCase()) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            },
+            
+            // Toggle seed phrase visibility
+            toggleSeedPhraseVisibility() {
+                const { seedWords, seedRevealed } = state;
+                this.displaySeedPhrase(seedWords, seedRevealed);
+                
+                // Update button icon
+                const toggle = document.getElementById('seed-phrase-toggle');
+                if (toggle) {
+                    toggle.innerHTML = seedRevealed ? 
+                        `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                        </svg>` :
+                        `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>`;
+                }
+            },
+            
+            // Update seed advanced info
+            updateSeedAdvancedInfo() {
+                const { seedEntropy, seedChecksum, seedDerivationPath } = state;
+                
+                const entropyElement = document.getElementById('seed-entropy-value');
+                if (entropyElement) entropyElement.textContent = seedEntropy || '';
+                
+                const checksumElement = document.getElementById('seed-checksum-value');
+                if (checksumElement) checksumElement.textContent = seedChecksum || '';
+                
+                const derivationPathElement = document.getElementById('seed-derivation-path-value');
+                if (derivationPathElement) derivationPathElement.textContent = seedDerivationPath || '';
+            },
+            
+            // Setup restore options
+            setupRestoreOptions() {
+                const restoreOptions = document.querySelectorAll('.restore-option');
+                restoreOptions.forEach(option => {
+                    option.addEventListener('click', () => {
+                        // Remove selected class from all options
+                        restoreOptions.forEach(opt => opt.classList.remove('selected'));
+                        
+                        // Add selected class to clicked option
+                        option.classList.add('selected');
+                        
+                        // Update restore method
+                        state.restoreMethod = option.dataset.restore;
+                        
+                        // Show/hide appropriate sections
+                        const seedSection = document.getElementById('restore-seed-section');
+                        const privateSection = document.getElementById('restore-private-section');
+                        
+                        if (state.restoreMethod === 'seed') {
+                            seedSection.style.display = 'block';
+                            privateSection.style.display = 'none';
+                        } else {
+                            seedSection.style.display = 'none';
+                            privateSection.style.display = 'block';
+                        }
+                    });
+                });
+                
+                // Set default option
+                document.querySelector('.restore-option[data-restore="seed"]').classList.add('selected');
+            },
+            
+            // Setup backup options
+            setupBackupOptions() {
+                const backupOptions = document.querySelectorAll('.seed-backup-option');
+                backupOptions.forEach(option => {
+                    option.addEventListener('click', () => {
+                        // Remove selected class from all options
+                        backupOptions.forEach(opt => opt.classList.remove('selected'));
+                        
+                        // Add selected class to clicked option
+                        option.classList.add('selected');
+                        
+                        // Update backup method
+                        state.seedBackupMethod = option.dataset.backup;
+                        
+                        // Enable confirm button if a backup method is selected
+                        const confirmButton = document.getElementById('seed-phrase-confirm-button');
+                        if (confirmButton) {
+                            confirmButton.disabled = false;
+                        }
+                    });
+                });
+            }
+        };
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load PQC modules
+            await loadPqcModules();
+            
+            // Initialize Supabase client
+            supabaseClient = window.supabase.createClient(
+                'https://yuozqhimrkyjopgidqje.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1b3pxaGltcmt5am9wZ2lkcWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU5OTM0MTEsImV4cCI6MjAzMTU2OTQxMX0.vHIXd4l8A2p2R2a3fS9tYhTmW4Q8r3wL8s9J3vF9cKk'
+            );
+            
+            // Load theme
+            loadTheme();
+            
+            // Setup UI event listeners
+            setupEventListeners();
+            
+            // Check if wallet exists
+            checkWalletExists();
+        });
+
+        function setupEventListeners() {
+            // Onboarding
+            document.getElementById('go-to-create-wallet').addEventListener('click', () => {
+                UI.showView('create-wallet-view');
             });
-            document.getElementById('refresh-tx-button').addEventListener('click', async () => { const button = document.getElementById('refresh-tx-button'); const icon = button.querySelector('.icon'); const loader = button.querySelector('.loader'); const syncStatusEl = document.getElementById('sync-status'); button.disabled = true; icon.style.display = 'none'; loader.style.display = 'block'; setStatus(syncStatusEl, 'Updating...', 'info'); try { await updateBalanceAndRender(); state.historyPage = 1; await renderTransactionHistory(state.historyPage); state.lastWalletViewUpdate = Date.now(); setStatus(syncStatusEl, 'Updated successfully.', 'success'); } catch (error) { console.error("Manual refresh failed:", error); setStatus(syncStatusEl, 'Update failed.', 'error'); } finally { const originalMessage = syncStatusEl.textContent; setTimeout(() => { button.disabled = false; icon.style.display = 'block'; loader.style.display = 'none'; if (syncStatusEl.textContent === originalMessage) { setStatus(syncStatusEl, ''); } }, 2500); } });
-            document.getElementById('see-more-tx-button').addEventListener('click', async () => { if (state.hasMoreHistory && !state.isFetchingHistory) { state.historyPage++; await renderTransactionHistory(state.historyPage); } });
-            document.getElementById('search-tx-id-button').addEventListener('click', async () => { const searchButton = document.getElementById('search-tx-id-button'); const searchInput = document.getElementById('search-tx-id-input'); const searchId = searchInput.value.trim(); if (!searchId) { renderTransactionHistory(); return; } searchButton.disabled = true; SecurityUtils.setTextContent(searchButton, '...'); try { const serverTransaction = await SupabaseLedger.findTransactionById(searchId); if (serverTransaction) { showTransactionDetails(serverTransaction); } else { alert('Transaction not found on the server.'); } } catch (error) { console.error("Server search failed:", error); alert(`Error searching server: ${error.message}`); } finally { searchButton.disabled = false; SecurityUtils.setTextContent(searchButton, 'Search'); } });
-            document.getElementById('confirm-payment-button').addEventListener('click', async (event) => { const button = event.target; const confirmStatusEl = document.getElementById('send-confirm-status'); button.disabled = true; setStatus(confirmStatusEl, 'Awaiting signature and queueing transaction...', 'info'); try { const result = await WalletLogic.executePreparedTransaction(); if (result.success && result.queuedJobId) { state.activeTransactionIntent = null; await showView('wallet-view'); const syncStatusEl = document.getElementById('sync-status'); setStatus(syncStatusEl, 'Transaction sent. Awaiting network confirmation...', 'info'); const channel = supabaseClient.channel(`queue-updates-for-job-${result.queuedJobId}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'transaction_queue', filter: `id=eq.${result.queuedJobId}` }, (payload) => { const updatedJob = payload.new; if (updatedJob.status === 'completed') { setStatusHTML(syncStatusEl, `⚡ Payment sent successfully!`, 'success'); updateBalanceAndRender(); state.historyPage = 1; renderTransactionHistory(1); state.lastWalletViewUpdate = Date.now(); setTimeout(() => { if (syncStatusEl.innerHTML.includes('Payment sent successfully!')) { setStatus(syncStatusEl, ''); } }, 4000); channel.unsubscribe(); } else if (updatedJob.status === 'failed') { setStatus(syncStatusEl, `Payment failed: ${updatedJob.error_message}`, 'error'); channel.unsubscribe(); } }).subscribe(); } else { throw new Error("Failed to queue the transaction with the server."); } } catch (err) { setStatus(confirmStatusEl, `Payment Failed: ${err.message}`, 'error'); } finally { button.disabled = false; } });
-            document.getElementById('show-charge-view-button').addEventListener('click', () => { resetViewInputs('charge-view'); showView('charge-view'); });
-            document.getElementById('banknote-image-input').addEventListener('change', async (event) => { const file = event.target.files[0]; const statusEl = document.getElementById('validation-status'); if (!file) return; const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']; if (!allowedTypes.includes(file.type)) { setStatus(statusEl, 'Invalid file type. Please upload a JPEG, PNG, or WebP file.', 'error'); event.target.value = ''; return; } setStatus(statusEl, 'Preparing image...', 'info'); try { const resizedDataUrl = await CoreLogic.Utils.resizeImage(file, CoreLogic.Constants.MAX_IMAGE_DIMENSION); const processedDataUrl = await CoreLogic.Utils.preprocessImage(resizedDataUrl); const imageData = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0); resolve(ctx.getImageData(0, 0, img.width, img.height)); }; img.onerror = reject; img.src = processedDataUrl; }); const banknotePayload = await CoreLogic.Banknote.decodeQrGrid(imageData, statusEl); setStatus(statusEl, 'Banknote scanned. Validating with server...', 'info'); const validationResult = await SupabaseLedger.validateBanknote(banknotePayload); if (validationResult.success) { state.tempBanknotePayload = banknotePayload; const amountAura = formatAuraValue(validationResult.amount); SecurityUtils.setHTMLContent(document.getElementById('confirm-banknote-amount-display'), `${auraIconHTML} ${amountAura}`, ['img']); SecurityUtils.setTextContent(document.getElementById('confirm-banknote-serial-display'), validationResult.serial); resetViewInputs('charge-view'); showView('banknote-confirm-view'); } else { throw new Error("Validation failed for an unknown reason."); } } catch (err) { setStatus(statusEl, `Validation Failed: ${SecurityUtils.sanitizeText(err.message)}`, 'error'); } finally { event.target.value = ''; } });
-            document.getElementById('confirm-banknote-button').addEventListener('click', async (event) => { const button = event.target; const statusEl = document.getElementById('banknote-confirm-status'); if (!state.tempBanknotePayload) { setStatus(statusEl, 'No banknote data to confirm.', 'error'); return; } button.disabled = true; setStatus(statusEl, 'Redeeming banknote...', 'info'); try { const result = await SupabaseLedger.redeemBanknote(state.tempBanknotePayload, state.wallet.address); if (result.success) { const amountAura = formatAuraValue(result.amount); setStatusHTML(statusEl, `Success! ${auraIconHTML} ${amountAura} added.`, 'success'); CacheManager.invalidate(state.wallet.address); await updateBalanceAndRender(); state.historyPage = 1; await renderTransactionHistory(1); state.lastWalletViewUpdate = Date.now(); setTimeout(() => { state.tempBanknotePayload = null; showView('wallet-view'); }, 2000); } } catch (err) { setStatus(statusEl, `Redemption Failed: ${err.message}`, 'error'); button.disabled = false; } });
-            document.querySelectorAll('.theme-button').forEach(button => { button.addEventListener('click', (e) => { applyTheme(e.target.dataset.theme); }); });
+            
+            document.getElementById('go-to-restore-wallet').addEventListener('click', () => {
+                UI.showView('restore-wallet-view');
+                UI.setupRestoreOptions();
+            });
+            
+            // Create wallet
+            document.getElementById('create-wallet-button').addEventListener('click', createWallet);
+            document.getElementById('back-from-create').addEventListener('click', () => {
+                UI.showView('onboarding-view');
+            });
+            
+            // Seed phrase
+            document.getElementById('seed-phrase-toggle').addEventListener('click', () => {
+                UI.toggleSeedPhraseVisibility();
+            });
+            
+            document.getElementById('seed-phrase-confirm-button').addEventListener('click', () => {
+                // Setup verification
+                UI.setupSeedVerification(state.seedWords);
+                UI.showView('seed-confirm-view');
+            });
+            
+            document.getElementById('seed-advanced-toggle').addEventListener('click', () => {
+                const content = document.getElementById('seed-advanced-content');
+                content.classList.toggle('show');
+            });
+            
+            // Seed verification
+            document.getElementById('verify-seed-button').addEventListener('click', verifySeedPhrase);
+            
+            // Restore wallet
+            document.getElementById('restore-wallet-button').addEventListener('click', restoreWallet);
+            document.getElementById('back-from-restore').addEventListener('click', () => {
+                UI.showView('onboarding-view');
+            });
+            
+            document.getElementById('restore-advanced-toggle').addEventListener('click', () => {
+                const content = document.getElementById('restore-advanced-content');
+                content.classList.toggle('show');
+            });
+            
+            document.getElementById('restore-word-count-select').addEventListener('change', (e) => {
+                state.restoreWordCount = parseInt(e.target.value);
+            });
+            
+            document.getElementById('restore-derivation-path-input').addEventListener('change', (e) => {
+                state.restoreDerivationPath = e.target.value;
+            });
+            
+            document.getElementById('restore-passphrase-input').addEventListener('change', (e) => {
+                state.restorePassphrase = e.target.value;
+            });
+            
+            // Backup options
+            UI.setupBackupOptions();
+            
+            // Theme switcher
+            document.querySelectorAll('.theme-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    applyTheme(button.dataset.theme);
+                });
+            });
+            
+            // Add other event listeners as needed...
         }
-        
-        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        async function createWallet() {
+            const password = document.getElementById('create-password-input').value;
+            const confirmPassword = document.getElementById('confirm-password-input').value;
+            
+            if (password !== confirmPassword) {
+                UI.showStatus('create-status', 'Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 8) {
+                UI.showStatus('create-status', 'Password must be at least 8 characters', 'error');
+                return;
+            }
+            
+            UI.showLoader('create-loader');
+            UI.clearStatus('create-status');
+            
+            try {
+                // Generate seed phrase
+                const { mnemonic, words, entropy, checksum } = await SeedPhraseUtils.generateSeedPhrase();
+                
+                // Generate wallet from seed
+                const wallet = await SeedPhraseUtils.generateWalletFromSeed(mnemonic);
+                
+                // Store in state
+                state.wallet = wallet;
+                state.tempWallet = wallet;
+                
+                // Encrypt and store wallet
+                const encryptedWallet = await CryptoUtils.encrypt(
+                    JSON.stringify({
+                        privateKey: CryptoUtils.toHex(wallet.privateKey),
+                        publicKey: CryptoUtils.toHex(wallet.publicKey),
+                        address: wallet.address,
+                        seed: mnemonic,
+                        derivationPath: wallet.derivationPath
+                    }),
+                    password
+                );
+                
+                // Store in localStorage
+                localStorage.setItem('aura_wallet', JSON.stringify(encryptedWallet));
+                
+                // Display seed phrase
+                UI.displaySeedPhrase(words, true); // Start hidden
+                UI.updateSeedAdvancedInfo();
+                
+                // Show seed phrase view
+                UI.showView('seed-phrase-view');
+                
+                // Hide loader
+                UI.hideLoader('create-loader');
+            } catch (error) {
+                UI.showStatus('create-status', `Error creating wallet: ${error.message}`, 'error');
+                UI.hideLoader('create-loader');
+            }
+        }
+
+        async function verifySeedPhrase() {
+            if (!UI.verifySeedPhrase()) {
+                UI.showStatus('seed-confirm-status', 'Incorrect words. Please try again.', 'error');
+                return;
+            }
+            
+            UI.clearStatus('seed-confirm-status');
+            
+            // Unlock wallet
+            if (state.tempWallet) {
+                state.wallet = state.tempWallet;
+                state.userStore = {
+                    address: state.wallet.address,
+                    publicKey: CryptoUtils.toHex(state.wallet.publicKey),
+                    encryptedPrivateKey: localStorage.getItem('aura_wallet')
+                };
+                
+                // Show wallet view
+                UI.showView('wallet-view');
+                updateWalletView();
+            } else {
+                UI.showStatus('seed-confirm-status', 'Wallet data not found. Please try again.', 'error');
+            }
+        }
+
+        async function restoreWallet() {
+            const password = document.getElementById('restore-password-input').value;
+            
+            if (password.length < 8) {
+                UI.showStatus('restore-status', 'Password must be at least 8 characters', 'error');
+                return;
+            }
+            
+            UI.showLoader('restore-loader');
+            UI.clearStatus('restore-status');
+            
+            try {
+                let wallet;
+                
+                if (state.restoreMethod === 'seed') {
+                    const mnemonic = document.getElementById('restore-seed-input').value.trim();
+                    
+                    if (!SeedPhraseUtils.validateSeedPhrase(mnemonic)) {
+                        throw new Error('Invalid seed phrase');
+                    }
+                    
+                    wallet = await RestoreUtils.restoreFromSeed(
+                        mnemonic, 
+                        state.restorePassphrase, 
+                        state.restoreDerivationPath
+                    );
+                } else {
+                    const privateKeyHex = document.getElementById('restore-private-input').value.trim();
+                    
+                    if (!RestoreUtils.validatePrivateKey(privateKeyHex)) {
+                        throw new Error('Invalid private key format');
+                    }
+                    
+                    wallet = await RestoreUtils.restoreFromPrivateKey(privateKeyHex);
+                }
+                
+                // Store in state
+                state.wallet = wallet;
+                state.tempWallet = wallet;
+                
+                // Encrypt and store wallet
+                const encryptedWallet = await CryptoUtils.encrypt(
+                    JSON.stringify({
+                        privateKey: CryptoUtils.toHex(wallet.privateKey),
+                        publicKey: CryptoUtils.toHex(wallet.publicKey),
+                        address: wallet.address,
+                        seed: state.restoreMethod === 'seed' ? document.getElementById('restore-seed-input').value.trim() : null,
+                        derivationPath: wallet.derivationPath
+                    }),
+                    password
+                );
+                
+                // Store in localStorage
+                localStorage.setItem('aura_wallet', JSON.stringify(encryptedWallet));
+                
+                // Update user store
+                state.userStore = {
+                    address: wallet.address,
+                    publicKey: CryptoUtils.toHex(wallet.publicKey),
+                    encryptedPrivateKey: JSON.stringify(encryptedWallet)
+                };
+                
+                // Show wallet view
+                UI.showView('wallet-view');
+                updateWalletView();
+                
+                // Hide loader
+                UI.hideLoader('restore-loader');
+            } catch (error) {
+                UI.showStatus('restore-status', `Error restoring wallet: ${error.message}`, 'error');
+                UI.hideLoader('restore-loader');
+            }
+        }
+
+        async function checkWalletExists() {
+            const encryptedWallet = localStorage.getItem('aura_wallet');
+            
+            if (encryptedWallet) {
+                UI.showView('unlock-view');
+            } else {
+                UI.showView('onboarding-view');
+            }
+        }
+
+        async function updateWalletView() {
+            if (!state.wallet || !state.userStore) return;
+            
+            // Update address display
+            const addressElement = document.getElementById('address-display');
+            if (addressElement) {
+                addressElement.textContent = state.wallet.address;
+            }
+            
+            // Update balance (placeholder)
+            const balanceElement = document.getElementById('balance-display');
+            if (balanceElement) {
+                balanceElement.innerHTML = `${auraIconHTML} 0.00`;
+            }
+            
+            // Update transaction history (placeholder)
+            updateTransactionHistory();
+        }
+
+        function updateTransactionHistory() {
+            const transactionList = document.getElementById('transaction-list-ul');
+            if (!transactionList) return;
+            
+            // Clear existing transactions
+            transactionList.innerHTML = '';
+            
+            // Add placeholder for no transactions
+            const noTransactions = document.createElement('li');
+            noTransactions.className = 'no-transactions';
+            noTransactions.textContent = 'No transactions yet';
+            transactionList.appendChild(noTransactions);
+        }
+
+        // Add other functions as needed...
     </script>
 </body>
 </html>
